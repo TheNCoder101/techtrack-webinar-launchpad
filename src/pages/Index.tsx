@@ -18,7 +18,7 @@ const Index = () => {
         {/* Hero Section */}
         <div className="text-center space-y-6 animate-fade-in">
           <h1 className="text-4xl sm:text-5xl font-bold leading-tight">
-            <span className="gradient-text">TechTrack Accelerator</span>
+            <span className="gradient-text">TechTrack Career Accelerator</span>
             <br />
             <span className="text-2xl sm:text-3xl text-white/80 mt-2 block">High Tech Career Accelerator</span>
             <span className="mt-4 block">קריירה בהייטק? הצעד הראשון שלך מתחיל כאן!</span>
