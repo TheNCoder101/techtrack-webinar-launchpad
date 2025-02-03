@@ -5,8 +5,21 @@ import { Testimonials } from "@/components/Testimonials";
 import { Speakers } from "@/components/Speakers";
 import { Partners } from "@/components/Partners";
 import { ArrowLeft } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const Index = () => {
+  const [showFloatingButton, setShowFloatingButton] = useState(true);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPercentage = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
+      setShowFloatingButton(scrollPercentage < 80);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const handleFormSubmit = () => {
     const form = document.querySelector('form');
     if (form) {
@@ -59,19 +72,21 @@ const Index = () => {
             <Partners />
           </div>
           <div className="sticky top-4">
-            <RegistrationForm hideSubmitButton={true} />
+            <RegistrationForm hideSubmitButton={!showFloatingButton} />
           </div>
         </div>
       </div>
       
       {/* Floating CTA Button */}
-      <button 
-        onClick={handleFormSubmit}
-        className="fixed bottom-8 left-4 right-4 md:left-8 md:right-8 z-50 glass-card py-4 px-6 text-white font-bold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary via-secondary to-accent hover:scale-105 flex items-center justify-center gap-2"
-      >
-        <span>כן! אני רוצה להבין איך לפרוץ להייטק</span>
-        <ArrowLeft className="w-5 h-5" />
-      </button>
+      {showFloatingButton && (
+        <button 
+          onClick={handleFormSubmit}
+          className="fixed bottom-8 left-4 right-4 md:left-8 md:right-8 z-50 glass-card py-4 px-6 text-white font-bold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary via-secondary to-accent hover:scale-105 flex items-center justify-center gap-2 animate-fade-in"
+        >
+          <span>כן! אני רוצה להבין איך לפרוץ להייטק</span>
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+      )}
     </div>
   );
 };
