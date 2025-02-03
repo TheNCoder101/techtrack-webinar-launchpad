@@ -41,7 +41,7 @@ const Index = () => {
         {/* Sticky CTA */}
         <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:bottom-8 z-50">
           <button className="cta-button w-full md:w-auto">
-            🔴 הבטיחו את מקומכם עכשיו - חינם!
+            כן! אני רוצה להצטרף ולשמוע איך נכנסים להייטק >>
           </button>
         </div>
       </div>
