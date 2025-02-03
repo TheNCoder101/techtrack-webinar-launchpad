@@ -14,44 +14,21 @@
 }
 
 body {
-  @apply font-heebo bg-gradient-to-br from-blue-600 via-purple-600 to-purple-700 min-h-screen text-white;
+  @apply font-heebo bg-gradient-to-br from-blue-600 to-purple-600 min-h-screen text-white;
 }
 
 .glass-card {
-  @apply bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300;
+  @apply bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl;
 }
 
 .form-input {
-  @apply w-full px-4 py-3 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-300;
+  @apply w-full px-4 py-2 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50;
 }
 
 .cta-button {
-  @apply bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:from-blue-600 hover:to-purple-600 transform hover:scale-105 transition-all duration-300 animate-fade-in;
+  @apply bg-white text-blue-600 font-bold py-3 px-6 rounded-full shadow-lg hover:bg-blue-50 transition-all duration-300 animate-fade-in;
 }
 
 .benefit-item {
-  @apply flex items-center space-x-3 space-x-reverse mb-4 animate-fade-in bg-white/5 p-3 rounded-lg hover:bg-white/10 transition-all duration-300;
-}
-
-/* Custom animations */
-@keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
-}
-
-.float-animation {
-  animation: float 3s ease-in-out infinite;
-}
-
-/* Tech-inspired decorative elements */
-.tech-pattern {
-  @apply absolute inset-0 opacity-10 pointer-events-none;
-  background-image: radial-gradient(circle at 1px 1px, white 1px, transparent 0);
-  background-size: 30px 30px;
-}
-
-/* Gradient text effect */
-.gradient-text {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400 font-bold;
+  @apply flex items-center space-x-3 space-x-reverse mb-4 animate-fade-in;
 }
