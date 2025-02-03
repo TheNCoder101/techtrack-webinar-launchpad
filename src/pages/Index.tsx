@@ -5,6 +5,14 @@ import { Testimonials } from "@/components/Testimonials";
 import { Speakers } from "@/components/Speakers";
 
 const Index = () => {
+  const handleFormSubmit = () => {
+    // Find the form and submit it programmatically
+    const form = document.querySelector('form');
+    if (form) {
+      form.requestSubmit();
+    }
+  };
+
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-12">
@@ -44,6 +52,14 @@ const Index = () => {
           </div>
         </div>
       </div>
+      
+      {/* Floating CTA Button */}
+      <button 
+        onClick={handleFormSubmit}
+        className="cta-button fixed bottom-4 left-4 right-4 md:relative md:bottom-auto z-50"
+      >
+        הבטיחו את מקומכם בוובינר &gt;
+      </button>
     </div>
   );
 };

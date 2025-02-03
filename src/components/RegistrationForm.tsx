@@ -18,7 +18,7 @@ export const RegistrationForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="glass-card p-6 space-y-4 sticky bottom-4 md:relative md:bottom-auto">
+    <form onSubmit={handleSubmit} className="glass-card p-6 space-y-4">
       <div>
         <input
           type="text"
@@ -49,9 +49,6 @@ export const RegistrationForm = () => {
           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
         />
       </div>
-      <button type="submit" className="cta-button w-full">
-        הבטיחו את מקומכם בוובינר &gt;
-      </button>
     </form>
   );
 };
