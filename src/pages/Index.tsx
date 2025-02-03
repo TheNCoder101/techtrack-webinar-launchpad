@@ -9,7 +9,7 @@ const Index = () => {
       <div className="max-w-4xl mx-auto space-y-12">
         {/* Hero Section */}
         <div className="text-center space-y-6 animate-fade-in">
-          <h1 className="text-4xl sm:text-5xl font-bold">
+          <h1 className="text-4xl sm:text-5xl font-bold leading-tight">
             קריירה בהייטק? הצעד הראשון שלך מתחיל כאן!
           </h1>
           <h2 className="text-2xl sm:text-3xl">
@@ -35,15 +35,18 @@ const Index = () => {
             </div>
             <Testimonials />
           </div>
-          <div>
+          <div className="sticky top-4">
             <RegistrationForm />
           </div>
         </div>
 
-        {/* Sticky CTA */}
-        <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:bottom-8 z-50">
-          <button className="cta-button w-full md:w-auto">
-            כן! אני רוצה להצטרף ולשמוע איך נכנסים להייטק {'>'}
+        {/* Sticky CTA for Mobile */}
+        <div className="fixed bottom-4 left-4 right-4 md:hidden z-50 animate-fade-in">
+          <button 
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="cta-button w-full"
+          >
+            הבטיחו את מקומכם בוובינר &gt;
           </button>
         </div>
       </div>

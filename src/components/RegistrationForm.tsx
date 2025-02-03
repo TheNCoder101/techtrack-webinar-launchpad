@@ -50,7 +50,7 @@ export const RegistrationForm = () => {
         />
       </div>
       <button type="submit" className="cta-button w-full">
-        הבטיחו את מקומכם בוובינר {'>'}
+        הבטיחו את מקומכם בוובינר &gt;
       </button>
     </form>
   );
