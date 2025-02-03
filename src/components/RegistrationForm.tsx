@@ -74,14 +74,12 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
         </div>
       </div>
 
-      {!hideSubmitButton && (
-        <Button 
-          type="submit"
-          className="w-full py-6 text-lg font-bold bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 transition-all duration-300 animate-pulse"
-        >
-          הבטיחו את מקומכם בוובינר! 🚀
-        </Button>
-      )}
+      <Button 
+        type="submit"
+        className="w-full py-6 text-lg font-bold bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 transition-all duration-300 animate-pulse"
+      >
+        הבטיחו את מקומכם בוובינר! 🚀
+      </Button>
 
       <div className="space-y-3 text-center text-sm">
         <div className="flex items-center justify-center space-x-2 space-x-reverse">
