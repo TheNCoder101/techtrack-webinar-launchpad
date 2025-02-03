@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 
 export const CountdownTimer = () => {
-  const targetDate = new Date("2024-02-06T20:00:00");
-  const registrationEndDate = new Date("2024-02-06T18:00:00");
+  const targetDate = new Date("2025-02-06T20:00:00");
+  const registrationEndDate = new Date("2025-02-06T18:00:00");
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -97,7 +97,7 @@ export const CountdownTimer = () => {
           </div>
         </div>
 
-        <p className="text-lg font-bold">📅 תחילת התוכנית: 9.2 – אל תישארו מאחור!</p>
+        <p className="text-lg font-bold">📅 תחילת התוכנית: 9.2.2025 – אל תישארו מאחור!</p>
       </div>
     </div>
   );
