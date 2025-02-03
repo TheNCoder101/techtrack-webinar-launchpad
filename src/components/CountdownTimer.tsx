@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 
 export const CountdownTimer = () => {
   const registrationEndDate = new Date("2025-02-06T18:00:00");
@@ -36,8 +37,62 @@ export const CountdownTimer = () => {
     return () => clearInterval(timer);
   }, []);
 
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2
+      }
+    }
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
+      <motion.div 
+        variants={container}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true }}
+        className="glass-card p-8"
+      >
+        <div className="text-center space-y-6">
+          <motion.div variants={item} className="mb-8">
+            <h2 className="text-3xl font-bold mb-4">מה נלמד בוובינר? 🎯</h2>
+            <p className="text-xl text-white/90 mb-6">
+              וובינר מעשי שיחשוף בפניכם את הדרך המהירה ביותר להשתלב בהייטק
+            </p>
+          </motion.div>
+
+          <motion.div variants={container} className="grid md:grid-cols-2 gap-6 text-right">
+            <motion.div variants={item} className="glass-card p-4 hover:scale-105 transition-transform duration-300">
+              <h3 className="text-lg font-bold mb-2">🚀 אסטרטגיית קריירה</h3>
+              <p className="text-white/90">איך לבחור את המסלול הנכון עבורכם בהייטק ולהתקדם בו במהירות</p>
+            </motion.div>
+
+            <motion.div variants={item} className="glass-card p-4 hover:scale-105 transition-transform duration-300">
+              <h3 className="text-lg font-bold mb-2">💼 טכניקות חיפוש עבודה</h3>
+              <p className="text-white/90">שיטות מוכחות למציאת משרות נחשקות ויצירת קשרים בתעשייה</p>
+            </motion.div>
+
+            <motion.div variants={item} className="glass-card p-4 hover:scale-105 transition-transform duration-300">
+              <h3 className="text-lg font-bold mb-2">📝 קורות חיים שעובדים</h3>
+              <p className="text-white/90">איך ליצור קורות חיים שמושכים תשומת לב של מגייסים</p>
+            </motion.div>
+
+            <motion.div variants={item} className="glass-card p-4 hover:scale-105 transition-transform duration-300">
+              <h3 className="text-lg font-bold mb-2">🎯 ראיונות עבודה</h3>
+              <p className="text-white/90">טיפים מעשיים להצלחה בראיונות עבודה טכניים ואישיים</p>
+            </motion.div>
+          </motion.div>
+        </div>
+      </motion.div>
+
       <div className="glass-card p-6">
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center space-x-2 space-x-reverse text-red-400">
