@@ -31,11 +31,11 @@ export const CountdownTimer = () => {
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center space-x-2 space-x-reverse text-red-400">
             <span className="text-2xl">⚡️</span>
-            <h3 className="text-xl font-bold">ההרשמה לוובינר נסגרת בקרוב!</h3>
+            <h3 className="text-xl font-bold">זמן ההרשמה לוובינר מתקרב לסיומו!</h3>
           </div>
           
           <div className="text-center">
-            <p className="text-lg">⏳ נותרו רק 20 מקומות אחרונים!</p>
+            <p className="text-lg">⏳ נשארו מקומות אחרונים!</p>
             <p className="text-lg">📌 ההרשמה לוובינר נסגרת ב-6.2 בשעה 18:00</p>
           </div>
 

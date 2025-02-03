@@ -24,13 +24,13 @@ export const RunningRibbon = () => {
         style={{ width: "200%" }}
       >
         <span className="inline-block px-4">
-          🚀 TECH TRACK ACCELERATOR - המסלול המהיר להייטק 
+          🚀 TECH TRACK ACCELERATOR - תכנית האצת הקריירה המובילה בישראל 
         </span>
         <span className="inline-block px-4">
-          💼 יותר מ-500 בוגרים כבר עובדים בהייטק! 
+          💼 יותר מ-500 בוגרים כבר עובדים בהייטק תוך פחות מ-3 חודשים! 
         </span>
         <span className="inline-block px-4">
-          🎯 הצטרפו לוובינר והתחילו את המסע שלכם להייטק 
+          🎯 הצטרפו לוובינר והתחילו את המסע המהיר שלכם להייטק 
         </span>
       </div>
     </div>

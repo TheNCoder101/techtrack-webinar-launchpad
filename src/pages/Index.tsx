@@ -36,40 +36,27 @@ const Index = () => {
           {/* Hero Section */}
           <div className="text-center space-y-6 animate-fade-in">
             <h1 className="text-4xl sm:text-5xl font-bold leading-tight font-mono">
-              <span className="gradient-text">TechTrack Online Career Accelerator</span>
+              <span className="gradient-text">תכנית האצת הקריירה היחידה בישראל למחפשי עבודה בהייטק</span>
               <br />
               <span className="text-2xl sm:text-3xl text-white/90 mt-4 block">
-                התוכנית שמביאה אותך לקריירה בהייטק
+                הדרך המהירה והיעילה ביותר להשתלב בתעשיית ההייטק
               </span>
             </h1>
             
             <div className="glass-card p-6 space-y-4">
               <h2 className="text-2xl font-bold">
-                תשכחו מקורסים תיאורטיים – כאן לומדים מה שבאמת עובד!
+                קצרו חודשים של חיפוש עבודה לשבועות ספורים
               </h2>
               <p className="text-lg text-white/90">
-                אם אתם רוצים להיכנס להייטק, <strong>אתם צריכים יותר ממידע – אתם צריכים אסטרטגיה מנצחת!</strong>
-              </p>
-              <p className="text-lg text-white/90">
-                <strong>TechTrack Career Accelerator</strong> היא תוכנית פרקטית שבנויה כדי לתת לכם <strong>יתרון אמיתי</strong> בשוק העבודה ולהכניס אתכם לתפקיד הראשון שלכם בהייטק – גם בלי ניסיון קודם!
+                במקום לבזבז זמן וכסף על קורסים ארוכים ויקרים, <strong>קבלו ליווי ממוקד ופרקטי</strong> שיביא אתכם מהר יותר למשרה הראשונה בהייטק
               </p>
             </div>
 
             <div className="glass-card p-4 inline-block">
-              <p className="text-xl">📅 וובינר הדרכה על התוכנית: חמישי | 6.2 | 20:00 | אונליין</p>
-            </div>
-          </div>
-
-          {/* Countdown Timer */}
-          <div className="glass-card p-6 space-y-4">
-            <div className="text-center space-y-2">
-              <h3 className="text-2xl font-bold">⏰ זמן ההרשמה לוובינר מתקרב לסיומו!</h3>
-              <p className="text-lg opacity-90">הבטיחו את מקומכם בוובינר המבוקש שלנו</p>
-            </div>
-            <CountdownTimer />
-            <div className="text-center mt-4">
-              <p className="text-lg font-bold text-white/90">
-                📅 תחילת התוכנית: 10.2.2025 | הירשמו עכשיו והבטיחו את מקומכם!
+              <p className="text-xl">
+                📅 וובינר הדרכה על התוכנית
+                <br />
+                6.2 | 20:00 | אונליין | יום חמישי
               </p>
             </div>
           </div>
@@ -102,7 +89,6 @@ const Index = () => {
           )}
         </div>
       </div>
-      {/* Add disclaimer at the bottom */}
       <footer className="max-w-4xl mx-auto px-4 py-8 text-center text-sm text-white/70">
         <p className="mb-2">© 2024 Tech Track. כל הזכויות שמורות.</p>
         <p className="mb-2">
