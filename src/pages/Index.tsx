@@ -3,7 +3,7 @@ import { CountdownTimer } from "@/components/CountdownTimer";
 import { Benefits } from "@/components/Benefits";
 import { Testimonials } from "@/components/Testimonials";
 import { Speakers } from "@/components/Speakers";
-import { Partners } from "@/components/Partners";
+import { ExclusiveOffer } from "@/components/ExclusiveOffer";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -69,7 +69,7 @@ const Index = () => {
             </div>
             <Speakers />
             <Testimonials />
-            <Partners />
+            <ExclusiveOffer />
           </div>
           <div className="sticky top-4">
             <RegistrationForm hideSubmitButton={!showFloatingButton} />

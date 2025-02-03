@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface RegistrationFormProps {
   hideSubmitButton?: boolean;
@@ -12,15 +13,27 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
     email: "",
     phone: "",
   });
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     toast({
       title: "תודה על ההרשמה! 🎉",
-      description: "שלחנו לך מייל עם כל הפרטים לוובינר. נתראה שם!",
+      description: (
+        <div className="space-y-2">
+          <p>שלחנו לך מייל עם כל הפרטים לוובינר.</p>
+          <a 
+            href="https://chat.whatsapp.com/invite-link" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-primary hover:underline block"
+          >
+            👉 לחץ כאן להצטרפות לקבוצת הווטסאפ של המחזור הקרוב
+          </a>
+        </div>
+      ),
     });
-    // Reset form
     setFormData({ name: "", email: "", phone: "" });
   };
 
@@ -72,11 +85,24 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
           />
         </div>
+        <div className="flex items-center space-x-2 space-x-reverse">
+          <Checkbox
+            id="marketing"
+            checked={marketingConsent}
+            onCheckedChange={(checked) => setMarketingConsent(checked as boolean)}
+          />
+          <label
+            htmlFor="marketing"
+            className="text-sm text-gray-200 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            אני מאשר/ת קבלת טיפים, תכנים ומידע שיווקי מצוות Tech Track
+          </label>
+        </div>
       </div>
 
       <Button 
         type="submit"
-        className="w-full py-6 text-lg font-bold bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 transition-all duration-300 animate-pulse"
+        className="w-full py-6 text-lg font-bold bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 transition-all duration-300 hover:scale-105"
       >
         הבטיחו את מקומכם בוובינר! 🚀
       </Button>
