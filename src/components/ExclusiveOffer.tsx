@@ -11,7 +11,7 @@ export const ExclusiveOffer = () => {
       <div className="text-center space-y-4">
         <div className="flex items-center justify-center space-x-2 space-x-reverse">
           <span className="text-3xl">🎁</span>
-          <h2 className="text-2xl font-bold gradient-text">מתנה בלעדית למשתתפי הוובינר!</h2>
+          <h2 className="text-2xl font-bold gradient-text">מתנה בלעדית ל-50 הנרשמים הראשונים!</h2>
         </div>
         
         <div className="bg-white/10 p-6 rounded-lg space-y-4">
@@ -39,9 +39,14 @@ export const ExclusiveOffer = () => {
           </div>
         </div>
         
-        <p className="text-lg font-bold text-primary">
-          שווי ההטבה: 997₪ | חינם למשתתפי הוובינר! 🎉
-        </p>
+        <div className="space-y-2">
+          <p className="text-lg font-bold text-primary">
+            שווי ההטבה: 997₪ | חינם ל-50 הנרשמים הראשונים! 🎉
+          </p>
+          <p className="text-sm text-white/80">
+            ⚡️ מהרו להירשם - המקומות מוגבלים!
+          </p>
+        </div>
 
         <button
           onClick={scrollToRegistration}

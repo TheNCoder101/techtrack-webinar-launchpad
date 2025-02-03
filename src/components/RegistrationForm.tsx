@@ -14,6 +14,7 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
     phone: "",
   });
   const [marketingConsent, setMarketingConsent] = useState(false);
+  const [callbackRequest, setCallbackRequest] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,13 +30,18 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
     }
 
     try {
-      console.log("Form submitted:", formData);
+      console.log("Form submitted:", { ...formData, callbackRequest });
       
       toast({
         title: "תודה על ההרשמה! 🎉",
         description: (
           <div className="space-y-2">
             <p>שלחנו לך מייל עם פרטי הוובינר ומידע נוסף על התכנית.</p>
+            {callbackRequest && (
+              <p className="text-primary font-medium">
+                ✨ נציג שלנו יצור איתך קשר בהקדם להרשמה מוקדמת לתכנית
+              </p>
+            )}
             <a 
               href="https://chat.whatsapp.com/techtrack-group" 
               target="_blank" 
@@ -50,6 +56,7 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
 
       setFormData({ name: "", email: "", phone: "" });
       setMarketingConsent(false);
+      setCallbackRequest(false);
       
     } catch (error) {
       toast({
@@ -71,7 +78,10 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
         </div>
         <div className="p-3 bg-white/10 rounded-lg border border-white/20">
           <p className="text-sm font-bold">
-            הצטרפו ל-500+ בוגרים שכבר עובדים בהייטק!
+            ⚡️ ההטבה המיוחדת תינתן ל-50 הנרשמים הראשונים בלבד!
+          </p>
+          <p className="text-sm mt-1 text-primary">
+            מהרו להירשם לפני שיגמרו המקומות
           </p>
         </div>
       </div>
@@ -120,16 +130,27 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
             אני מאשר/ת קבלת טיפים, תכנים ומידע שיווקי מצוות Tech Track
           </label>
         </div>
+        <div className="flex items-center space-x-2 space-x-reverse bg-white/5 p-3 rounded-lg">
+          <Checkbox
+            id="callback"
+            checked={callbackRequest}
+            onCheckedChange={(checked) => setCallbackRequest(checked as boolean)}
+          />
+          <label
+            htmlFor="callback"
+            className="text-sm text-gray-200 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            אני מעוניין/ת שנציג יחזור אליי להרשמה מוקדמת לתכנית (מספר המקומות במחזור הקרוב מוגבל)
+          </label>
+        </div>
       </div>
 
-      {!hideSubmitButton && (
-        <Button 
-          type="submit"
-          className="w-full py-6 text-lg font-bold bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 transition-all duration-300 shadow-lg hover:shadow-xl"
-        >
-          הבטיחו את מקומכם בוובינר! 🚀
-        </Button>
-      )}
+      <Button 
+        type="submit"
+        className="w-full py-6 text-lg font-bold bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 transition-all duration-300 shadow-lg hover:shadow-xl"
+      >
+        הבטיחו את מקומכם בוובינר! 🚀
+      </Button>
 
       <div className="space-y-4 text-center text-sm">
         <div className="flex flex-col gap-2">
