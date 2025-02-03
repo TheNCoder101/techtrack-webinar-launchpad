@@ -6,7 +6,6 @@ import { Speakers } from "@/components/Speakers";
 
 const Index = () => {
   const handleFormSubmit = () => {
-    // Find the form and submit it programmatically
     const form = document.querySelector('form');
     if (form) {
       form.requestSubmit();
@@ -21,7 +20,8 @@ const Index = () => {
           <h1 className="text-4xl sm:text-5xl font-bold leading-tight">
             <span className="gradient-text">TechTrack Accelerator</span>
             <br />
-            קריירה בהייטק? הצעד הראשון שלך מתחיל כאן!
+            <span className="text-2xl sm:text-3xl text-white/80 mt-2 block">High Tech Career Accelerator</span>
+            <span className="mt-4 block">קריירה בהייטק? הצעד הראשון שלך מתחיל כאן!</span>
           </h1>
           <h2 className="text-2xl sm:text-3xl glass-card inline-block px-6 py-3">
             וובינר אחרון לפני סגירת ההרשמה לתוכנית!
@@ -56,9 +56,9 @@ const Index = () => {
       {/* Floating CTA Button */}
       <button 
         onClick={handleFormSubmit}
-        className="fixed bottom-8 left-4 right-4 md:left-8 md:right-8 z-50 glass-card py-4 px-6 text-white font-bold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary via-secondary to-accent"
+        className="fixed bottom-8 left-4 right-4 md:left-8 md:right-8 z-50 glass-card py-4 px-6 text-white font-bold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary via-secondary to-accent hover:scale-105"
       >
-        הבטיחו את מקומכם בוובינר &lt;
+        הבטיחו את מקומכם בוובינר &gt;
       </button>
     </div>
   );
