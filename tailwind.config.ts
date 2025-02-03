@@ -32,6 +32,11 @@ export default {
           DEFAULT: "#7c3aed",
           foreground: "#ffffff",
         },
+        tech: {
+          blue: "#1a73e8",
+          purple: "#7c3aed",
+          cyan: "#06b6d4",
+        }
       },
       fontFamily: {
         heebo: ["Heebo", "sans-serif"],
@@ -45,10 +50,18 @@ export default {
           "0%": { transform: "translateX(-100%)" },
           "100%": { transform: "translateX(0)" },
         },
+        "pulse-soft": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.8" },
+        },
       },
       animation: {
         "fade-in": "fade-in 0.5s ease-out",
         "slide-in": "slide-in 0.5s ease-out",
+        "pulse-soft": "pulse-soft 2s ease-in-out infinite",
+      },
+      backgroundImage: {
+        'tech-pattern': "radial-gradient(circle at 1px 1px, white 1px, transparent 0)",
       },
     },
   },

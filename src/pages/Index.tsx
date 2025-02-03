@@ -6,12 +6,14 @@ import { Speakers } from "@/components/Speakers";
 
 const Index = () => {
   return (
-    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+    <div className="relative min-h-screen py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      <div className="tech-pattern" />
       <div className="max-w-4xl mx-auto space-y-12">
         {/* Hero Section */}
-        <div className="text-center space-y-6 animate-fade-in">
+        <div className="text-center space-y-6 animate-fade-in relative">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl" />
           <h1 className="text-4xl sm:text-5xl font-bold leading-tight">
-            קריירה בהייטק? הצעד הראשון שלך מתחיל כאן!
+            קריירה ב<span className="gradient-text">הייטק</span>? הצעד הראשון שלך מתחיל כאן!
           </h1>
           <h2 className="text-2xl sm:text-3xl">
             וובינר אחרון לפני סגירת ההרשמה לתוכנית!
@@ -20,7 +22,7 @@ const Index = () => {
             📅 חמישי | 6.2 | 20:00 | אונליין
           </p>
           <p className="text-xl font-bold">
-            ⏳ תוכנית TechTrack Career Accelerator יוצאת לדרך ב-9.2!
+            ⏳ תוכנית <span className="gradient-text">TechTrack Career Accelerator</span> יוצאת לדרך ב-9.2!
           </p>
         </div>
 
@@ -30,7 +32,7 @@ const Index = () => {
         {/* Main Content */}
         <div className="grid md:grid-cols-2 gap-8">
           <div className="space-y-8">
-            <div className="glass-card p-6">
+            <div className="glass-card p-6 hover:scale-105 transition-transform duration-300">
               <h3 className="text-xl font-bold mb-6">מה נלמד בוובינר?</h3>
               <Benefits />
             </div>
