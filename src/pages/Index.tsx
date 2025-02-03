@@ -18,7 +18,7 @@ const Index = () => {
         {/* Hero Section */}
         <div className="text-center space-y-6 animate-fade-in">
           <h1 className="text-4xl sm:text-5xl font-bold leading-tight">
-            <span className="gradient-text">TechTrack Online Career Accelerator</span>
+            <span className="gradient-text">TechTrack Career Accelerator</span>
             <br />
             התוכנית שמביאה אותך לקריירה בהייטק
           </h1>
@@ -83,12 +83,12 @@ const Index = () => {
         </div>
       </div>
       
-      {/* Floating CTA Button */}
+      {/* Floating CTA Button with improved styling */}
       <button 
         onClick={handleFormSubmit}
-        className="cta-button fixed bottom-4 left-4 right-4 md:relative md:bottom-auto z-50"
+        className="cta-button fixed bottom-8 left-4 right-4 md:w-auto md:left-8 shadow-2xl hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-sm z-50 transition-all duration-300 ease-in-out transform hover:-translate-y-1"
       >
-        {"כן! אני רוצה להבין איך לפרוץ להייטק ➜"}
+        {"כן! אני רוצה להבין איך לפרוץ להייטק ←"}
       </button>
     </div>
   );
