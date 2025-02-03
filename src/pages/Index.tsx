@@ -34,6 +34,8 @@ const Index = () => {
       <RunningRibbon />
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto space-y-12">
+          <Partners />
+          
           <div className="text-center space-y-6 animate-fade-in">
             <h1 className="text-4xl sm:text-5xl font-bold leading-tight font-mono">
               <span className="gradient-text">TechTrack Online Career Accelerator</span>
@@ -43,21 +45,69 @@ const Index = () => {
               </span>
             </h1>
             
-            <div className="glass-card p-8 transform hover:scale-105 transition-all duration-300 bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20">
+            <div className="glass-card p-6 space-y-4">
+              <h2 className="text-2xl font-bold">
+                הפכו חודשים של חיפוש עבודה לשבועות ספורים
+              </h2>
+              <p className="text-lg text-white/90">
+                במקום לבזבז זמן וכסף על קורסים ארוכים, קבלו ליווי ממוקד שיביא אתכם מהר יותר למשרה הראשונה בהייטק
+              </p>
+            </div>
+
+            <div className="glass-card p-8 transform hover:scale-105 transition-all duration-300">
+              <div className="space-y-6">
+                <h3 className="text-3xl font-bold text-white mb-6 border-b border-white/20 pb-4">
+                  למה ליווי קבוצתי הוא המפתח להצלחה שלך?
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-right">
+                  <div className="benefit-item">
+                    <div className="w-2 h-2 bg-primary rounded-full mr-2 mt-2"></div>
+                    <p className="text-lg">
+                      <strong className="text-primary">כוח הקבוצה:</strong> תמיכה הדדית ומוטיבציה גבוהה לאורך כל הדרך
+                    </p>
+                  </div>
+                  <div className="benefit-item">
+                    <div className="w-2 h-2 bg-secondary rounded-full mr-2 mt-2"></div>
+                    <p className="text-lg">
+                      <strong className="text-secondary">למידה מהירה יותר:</strong> שיתוף ידע וניסיון בין המשתתפים
+                    </p>
+                  </div>
+                  <div className="benefit-item">
+                    <div className="w-2 h-2 bg-accent rounded-full mr-2 mt-2"></div>
+                    <p className="text-lg">
+                      <strong className="text-accent">נטוורקינג אפקטיבי:</strong> בניית רשת קשרים חזקה בתעשייה
+                    </p>
+                  </div>
+                  <div className="benefit-item">
+                    <div className="w-2 h-2 bg-white rounded-full mr-2 mt-2"></div>
+                    <p className="text-lg">
+                      <strong className="text-white">מיקוד מקצועי:</strong> תכנית מובנית עם מנטורים מנוסים מההייטק
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-6 p-4 bg-white/10 rounded-lg border border-white/20">
+                  <p className="text-lg font-bold text-white">
+                    83% מבוגרי התכנית השתלבו בהייטק תוך פחות מ-3 חודשים!
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="glass-card p-8 transform hover:scale-105 transition-all duration-300">
               <div className="space-y-6">
                 <h3 className="text-3xl font-bold text-white mb-6 border-b border-white/20 pb-4">
                   תכנית ההתמחות המעשית שלנו 🚀
                 </h3>
                 <div className="text-right space-y-4">
-                  <p className="text-lg text-white/90 font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-                    למשתתפים הבולטים ביותר בתכנית - הזדמנות ייחודית להתמחות מעשית בחברות הייטק מובילות
+                  <p className="text-lg text-white/90">
+                    המצטיינים בתכנית יקבלו הזדמנות ייחודית להתמחות מעשית בחברות הייטק מובילות
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="p-4 bg-primary/10 rounded-lg border border-primary/30 hover:border-primary/50 transition-all">
+                    <div className="p-4 bg-white/10 rounded-lg border border-white/20">
                       <h4 className="text-xl font-bold text-white mb-2">התנסות מעשית</h4>
                       <p className="text-white/80">עבודה על פרויקטים אמיתיים תחת הנחיה מקצועית</p>
                     </div>
-                    <div className="p-4 bg-secondary/10 rounded-lg border border-secondary/30 hover:border-secondary/50 transition-all">
+                    <div className="p-4 bg-white/10 rounded-lg border border-white/20">
                       <h4 className="text-xl font-bold text-white mb-2">רשת קשרים</h4>
                       <p className="text-white/80">הזדמנות ליצור קשרים מקצועיים בתעשייה</p>
                     </div>
@@ -66,8 +116,6 @@ const Index = () => {
               </div>
             </div>
           </div>
-
-          <Partners />
 
           <div className="grid md:grid-cols-2 gap-8">
             <div className="space-y-8">
