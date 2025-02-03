@@ -51,15 +51,33 @@ const Index = () => {
               </p>
             </div>
 
-            <div className="glass-card p-4 inline-block">
-              <p className="text-xl">
-                וובינר הדרכה על התוכנית
-                <br />
-                6.2.2025 | 20:00 | אונליין
-                <br />
-                יום חמישי
-              </p>
+            <div className="glass-card p-6 space-y-4 animate-pulse-slow">
+              <h3 className="text-xl font-bold text-primary">למה חיפוש עבודה בקבוצה מגדיל את הסיכויים להצלחה?</h3>
+              <div className="space-y-3 text-right">
+                <div className="benefit-item">
+                  <span>💪</span>
+                  <p>תמיכה הדדית ומוטיבציה גבוהה לאורך כל הדרך</p>
+                </div>
+                <div className="benefit-item">
+                  <span>🎯</span>
+                  <p>למידה מניסיון של אחרים וחיסכון בטעויות נפוצות</p>
+                </div>
+                <div className="benefit-item">
+                  <span>🤝</span>
+                  <p>נטוורקינג והפריה הדדית בין המשתתפים</p>
+                </div>
+                <div className="benefit-item">
+                  <span>📈</span>
+                  <p>אחוזי השמה גבוהים יותר בזכות הליווי המקצועי</p>
+                </div>
+              </div>
             </div>
+          </div>
+
+          <div className="glass-card p-4 bg-primary/20 text-center animate-pulse-slow">
+            <p className="text-lg font-bold">
+              🎁 ההטבה המיוחדת תינתן ל-50 הנרשמים הראשונים בלבד! הבטיחו את מקומכם עכשיו!
+            </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
