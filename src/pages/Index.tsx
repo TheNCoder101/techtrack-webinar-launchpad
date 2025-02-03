@@ -34,57 +34,57 @@ const Index = () => {
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto space-y-12">
           <div className="text-center space-y-6 animate-fade-in">
-            <h1 className="text-4xl sm:text-5xl font-bold leading-tight font-mono">
-              <span className="gradient-text">TechTrack Online Career Accelerator</span>
+            <h1 className="text-4xl sm:text-5xl font-bold leading-tight">
+              <span className="text-white">תכנית הליווי המקצועית</span>
               <br />
               <span className="text-2xl sm:text-3xl text-white/90 mt-4 block">
-                Your Fast Track to a Tech Career
+                שתעזור לך להשתלב בהייטק בתוך 90 יום
               </span>
             </h1>
             
-            <div className="glass-card p-6 space-y-4">
-              <h2 className="text-2xl font-bold">
-                הפכו חודשים של חיפוש עבודה לשבועות ספורים
+            <div className="glass-card p-6 space-y-4 hover:scale-105 transition-all duration-300">
+              <h2 className="text-2xl font-bold text-white">
+                למה לבזבז זמן יקר על חיפוש עבודה לבד? 
               </h2>
               <p className="text-lg text-white/90">
-                במקום לבזבז זמן וכסף על קורסים ארוכים, קבלו ליווי ממוקד שיביא אתכם מהר יותר למשרה הראשונה בהייטק
+                בואו תצטרפו לקהילה שלנו ותקבלו את כל הכלים והליווי שאתם צריכים להצלחה 🚀
               </p>
             </div>
 
             <div className="glass-card p-8 transform hover:scale-105 transition-all duration-300">
               <div className="space-y-6">
-                <h3 className="text-2xl font-bold gradient-text mb-4">
-                  למה ליווי קבוצתי הוא המפתח להצלחה שלך? 🎯
+                <h3 className="text-2xl font-bold text-white mb-4">
+                  4 סיבות למה ליווי קבוצתי הוא המפתח להצלחה שלך
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-right">
                   <div className="benefit-item">
-                    <span className="text-2xl">💪</span>
+                    <span className="text-2xl">✨</span>
                     <p className="text-lg">
-                      <strong className="text-primary">כוח הקבוצה:</strong> תמיכה הדדית ומוטיבציה גבוהה לאורך כל הדרך
-                    </p>
-                  </div>
-                  <div className="benefit-item">
-                    <span className="text-2xl">🎓</span>
-                    <p className="text-lg">
-                      <strong className="text-primary">למידה מהירה יותר:</strong> שיתוף ידע וניסיון בין המשתתפים
-                    </p>
-                  </div>
-                  <div className="benefit-item">
-                    <span className="text-2xl">🤝</span>
-                    <p className="text-lg">
-                      <strong className="text-primary">נטוורקינג אפקטיבי:</strong> בניית רשת קשרים חזקה בתעשייה
+                      <strong className="text-white">כוח הקבוצה:</strong> תמיכה הדדית ומוטיבציה גבוהה לאורך כל הדרך
                     </p>
                   </div>
                   <div className="benefit-item">
                     <span className="text-2xl">🎯</span>
                     <p className="text-lg">
-                      <strong className="text-primary">מיקוד מקצועי:</strong> תכנית מובנית עם מנטורים מנוסים מההייטק
+                      <strong className="text-white">מיקוד מקצועי:</strong> תכנית מובנית עם מנטורים מנוסים מההייטק
+                    </p>
+                  </div>
+                  <div className="benefit-item">
+                    <span className="text-2xl">🌟</span>
+                    <p className="text-lg">
+                      <strong className="text-white">למידה מהירה:</strong> שיתוף ידע וניסיון בין המשתתפים
+                    </p>
+                  </div>
+                  <div className="benefit-item">
+                    <span className="text-2xl">🤝</span>
+                    <p className="text-lg">
+                      <strong className="text-white">נטוורקינג חזק:</strong> חיבור ישיר למשרות ולאנשי מפתח בתעשייה
                     </p>
                   </div>
                 </div>
                 <div className="mt-6 p-4 bg-white/10 rounded-lg">
-                  <p className="text-lg font-bold text-primary">
-                    83% מבוגרי התכנית השתלבו בהייטק תוך פחות מ-3 חודשים! 🚀
+                  <p className="text-lg font-bold text-white">
+                    83% מבוגרי התכנית השתלבו בהייטק תוך פחות מ-3 חודשים! ⭐️
                   </p>
                 </div>
               </div>
