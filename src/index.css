@@ -14,21 +14,29 @@
 }
 
 body {
-  @apply font-heebo bg-gradient-to-br from-blue-600 to-purple-600 min-h-screen text-white;
+  @apply font-heebo bg-gradient-to-br from-primary/90 via-secondary/80 to-accent/70 min-h-screen text-white bg-[length:400%_400%] animate-gradient-shift;
 }
 
 .glass-card {
-  @apply bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl;
+  @apply bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300;
 }
 
 .form-input {
-  @apply w-full px-4 py-2 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50;
+  @apply w-full px-4 py-2 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-300;
 }
 
 .cta-button {
-  @apply bg-white text-blue-600 font-bold py-3 px-6 rounded-full shadow-lg hover:bg-blue-50 transition-all duration-300 animate-fade-in;
+  @apply bg-gradient-to-r from-primary via-secondary to-accent text-white font-bold py-3 px-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 animate-pulse-slow hover:scale-105;
 }
 
 .benefit-item {
-  @apply flex items-center space-x-3 space-x-reverse mb-4 animate-fade-in;
+  @apply flex items-center space-x-3 space-x-reverse mb-4 animate-fade-in hover:translate-x-2 transition-transform duration-300;
+}
+
+.gradient-text {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-secondary to-accent animate-gradient-shift bg-[length:200%_auto];
+}
+
+.tech-card {
+  @apply glass-card p-6 hover:scale-105 transition-transform duration-300;
 }

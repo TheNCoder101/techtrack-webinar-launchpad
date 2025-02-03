@@ -11,15 +11,17 @@ const Index = () => {
         {/* Hero Section */}
         <div className="text-center space-y-6 animate-fade-in">
           <h1 className="text-4xl sm:text-5xl font-bold leading-tight">
+            <span className="gradient-text">TechTrack Accelerator</span>
+            <br />
             קריירה בהייטק? הצעד הראשון שלך מתחיל כאן!
           </h1>
-          <h2 className="text-2xl sm:text-3xl">
+          <h2 className="text-2xl sm:text-3xl glass-card inline-block px-6 py-3">
             וובינר אחרון לפני סגירת ההרשמה לתוכנית!
           </h2>
-          <p className="text-xl">
+          <p className="text-xl tech-card inline-block">
             📅 חמישי | 6.2 | 20:00 | אונליין
           </p>
-          <p className="text-xl font-bold">
+          <p className="text-xl font-bold glass-card p-4">
             ⏳ תוכנית TechTrack Career Accelerator יוצאת לדרך ב-9.2!
           </p>
         </div>
@@ -30,8 +32,8 @@ const Index = () => {
         {/* Main Content */}
         <div className="grid md:grid-cols-2 gap-8">
           <div className="space-y-8">
-            <div className="glass-card p-6">
-              <h3 className="text-xl font-bold mb-6">מה נלמד בוובינר?</h3>
+            <div className="tech-card">
+              <h3 className="text-xl font-bold mb-6 gradient-text">מה נלמד בוובינר?</h3>
               <Benefits />
             </div>
             <Speakers />
