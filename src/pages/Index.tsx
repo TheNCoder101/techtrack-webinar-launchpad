@@ -51,14 +51,43 @@ const Index = () => {
               </p>
             </div>
 
-            <div className="glass-card p-4 inline-block">
-              <p className="text-xl">
-                למה חיפוש עבודה בקבוצה מגדיל משמעותית את הסיכויים להצלחה?
-                <br />
-                ליווי קבוצתי מספק תמיכה הדדית, למידה משותפת, ורשת קשרים חזקה
-                <br />
-                בתכנית מובנית עם מנטורים מנוסים, תקבלו את כל הכלים להצלחה 🚀
-              </p>
+            <div className="glass-card p-8 transform hover:scale-105 transition-all duration-300">
+              <div className="space-y-6">
+                <h3 className="text-2xl font-bold gradient-text mb-4">
+                  למה ליווי קבוצתי הוא המפתח להצלחה שלך? 🎯
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-right">
+                  <div className="benefit-item">
+                    <span className="text-2xl">💪</span>
+                    <p className="text-lg">
+                      <strong className="text-primary">כוח הקבוצה:</strong> תמיכה הדדית ומוטיבציה גבוהה לאורך כל הדרך
+                    </p>
+                  </div>
+                  <div className="benefit-item">
+                    <span className="text-2xl">🎓</span>
+                    <p className="text-lg">
+                      <strong className="text-primary">למידה מהירה יותר:</strong> שיתוף ידע וניסיון בין המשתתפים
+                    </p>
+                  </div>
+                  <div className="benefit-item">
+                    <span className="text-2xl">🤝</span>
+                    <p className="text-lg">
+                      <strong className="text-primary">נטוורקינג אפקטיבי:</strong> בניית רשת קשרים חזקה בתעשייה
+                    </p>
+                  </div>
+                  <div className="benefit-item">
+                    <span className="text-2xl">🎯</span>
+                    <p className="text-lg">
+                      <strong className="text-primary">מיקוד מקצועי:</strong> תכנית מובנית עם מנטורים מנוסים מההייטק
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-6 p-4 bg-white/10 rounded-lg">
+                  <p className="text-lg font-bold text-primary">
+                    83% מבוגרי התכנית השתלבו בהייטק תוך פחות מ-3 חודשים! 🚀
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
