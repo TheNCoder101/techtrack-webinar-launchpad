@@ -53,11 +53,11 @@ const Index = () => {
 
             <div className="glass-card p-4 inline-block">
               <p className="text-xl">
-                וובינר הדרכה על התוכנית
+                למה חיפוש עבודה בקבוצה מגדיל משמעותית את הסיכויים להצלחה?
                 <br />
-                6.2.2025 | 20:00 | אונליין
+                ליווי קבוצתי מספק תמיכה הדדית, למידה משותפת, ורשת קשרים חזקה
                 <br />
-                יום חמישי
+                בתכנית מובנית עם מנטורים מנוסים, תקבלו את כל הכלים להצלחה 🚀
               </p>
             </div>
           </div>
@@ -74,7 +74,7 @@ const Index = () => {
               <ExclusiveOffer />
             </div>
             <div className="sticky top-4">
-              <RegistrationForm hideSubmitButton={!showFloatingButton} />
+              <RegistrationForm />
             </div>
           </div>
       

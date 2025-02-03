@@ -54,7 +54,7 @@ export const CountdownTimer = () => {
 
           <div className="bg-white/20 p-4 rounded-lg">
             <p className="text-lg mb-4">⏱️ הזמן שנותר להרשמה:</p>
-            <div className="flex justify-between items-center gap-4">
+            <div dir="ltr" className="flex justify-between items-center gap-4">
               <div className="glass-card p-2 flex-1">
                 <div className="text-2xl font-bold">{timeLeft.days}</div>
                 <div className="text-sm">ימים</div>
