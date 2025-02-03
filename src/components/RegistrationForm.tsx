@@ -31,7 +31,7 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
       title: "תודה על ההרשמה! 🎉",
       description: (
         <div className="space-y-2">
-          <p>שלחנו לך מייל עם כל הפרטים לוובינר.</p>
+          <p>שלחנו לך מייל עם פרטי הוובינר ומידע נוסף על התכנית.</p>
           <a 
             href="https://chat.whatsapp.com/invite-link" 
             target="_blank" 
