@@ -56,9 +56,9 @@ const Index = () => {
       {/* Floating CTA Button */}
       <button 
         onClick={handleFormSubmit}
-        className="cta-button fixed bottom-4 left-4 right-4 md:relative md:bottom-auto z-50"
+        className="fixed bottom-8 left-4 right-4 md:left-8 md:right-8 z-50 glass-card py-4 px-6 text-white font-bold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary via-secondary to-accent"
       >
-        הבטיחו את מקומכם בוובינר &gt;
+        הבטיחו את מקומכם בוובינר &lt;
       </button>
     </div>
   );
