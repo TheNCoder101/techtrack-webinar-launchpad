@@ -3,7 +3,6 @@ import { CountdownTimer } from "@/components/CountdownTimer";
 import { Benefits } from "@/components/Benefits";
 import { Testimonials } from "@/components/Testimonials";
 import { Speakers } from "@/components/Speakers";
-import { GraduationCap, Users, Target, BookOpen } from "lucide-react";
 
 const Index = () => {
   const handleFormSubmit = () => {
@@ -19,7 +18,7 @@ const Index = () => {
         {/* Hero Section */}
         <div className="text-center space-y-6 animate-fade-in">
           <h1 className="text-4xl sm:text-5xl font-bold leading-tight">
-            <span className="gradient-text">TechTrack Career Accelerator</span>
+            <span className="gradient-text">TechTrack Online Career Accelerator</span>
             <br />
             התוכנית שמביאה אותך לקריירה בהייטק
           </h1>
@@ -41,49 +40,25 @@ const Index = () => {
           </p>
         </div>
 
-        {/* What You'll Get Section - Improved Layout */}
-        <div className="glass-card p-8">
-          <h2 className="text-3xl font-bold text-center mb-8">מה תקבלו בתוכנית?</h2>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-6">
-              <div className="glass-card p-6 hover:scale-105 transition-all duration-300">
-                <div className="flex items-start gap-4">
-                  <Target className="w-8 h-8 text-accent shrink-0" />
-                  <div>
-                    <h3 className="text-xl font-bold mb-2">מיתוג אישי מנצח</h3>
-                    <p>נלמד אתכם איך לבנות נוכחות דיגיטלית חזקה שתגרום למגייסים לרצות אתכם</p>
-                  </div>
-                </div>
-              </div>
-              <div className="glass-card p-6 hover:scale-105 transition-all duration-300">
-                <div className="flex items-start gap-4">
-                  <BookOpen className="w-8 h-8 text-primary shrink-0" />
-                  <div>
-                    <h3 className="text-xl font-bold mb-2">הכנה מקיפה לראיונות</h3>
-                    <p>סימולציות ראיונות, טיפים מעשיים והכנה מקצועית שתעזור לכם להתקבל</p>
-                  </div>
-                </div>
-              </div>
+        {/* Program Benefits */}
+        <div className="glass-card p-8 space-y-6">
+          <h2 className="text-2xl font-bold text-center mb-6">מה תקבלו בתוכנית?</h2>
+          <div className="space-y-4">
+            <div className="benefit-item">
+              <span className="text-xl">🔹 מיתוג אישי מנצח</span>
+              <p className="text-lg opacity-90">איך לגרום למגייסים להבין שאתם בדיוק מה שהם מחפשים</p>
             </div>
-            <div className="space-y-6">
-              <div className="glass-card p-6 hover:scale-105 transition-all duration-300">
-                <div className="flex items-start gap-4">
-                  <Users className="w-8 h-8 text-secondary shrink-0" />
-                  <div>
-                    <h3 className="text-xl font-bold mb-2">נטוורקינג מקצועי</h3>
-                    <p>גישה לקהילה תומכת וקשרים שיפתחו לכם דלתות בתעשייה</p>
-                  </div>
-                </div>
-              </div>
-              <div className="glass-card p-6 hover:scale-105 transition-all duration-300">
-                <div className="flex items-start gap-4">
-                  <GraduationCap className="w-8 h-8 text-accent shrink-0" />
-                  <div>
-                    <h3 className="text-xl font-bold mb-2">ליווי אישי צמוד</h3>
-                    <p>מנטורים מנוסים שילוו אתכם בכל שלב בדרך להצלחה</p>
-                  </div>
-                </div>
-              </div>
+            <div className="benefit-item">
+              <span className="text-xl">🔹 שדרוג קורות חיים, לינקדאין ומכתב מקדים</span>
+              <p className="text-lg opacity-90">כדי שתבלטו בין מאות מועמדים</p>
+            </div>
+            <div className="benefit-item">
+              <span className="text-xl">🔹 הכנה לראיונות עבודה</span>
+              <p className="text-lg opacity-90">כולל סימולציות כדי שתגיעו מוכנים ותשאירו רושם מעולה</p>
+            </div>
+            <div className="benefit-item">
+              <span className="text-xl">🔹 בניית נטוורקינג מקצועי</span>
+              <p className="text-lg opacity-90">כי בהייטק הקשרים האישיים עושים את ההבדל</p>
             </div>
           </div>
         </div>
@@ -108,12 +83,12 @@ const Index = () => {
         </div>
       </div>
       
-      {/* Floating CTA Button with improved styling - removed animation */}
+      {/* Floating CTA Button */}
       <button 
         onClick={handleFormSubmit}
-        className="fixed bottom-8 left-4 right-4 md:w-auto md:left-8 bg-gradient-to-r from-primary via-secondary to-accent text-white font-bold py-3 px-6 rounded-full shadow-2xl hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-sm z-50 transition-all duration-300 ease-in-out transform hover:-translate-y-1"
+        className="cta-button fixed bottom-4 left-4 right-4 md:relative md:bottom-auto z-50"
       >
-        {"כן! אני רוצה להבין איך לפרוץ להייטק ←"}
+        כן! אני רוצה להבין איך לפרוץ להייטק >>
       </button>
     </div>
   );
