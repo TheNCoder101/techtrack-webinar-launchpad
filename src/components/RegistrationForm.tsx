@@ -65,13 +65,20 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
       <div className="text-center space-y-4 mb-6">
         <div className="bg-gradient-to-r from-primary/20 via-secondary/20 to-accent/20 p-4 rounded-lg mb-4">
           <h3 className="text-2xl font-bold gradient-text">
-            הירשמו עכשיו לוובינר החינמי!
+            הירשמו עכשיו לוובינר המקיף על תכנית Tech Track!
           </h3>
-          <p className="text-lg font-medium mt-2">גלו איך להתקבל להייטק ב-2025</p>
+          <p className="text-lg font-medium mt-2">גלו את כל הפרטים על התכנית, כולל עלויות והטבות מיוחדות</p>
         </div>
-        <div className="p-3 bg-white/10 rounded-lg border border-white/20">
+        
+        <div className="p-4 bg-white/10 rounded-lg border border-white/20 space-y-3">
+          <p className="text-sm font-bold text-red-400">
+            ⚡ מספר המקומות בוובינר מוגבל!
+          </p>
+          <p className="text-sm font-bold text-primary">
+            🎁 10 הנרשמים הראשונים יקבלו גישה חינמית ל-Hub של Tech Track
+          </p>
           <p className="text-sm font-bold">
-            הצטרפו ל-500+ בוגרים שכבר עובדים בהייטק!
+            🫡 הנחה משמעותית למשרתי צו 8 ובני/בנות זוגם
           </p>
         </div>
       </div>
@@ -122,14 +129,12 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
         </div>
       </div>
 
-      {!hideSubmitButton && (
-        <Button 
-          type="submit"
-          className="w-full py-6 text-lg font-bold bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 transition-all duration-300 shadow-lg hover:shadow-xl"
-        >
-          הבטיחו את מקומכם בוובינר! 🚀
-        </Button>
-      )}
+      <Button 
+        type="submit"
+        className="w-full py-6 text-lg font-bold bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 transition-all duration-300 shadow-lg hover:shadow-xl"
+      >
+        הבטיחו את מקומכם בוובינר! 🚀
+      </Button>
 
       <div className="space-y-4 text-center text-sm">
         <div className="flex flex-col gap-2">
