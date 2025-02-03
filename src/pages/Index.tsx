@@ -88,7 +88,7 @@ const Index = () => {
         onClick={handleFormSubmit}
         className="cta-button fixed bottom-4 left-4 right-4 md:relative md:bottom-auto z-50"
       >
-        כן! אני רוצה להבין איך לפרוץ להייטק >>
+        {"כן! אני רוצה להבין איך לפרוץ להייטק ➜"}
       </button>
     </div>
   );
