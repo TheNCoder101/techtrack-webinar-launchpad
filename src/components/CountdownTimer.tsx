@@ -26,41 +26,41 @@ export const CountdownTimer = () => {
   }, []);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="glass-card p-6 space-y-4">
-        <div className="flex items-center justify-center space-x-2 space-x-reverse text-red-400">
-          <span className="text-2xl">🔥</span>
-          <h3 className="text-xl font-bold">זהו הוובינר האחרון לפני שהתוכנית נסגרת!</h3>
-        </div>
-        
-        <div className="text-center space-y-2">
-          <p className="text-lg">⏳ נותרו רק 20 מקומות פנויים – ההרשמה נסגרת בקרוב!</p>
-          <p className="text-lg">📌 ההרשמה לוובינר נסגרת ב-6.2 בשעה 18:00!</p>
-        </div>
+    <div className="space-y-4">
+      <div className="glass-card p-6">
+        <div className="text-center space-y-4">
+          <div className="flex items-center justify-center space-x-2 space-x-reverse text-red-400">
+            <span className="text-2xl">⚡️</span>
+            <h3 className="text-xl font-bold">ההרשמה לוובינר נסגרת בקרוב!</h3>
+          </div>
+          
+          <div className="text-center">
+            <p className="text-lg">⏳ נותרו רק 20 מקומות אחרונים!</p>
+            <p className="text-lg">📌 ההרשמה לוובינר נסגרת ב-6.2 בשעה 18:00</p>
+          </div>
 
-        <div className="bg-white/20 p-4 rounded-lg">
-          <p className="text-lg mb-2">⏱️ ההרשמה נסגרת בעוד:</p>
-          <div className="grid grid-cols-4 gap-2">
-            <div className="glass-card p-2">
-              <div className="text-2xl font-bold">{timeLeft.days}</div>
-              <div className="text-sm">ימים</div>
-            </div>
-            <div className="glass-card p-2">
-              <div className="text-2xl font-bold">{timeLeft.hours}</div>
-              <div className="text-sm">שעות</div>
-            </div>
-            <div className="glass-card p-2">
-              <div className="text-2xl font-bold">{timeLeft.minutes}</div>
-              <div className="text-sm">דקות</div>
-            </div>
-            <div className="glass-card p-2">
-              <div className="text-2xl font-bold">{timeLeft.seconds}</div>
-              <div className="text-sm">שניות</div>
+          <div className="bg-white/20 p-4 rounded-lg">
+            <p className="text-lg mb-4">⏱️ הזמן שנותר להרשמה לוובינר:</p>
+            <div className="grid grid-cols-4 gap-2">
+              <div className="glass-card p-2">
+                <div className="text-2xl font-bold">{timeLeft.days}</div>
+                <div className="text-sm">ימים</div>
+              </div>
+              <div className="glass-card p-2">
+                <div className="text-2xl font-bold">{timeLeft.hours}</div>
+                <div className="text-sm">שעות</div>
+              </div>
+              <div className="glass-card p-2">
+                <div className="text-2xl font-bold">{timeLeft.minutes}</div>
+                <div className="text-sm">דקות</div>
+              </div>
+              <div className="glass-card p-2">
+                <div className="text-2xl font-bold">{timeLeft.seconds}</div>
+                <div className="text-sm">שניות</div>
+              </div>
             </div>
           </div>
         </div>
-
-        <p className="text-lg font-bold">📅 תחילת התוכנית: 10.2.2025 – אל תישארו מאחור!</p>
       </div>
     </div>
   );

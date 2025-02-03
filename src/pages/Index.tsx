@@ -24,7 +24,7 @@ const Index = () => {
   const handleFormSubmit = () => {
     const form = document.querySelector('form');
     if (form) {
-      form.requestSubmit();
+      form.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
 
@@ -61,7 +61,18 @@ const Index = () => {
           </div>
 
           {/* Countdown Timer */}
-          <CountdownTimer />
+          <div className="glass-card p-6 space-y-4">
+            <div className="text-center space-y-2">
+              <h3 className="text-2xl font-bold">⏰ זמן ההרשמה לוובינר מתקרב לסיומו!</h3>
+              <p className="text-lg opacity-90">הבטיחו את מקומכם בוובינר המבוקש שלנו</p>
+            </div>
+            <CountdownTimer />
+            <div className="text-center mt-4">
+              <p className="text-lg font-bold text-white/90">
+                📅 תחילת התוכנית: 10.2.2025 | הירשמו עכשיו והבטיחו את מקומכם!
+              </p>
+            </div>
+          </div>
 
           {/* Main Content */}
           <div className="grid md:grid-cols-2 gap-8">
@@ -78,19 +89,19 @@ const Index = () => {
               <RegistrationForm hideSubmitButton={!showFloatingButton} />
             </div>
           </div>
+      
+          {/* Floating CTA Button */}
+          {showFloatingButton && (
+            <button 
+              onClick={handleFormSubmit}
+              className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 glass-card py-4 px-8 text-white font-bold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary via-secondary to-accent hover:scale-105 flex items-center justify-center gap-2 animate-fade-in max-w-xl w-[90%] mx-auto"
+            >
+              <span>להרשמה לוובינר - לחצו כאן</span>
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
-      
-      {/* Floating CTA Button */}
-      {showFloatingButton && (
-        <button 
-          onClick={handleFormSubmit}
-          className="fixed bottom-8 left-4 right-4 md:left-8 md:right-8 z-50 glass-card py-4 px-6 text-white font-bold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary via-secondary to-accent hover:scale-105 flex items-center justify-center gap-2 animate-fade-in"
-        >
-          <span>כן! אני רוצה להבין איך לפרוץ להייטק</span>
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-      )}
     </div>
   );
 };
