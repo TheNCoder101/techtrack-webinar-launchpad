@@ -8,7 +8,7 @@ export const RunningRibbon = () => {
     if (!element) return;
 
     const scroll = () => {
-      element.style.transform = `translateX(${(Date.now() / 50) % 100}%)`;
+      element.style.transform = `translateX(${(Date.now() / 150) % 100}%)`;  // Slowed down animation
       requestAnimationFrame(scroll);
     };
 
@@ -24,13 +24,13 @@ export const RunningRibbon = () => {
         style={{ width: "200%" }}
       >
         <span className="inline-block px-4">
-          🚀 TECH TRACK ACCELERATOR - תכנית האצת הקריירה המובילה בישראל 
+          תכנית האצת הקריירה המובילה בישראל להייטק
         </span>
         <span className="inline-block px-4">
-          💼 יותר מ-500 בוגרים כבר עובדים בהייטק תוך פחות מ-3 חודשים! 
+          יותר מ-500 בוגרים השתלבו בהייטק תוך פחות מ-3 חודשים
         </span>
         <span className="inline-block px-4">
-          🎯 הצטרפו לוובינר והתחילו את המסע המהיר שלכם להייטק 
+          הצטרפו לוובינר והתחילו את המסע שלכם להייטק
         </span>
       </div>
     </div>

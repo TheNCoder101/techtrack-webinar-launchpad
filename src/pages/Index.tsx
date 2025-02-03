@@ -33,35 +33,35 @@ const Index = () => {
       <RunningRibbon />
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto space-y-12">
-          {/* Hero Section */}
           <div className="text-center space-y-6 animate-fade-in">
             <h1 className="text-4xl sm:text-5xl font-bold leading-tight font-mono">
-              <span className="gradient-text">תכנית האצת הקריירה היחידה בישראל למחפשי עבודה בהייטק</span>
+              <span className="gradient-text">TechTrack Online Career Accelerator</span>
               <br />
               <span className="text-2xl sm:text-3xl text-white/90 mt-4 block">
-                הדרך המהירה והיעילה ביותר להשתלב בתעשיית ההייטק
+                Your Fast Track to a Tech Career
               </span>
             </h1>
             
             <div className="glass-card p-6 space-y-4">
               <h2 className="text-2xl font-bold">
-                קצרו חודשים של חיפוש עבודה לשבועות ספורים
+                הפכו חודשים של חיפוש עבודה לשבועות ספורים
               </h2>
               <p className="text-lg text-white/90">
-                במקום לבזבז זמן וכסף על קורסים ארוכים ויקרים, <strong>קבלו ליווי ממוקד ופרקטי</strong> שיביא אתכם מהר יותר למשרה הראשונה בהייטק
+                במקום לבזבז זמן וכסף על קורסים ארוכים, קבלו ליווי ממוקד שיביא אתכם מהר יותר למשרה הראשונה בהייטק
               </p>
             </div>
 
             <div className="glass-card p-4 inline-block">
               <p className="text-xl">
-                📅 וובינר הדרכה על התוכנית
+                וובינר הדרכה על התוכנית
                 <br />
-                6.2 | 20:00 | אונליין | יום חמישי
+                6.2 | 20:00 | אונליין
+                <br />
+                יום חמישי
               </p>
             </div>
           </div>
 
-          {/* Main Content */}
           <div className="grid md:grid-cols-2 gap-8">
             <div className="space-y-8">
               <div className="glass-card p-6">
@@ -77,7 +77,6 @@ const Index = () => {
             </div>
           </div>
       
-          {/* Floating CTA Button */}
           {showFloatingButton && (
             <button 
               onClick={handleFormSubmit}

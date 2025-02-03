@@ -1,42 +1,45 @@
-import { User, BookOpen, Users, Cloud, CheckCircle } from "lucide-react";
+import { User, BookOpen, Users, Cloud } from "lucide-react";
 
 export const Speakers = () => {
   const speakers = [
     {
-      name: "עמית",
+      name: "עמית בכשי",
+      englishTitle: "Amit Bakshi",
       title: "מגייס בכיר ובעלים של חברת השמה להייטק",
-      description: "מומחה בעל ניסיון עשיר בגיוס והשמה בהייטק, מלווה חברות וסטארטאפים בתהליכי גיוס ומייעץ למועמדים בבניית קריירה",
+      description: "מומחה בגיוס והשמה בהייטק עם ניסיון של למעלה מעשור בליווי חברות וסטארטאפים. מתמחה בבניית אסטרטגיות גיוס ופיתוח קריירה",
       expertise: [
-        "איך לכתוב קורות חיים שמבליטים אותך מול מגייסים?",
-        "איך להפוך את הפרופיל שלך בלינקדאין למגנט הצעות עבודה?",
-        "מהם המשפטים שיגרמו למעסיקים להבין שאתה הטאלנט הבא שלהם?"
+        "בניית קורות חיים אפקטיביים שמושכים תשומת לב",
+        "אופטימיזציה של פרופיל LinkedIn למקסום הזדמנויות",
+        "פיתוח נרטיב מקצועי משכנע למעסיקים"
       ],
       icon: BookOpen,
-      testimonial: "עזר לי להגדיל את כמות הפניות ב-LinkedIn ב-300% תוך חודש!"
+      testimonial: "הגישה המקצועית של עמית עזרה לי להבין איך מגייסים חושבים ולהתאים את עצמי בהתאם"
     },
     {
-      name: "נאור",
-      title: "מומחה לחוויית עובד וניהול אופרציה בהייטק",
-      description: "מגיע מרקע עשיר בניהול חוויית עובד ואופרציה בחברות הייטק מובילות, מתמחה בהכנה לראיונות ותהליכי גיוס",
+      name: "נאור לביא",
+      englishTitle: "Naor Lavi",
+      title: "מומחה לחוויית עובד וניהול תפעול בהייטק",
+      description: "מביא ניסיון עשיר בניהול תפעולי בחברות הייטק מובילות, עם התמחות בתהליכי גיוס והכנה לראיונות",
       expertise: [
-        "איך למכור את עצמך בראיון עבודה גם בלי ניסיון ישיר?",
-        'מה אומרים כששואלים "למה דווקא אותך?"',
-        "איך להבליט את היכולות שלך בתפקידים תפעוליים בהייטק?"
+        "טכניקות להצגת ניסיון קודם בצורה אפקטיבית",
+        "הכנה מעמיקה לראיונות עבודה",
+        "בניית מסלול קריירה בתפקידים תפעוליים"
       ],
       icon: Users,
-      testimonial: "הטכניקות של נאור עזרו לי לעבור 3 ראיונות ולקבל הצעת עבודה תוך שבועיים!"
+      testimonial: "השיטות של נאור לראיונות עבודה הובילו אותי להצעת עבודה תוך שבועיים"
     },
     {
-      name: "גל",
-      title: "מומחה לעולם ה-Cloud ותפקידים טכנולוגיים",
-      description: "מהנדס בכיר עם התמחות בענן, מלווה מתחילים בדרכם להייטק ומשתף מניסיונו העשיר בתעשייה",
+      name: "גל מושקוביץ",
+      englishTitle: "Gal Moskowitz",
+      title: "מומחה לטכנולוגיות ענן ותשתיות",
+      description: "מהנדס בכיר עם התמחות בענן ותשתיות, מלווה מועמדים בתחילת דרכם בהייטק",
       expertise: [
-        "איך להיכנס לעולמות הענן גם אם אין לך רקע בפיתוח?",
-        "אילו מיומנויות הכי מבוקשות כיום, ואיך לרכוש אותן במהירות?",
-        "מהם הטרנדים הכי חמים בתחום ואיך להתאים את עצמך אליהם?"
+        "הכרת עולם הענן והתשתיות ללא רקע טכני קודם",
+        "זיהוי והשלמת פערי ידע קריטיים",
+        "הבנת הטרנדים העדכניים בתעשייה"
       ],
       icon: Cloud,
-      testimonial: "בזכות ההכוונה של גל התקבלתי לתפקיד Cloud Support ב-AWS!"
+      testimonial: "בזכות ההכוונה של גל הצלחתי להשתלב בתפקיד Cloud Support"
     }
   ];
 
@@ -54,6 +57,7 @@ export const Speakers = () => {
               </div>
               <div className="text-right">
                 <h4 className="text-xl font-bold gradient-text">{speaker.name}</h4>
+                <p className="text-sm text-white/60 mb-1">{speaker.englishTitle}</p>
                 <p className="text-white/80 mb-2">{speaker.title}</p>
                 <p className="text-white/70 text-sm leading-relaxed">{speaker.description}</p>
               </div>
@@ -61,24 +65,16 @@ export const Speakers = () => {
             <div className="space-y-2 mt-4">
               {speaker.expertise.map((item, i) => (
                 <div key={i} className="flex items-start space-x-2 space-x-reverse">
-                  <CheckCircle className="text-white/80 w-5 h-5 flex-shrink-0 mt-1" />
+                  <div className="text-white/80 w-5 h-5 flex-shrink-0 mt-1">•</div>
                   <p className="text-white/90">{item}</p>
                 </div>
               ))}
             </div>
-            <div className="mt-6 p-4 glass-card">
-              <div className="flex items-center space-x-2 space-x-reverse">
-                <div className="text-yellow-400 text-xl">⭐</div>
-                <p className="text-white/90 italic">{speaker.testimonial}</p>
-              </div>
+            <div className="mt-6 p-4 bg-white/10 rounded-lg">
+              <p className="text-white/90 italic">{speaker.testimonial}</p>
             </div>
           </div>
         ))}
-      </div>
-      <div className="text-center mt-8 p-4 glass-card">
-        <p className="text-xl font-bold text-white">
-          🎓 יותר מ-500 בוגרים כבר מצאו עבודה בהייטק בעזרת המומחים שלנו!
-        </p>
       </div>
     </div>
   );
