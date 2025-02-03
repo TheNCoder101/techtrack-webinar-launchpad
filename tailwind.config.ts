@@ -25,15 +25,15 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#403E43", // Charcoal Gray
+          DEFAULT: "#8B5CF6", // Vivid purple
           foreground: "#ffffff",
         },
         secondary: {
-          DEFAULT: "#1EAEDB", // Bright Blue
+          DEFAULT: "#0EA5E9", // Ocean blue
           foreground: "#ffffff",
         },
         accent: {
-          DEFAULT: "#33C3F0", // Sky Blue
+          DEFAULT: "#D946EF", // Magenta pink
           foreground: "#ffffff",
         },
       },
@@ -41,23 +41,29 @@ export default {
         heebo: ["Heebo", "sans-serif"],
       },
       keyframes: {
-        "fade-up": {
-          "0%": { opacity: "0", transform: "translateY(20px)" },
+        "fade-in": {
+          "0%": { opacity: "0", transform: "translateY(10px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
-        "glow": {
-          "0%, 100%": { boxShadow: "0 0 20px rgba(51, 195, 240, 0.3)" },
-          "50%": { boxShadow: "0 0 40px rgba(51, 195, 240, 0.6)" },
+        "slide-in": {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(0)" },
         },
-        "float": {
-          "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-10px)" },
+        "pulse-slow": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.8" },
+        },
+        "gradient-shift": {
+          "0%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+          "100%": { backgroundPosition: "0% 50%" },
         },
       },
       animation: {
-        "fade-up": "fade-up 0.6s ease-out",
-        "glow": "glow 3s infinite",
-        "float": "float 3s ease-in-out infinite",
+        "fade-in": "fade-in 0.5s ease-out",
+        "slide-in": "slide-in 0.5s ease-out",
+        "pulse-slow": "pulse-slow 3s ease-in-out infinite",
+        "gradient-shift": "gradient-shift 3s ease infinite",
       },
     },
   },

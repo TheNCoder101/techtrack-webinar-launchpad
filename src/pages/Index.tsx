@@ -9,11 +9,9 @@ const Index = () => {
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-12">
         {/* Hero Section */}
-        <div className="text-center space-y-6 animate-fade-up">
+        <div className="text-center space-y-6 animate-fade-in">
           <h1 className="text-4xl sm:text-5xl font-bold leading-tight">
-            <span className="bg-gradient-to-r from-secondary to-accent bg-clip-text text-transparent">
-              TechTrack Accelerator
-            </span>
+            <span className="gradient-text">TechTrack Accelerator</span>
             <br />
             קריירה בהייטק? הצעד הראשון שלך מתחיל כאן!
           </h1>
@@ -22,6 +20,9 @@ const Index = () => {
           </h2>
           <p className="text-xl tech-card inline-block">
             📅 חמישי | 6.2 | 20:00 | אונליין
+          </p>
+          <p className="text-xl font-bold glass-card p-4">
+            ⏳ תוכנית TechTrack Career Accelerator יוצאת לדרך ב-9.2!
           </p>
         </div>
 
@@ -32,9 +33,7 @@ const Index = () => {
         <div className="grid md:grid-cols-2 gap-8">
           <div className="space-y-8">
             <div className="tech-card">
-              <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-secondary to-accent bg-clip-text text-transparent">
-                מה נלמד בוובינר?
-              </h3>
+              <h3 className="text-xl font-bold mb-6 gradient-text">מה נלמד בוובינר?</h3>
               <Benefits />
             </div>
             <Speakers />
@@ -45,13 +44,15 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Mobile CTA Button */}
-        <button 
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="cta-button"
-        >
-          הבטיחו את מקומכם בוובינר &gt;
-        </button>
+        {/* Sticky CTA for Mobile */}
+        <div className="fixed bottom-4 left-4 right-4 md:hidden z-50 animate-fade-in">
+          <button 
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="cta-button w-full"
+          >
+            הבטיחו את מקומכם בוובינר &gt;
+          </button>
+        </div>
       </div>
     </div>
   );

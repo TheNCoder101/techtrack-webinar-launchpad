@@ -14,48 +14,29 @@
 }
 
 body {
-  @apply font-heebo bg-gradient-to-br from-primary via-secondary to-accent min-h-screen text-white;
-  background-size: 300% 300%;
-  animation: gradient 15s ease infinite;
-}
-
-@keyframes gradient {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  @apply font-heebo bg-gradient-to-br from-primary/90 via-secondary/80 to-accent/70 min-h-screen text-white bg-[length:400%_400%] animate-gradient-shift;
 }
 
 .glass-card {
   @apply bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300;
-  background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0));
 }
 
 .form-input {
-  @apply w-full px-4 py-2 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-accent/50 transition-all duration-300;
+  @apply w-full px-4 py-2 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-300;
 }
 
 .cta-button {
-  @apply fixed bottom-4 left-4 right-4 md:hidden z-50 bg-accent text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-300 animate-glow hover:scale-105;
-  background: linear-gradient(45deg, #1EAEDB, #33C3F0);
+  @apply bg-gradient-to-r from-primary via-secondary to-accent text-white font-bold py-3 px-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 animate-pulse-slow hover:scale-105;
 }
 
 .benefit-item {
-  @apply flex items-center space-x-3 space-x-reverse mb-4 animate-fade-up hover:translate-x-2 transition-transform duration-300;
+  @apply flex items-center space-x-3 space-x-reverse mb-4 animate-fade-in hover:translate-x-2 transition-transform duration-300;
+}
+
+.gradient-text {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-secondary to-accent animate-gradient-shift bg-[length:200%_auto];
 }
 
 .tech-card {
-  @apply glass-card p-6 hover:scale-105 transition-transform duration-300 animate-float;
-}
-
-.timer-card {
-  @apply glass-card p-4 backdrop-blur-md animate-float;
-  background: linear-gradient(135deg, rgba(30,174,219,0.1), rgba(51,195,240,0.2));
-}
-
-.timer-digit {
-  @apply text-3xl font-bold bg-white/10 rounded-lg p-2 min-w-[60px] inline-block;
-}
-
-.timer-label {
-  @apply text-sm text-white/80 mt-1;
+  @apply glass-card p-6 hover:scale-105 transition-transform duration-300;
 }
