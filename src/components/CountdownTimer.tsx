@@ -14,6 +14,18 @@ export const CountdownTimer = () => {
       const now = new Date().getTime();
       const registrationDistance = registrationEndDate.getTime() - now;
 
+      if (registrationDistance < 0) {
+        // אם התאריך עבר
+        setTimeLeft({
+          days: 0,
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+        });
+        clearInterval(timer);
+        return;
+      }
+
       setTimeLeft({
         days: Math.floor(registrationDistance / (1000 * 60 * 60 * 24)),
         hours: Math.floor((registrationDistance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
@@ -36,7 +48,7 @@ export const CountdownTimer = () => {
           
           <div className="text-center">
             <p className="text-lg">⏳ נשארו מקומות אחרונים!</p>
-            <p className="text-lg">📌 ההרשמה לוובינר נסגרת ב-6.2 בשעה 18:00</p>
+            <p className="text-lg">📌 ההרשמה לוובינר נסגרת ב-6.2.2025 בשעה 18:00</p>
           </div>
 
           <div className="bg-white/20 p-4 rounded-lg">

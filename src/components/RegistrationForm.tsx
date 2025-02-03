@@ -16,8 +16,9 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
   const [marketingConsent, setMarketingConsent] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!marketingConsent) {
       toast({
         title: "שגיאה",
@@ -26,24 +27,39 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
       });
       return;
     }
-    
-    toast({
-      title: "תודה על ההרשמה! 🎉",
-      description: (
-        <div className="space-y-2">
-          <p>שלחנו לך מייל עם פרטי הוובינר ומידע נוסף על התכנית.</p>
-          <a 
-            href="https://chat.whatsapp.com/invite-link" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-primary hover:underline block"
-          >
-            👉 לחץ כאן להצטרפות לקבוצת הווטסאפ של המחזור הקרוב
-          </a>
-        </div>
-      ),
-    });
-    setFormData({ name: "", email: "", phone: "" });
+
+    try {
+      // כאן יהיה בעתיד הקוד לשליחת הטופס לשרת
+      console.log("Form submitted:", formData);
+      
+      toast({
+        title: "תודה על ההרשמה! 🎉",
+        description: (
+          <div className="space-y-2">
+            <p>שלחנו לך מייל עם פרטי הוובינר ומידע נוסף על התכנית.</p>
+            <a 
+              href="https://chat.whatsapp.com/techtrack-group" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:underline block"
+            >
+              👉 לחץ כאן להצטרפות לקבוצת הווטסאפ של המחזור הקרוב
+            </a>
+          </div>
+        ),
+      });
+
+      // איפוס הטופס
+      setFormData({ name: "", email: "", phone: "" });
+      setMarketingConsent(false);
+      
+    } catch (error) {
+      toast({
+        title: "שגיאה בהרשמה",
+        description: "אירעה שגיאה בתהליך ההרשמה. אנא נסו שוב מאוחר יותר.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -53,7 +69,7 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
           <h3 className="text-2xl font-bold gradient-text">
             הירשמו עכשיו לוובינר החינמי!
           </h3>
-          <p className="text-lg font-medium mt-2">גלו איך להתקבל להייטק ב-2024</p>
+          <p className="text-lg font-medium mt-2">גלו איך להתקבל להייטק ב-2025</p>
         </div>
         <div className="p-3 bg-white/10 rounded-lg border border-white/20">
           <p className="text-sm font-bold">
@@ -68,7 +84,7 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
             type="text"
             placeholder="שם מלא"
             required
-            className="form-input text-right"
+            className="form-input text-right w-full"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
@@ -78,7 +94,7 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
             type="email"
             placeholder="אימייל"
             required
-            className="form-input text-right"
+            className="form-input text-right w-full"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
           />
@@ -88,7 +104,7 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
             type="tel"
             placeholder="טלפון"
             required
-            className="form-input text-right"
+            className="form-input text-right w-full"
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
           />
@@ -98,7 +114,6 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
             id="marketing"
             checked={marketingConsent}
             onCheckedChange={(checked) => setMarketingConsent(checked as boolean)}
-            required
           />
           <label
             htmlFor="marketing"
@@ -109,12 +124,14 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
         </div>
       </div>
 
-      <Button 
-        type="submit"
-        className="w-full py-6 text-lg font-bold bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 transition-all duration-300 shadow-lg hover:shadow-xl"
-      >
-        הבטיחו את מקומכם בוובינר! 🚀
-      </Button>
+      {!hideSubmitButton && (
+        <Button 
+          type="submit"
+          className="w-full py-6 text-lg font-bold bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 transition-all duration-300 shadow-lg hover:shadow-xl"
+        >
+          הבטיחו את מקומכם בוובינר! 🚀
+        </Button>
+      )}
 
       <div className="space-y-4 text-center text-sm">
         <div className="flex flex-col gap-2">

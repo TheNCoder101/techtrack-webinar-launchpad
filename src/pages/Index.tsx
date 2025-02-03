@@ -55,7 +55,7 @@ const Index = () => {
               <p className="text-xl">
                 וובינר הדרכה על התוכנית
                 <br />
-                6.2 | 20:00 | אונליין
+                6.2.2025 | 20:00 | אונליין
                 <br />
                 יום חמישי
               </p>
@@ -64,6 +64,7 @@ const Index = () => {
 
           <div className="grid md:grid-cols-2 gap-8">
             <div className="space-y-8">
+              <CountdownTimer />
               <div className="glass-card p-6">
                 <h3 className="text-2xl font-bold mb-6">מה תקבלו בתוכנית?</h3>
                 <Benefits />
