@@ -29,7 +29,6 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
     }
 
     try {
-      // כאן יהיה בעתיד הקוד לשליחת הטופס לשרת
       console.log("Form submitted:", formData);
       
       toast({
@@ -49,7 +48,6 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
         ),
       });
 
-      // איפוס הטופס
       setFormData({ name: "", email: "", phone: "" });
       setMarketingConsent(false);
       

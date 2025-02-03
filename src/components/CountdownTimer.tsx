@@ -15,7 +15,6 @@ export const CountdownTimer = () => {
       const registrationDistance = registrationEndDate.getTime() - now;
 
       if (registrationDistance < 0) {
-        // אם התאריך עבר
         setTimeLeft({
           days: 0,
           hours: 0,
@@ -46,29 +45,33 @@ export const CountdownTimer = () => {
             <h3 className="text-xl font-bold">זמן ההרשמה לוובינר מתקרב לסיומו!</h3>
           </div>
           
-          <div className="text-center">
-            <p className="text-lg">⏳ נשארו מקומות אחרונים!</p>
-            <p className="text-lg">📌 ההרשמה לוובינר נסגרת ב-6.2.2025 בשעה 18:00</p>
+          <div className="glass-card p-4 inline-block">
+            <div className="text-lg space-y-2">
+              <p className="font-bold">📅 מועד הוובינר:</p>
+              <p className="text-xl">יום חמישי | 6.2.2025 | 20:00</p>
+            </div>
           </div>
 
           <div className="bg-white/20 p-4 rounded-lg">
-            <p className="text-lg mb-4">⏱️ הזמן שנותר להרשמה לוובינר:</p>
-            <div className="grid grid-cols-4 gap-2">
-              <div className="glass-card p-2">
+            <p className="text-lg mb-4">⏱️ הזמן שנותר להרשמה:</p>
+            <div className="flex justify-between items-center gap-4">
+              <div className="glass-card p-2 flex-1">
                 <div className="text-2xl font-bold">{timeLeft.days}</div>
                 <div className="text-sm">ימים</div>
               </div>
-              <div className="glass-card p-2">
-                <div className="text-2xl font-bold">{timeLeft.hours}</div>
-                <div className="text-sm">שעות</div>
-              </div>
-              <div className="glass-card p-2">
-                <div className="text-2xl font-bold">{timeLeft.minutes}</div>
-                <div className="text-sm">דקות</div>
-              </div>
-              <div className="glass-card p-2">
-                <div className="text-2xl font-bold">{timeLeft.seconds}</div>
-                <div className="text-sm">שניות</div>
+              <div className="flex gap-2 flex-[3]">
+                <div className="glass-card p-2 flex-1">
+                  <div className="text-2xl font-bold">{timeLeft.hours}</div>
+                  <div className="text-sm">שעות</div>
+                </div>
+                <div className="glass-card p-2 flex-1">
+                  <div className="text-2xl font-bold">{timeLeft.minutes}</div>
+                  <div className="text-sm">דקות</div>
+                </div>
+                <div className="glass-card p-2 flex-1">
+                  <div className="text-2xl font-bold">{timeLeft.seconds}</div>
+                  <div className="text-sm">שניות</div>
+                </div>
               </div>
             </div>
           </div>

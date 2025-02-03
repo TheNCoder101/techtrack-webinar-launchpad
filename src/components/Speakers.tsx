@@ -4,8 +4,8 @@ export const Speakers = () => {
   const speakers = [
     {
       name: "עמית בכשי",
-      englishTitle: "Amit Bakshi",
       title: "מגייס בכיר ובעלים של חברת השמה להייטק",
+      englishTitle: "Senior Tech Recruiter & HR Agency Owner",
       description: "מומחה בגיוס והשמה בהייטק עם ניסיון של למעלה מעשור בליווי חברות וסטארטאפים. מתמחה בבניית אסטרטגיות גיוס ופיתוח קריירה",
       expertise: [
         "✨ בניית קורות חיים אפקטיביים שמושכים תשומת לב",
@@ -17,8 +17,8 @@ export const Speakers = () => {
     },
     {
       name: "נאור לביא",
-      englishTitle: "Naor Lavi",
       title: "מומחה לחוויית עובד וניהול תפעול בהייטק",
+      englishTitle: "Employee Experience & Operations Manager",
       description: "מביא ניסיון עשיר בניהול תפעולי בחברות הייטק מובילות, עם התמחות בתהליכי גיוס והכנה לראיונות",
       expertise: [
         "🎯 טכניקות להצגת ניסיון קודם בצורה אפקטיבית",
@@ -30,8 +30,8 @@ export const Speakers = () => {
     },
     {
       name: "גל מושקוביץ",
-      englishTitle: "Gal Moskowitz",
       title: "מומחה לטכנולוגיות ענן ותשתיות",
+      englishTitle: "Cloud & Infrastructure Specialist",
       description: "מהנדס בכיר עם התמחות בענן ותשתיות, מלווה מועמדים בתחילת דרכם בהייטק",
       expertise: [
         "☁️ הכרת עולם הענן והתשתיות ללא רקע טכני קודם",
