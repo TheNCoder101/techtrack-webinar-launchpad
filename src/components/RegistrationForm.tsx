@@ -2,7 +2,11 @@ import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 
-export const RegistrationForm = () => {
+interface RegistrationFormProps {
+  hideSubmitButton?: boolean;
+}
+
+export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormProps) => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -70,12 +74,14 @@ export const RegistrationForm = () => {
         </div>
       </div>
 
-      <Button 
-        type="submit"
-        className="w-full py-6 text-lg font-bold bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 transition-all duration-300 animate-pulse"
-      >
-        הבטיחו את מקומכם בוובינר! 🚀
-      </Button>
+      {!hideSubmitButton && (
+        <Button 
+          type="submit"
+          className="w-full py-6 text-lg font-bold bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 transition-all duration-300 animate-pulse"
+        >
+          הבטיחו את מקומכם בוובינר! 🚀
+        </Button>
+      )}
 
       <div className="space-y-3 text-center text-sm">
         <div className="flex items-center justify-center space-x-2 space-x-reverse">

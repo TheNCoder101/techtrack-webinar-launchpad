@@ -3,6 +3,8 @@ import { CountdownTimer } from "@/components/CountdownTimer";
 import { Benefits } from "@/components/Benefits";
 import { Testimonials } from "@/components/Testimonials";
 import { Speakers } from "@/components/Speakers";
+import { Partners } from "@/components/Partners";
+import { ArrowLeft } from "lucide-react";
 
 const Index = () => {
   const handleFormSubmit = () => {
@@ -51,17 +53,13 @@ const Index = () => {
             <div className="glass-card p-6">
               <h3 className="text-2xl font-bold mb-6">מה תקבלו בתוכנית?</h3>
               <Benefits />
-              <div className="mt-8 p-4 glass-card text-center">
-                <p className="text-xl font-bold">
-                  🚀 85% מבוגרי התוכנית התקבלו לעבודה בהייטק תוך 3 חודשים!
-                </p>
-              </div>
             </div>
             <Speakers />
             <Testimonials />
+            <Partners />
           </div>
           <div className="sticky top-4">
-            <RegistrationForm />
+            <RegistrationForm hideSubmitButton={true} />
           </div>
         </div>
       </div>
@@ -69,9 +67,10 @@ const Index = () => {
       {/* Floating CTA Button */}
       <button 
         onClick={handleFormSubmit}
-        className="fixed bottom-8 left-4 right-4 md:left-8 md:right-8 z-50 glass-card py-4 px-6 text-white font-bold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary via-secondary to-accent hover:scale-105"
+        className="fixed bottom-8 left-4 right-4 md:left-8 md:right-8 z-50 glass-card py-4 px-6 text-white font-bold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary via-secondary to-accent hover:scale-105 flex items-center justify-center gap-2"
       >
-        כן! אני רוצה להבין איך לפרוץ להייטק &gt;
+        <span>כן! אני רוצה להבין איך לפרוץ להייטק</span>
+        <ArrowLeft className="w-5 h-5" />
       </button>
     </div>
   );
