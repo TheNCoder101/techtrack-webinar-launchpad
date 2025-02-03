@@ -1,6 +1,7 @@
 import { RegistrationForm } from "@/components/RegistrationForm";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { Benefits } from "@/components/Benefits";
+import { Testimonials } from "@/components/Testimonials";
 
 const Index = () => {
   return (
@@ -32,6 +33,7 @@ const Index = () => {
               <h3 className="text-xl font-bold mb-6">מה נלמד בוובינר?</h3>
               <Benefits />
             </div>
+            <Testimonials />
           </div>
           <div>
             <RegistrationForm />
