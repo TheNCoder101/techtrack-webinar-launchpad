@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
 
 export const RegistrationForm = () => {
   const [formData, setFormData] = useState({
@@ -12,42 +13,83 @@ export const RegistrationForm = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     toast({
-      title: "תודה על ההרשמה!",
-      description: "פרטי ההתחברות לוובינר ישלחו אליך במייל",
+      title: "תודה על ההרשמה! 🎉",
+      description: "שלחנו לך מייל עם כל הפרטים לוובינר. נתראה שם!",
     });
+    // Reset form
+    setFormData({ name: "", email: "", phone: "" });
   };
 
   return (
-    <form onSubmit={handleSubmit} className="glass-card p-6 space-y-4">
-      <div>
-        <input
-          type="text"
-          placeholder="שם מלא"
-          required
-          className="form-input"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-        />
+    <form onSubmit={handleSubmit} className="glass-card p-6 space-y-6 sticky top-4">
+      <div className="text-center space-y-4 mb-6">
+        <h3 className="text-2xl font-bold gradient-text">
+          הירשמו עכשיו לוובינר החינמי!
+        </h3>
+        <div className="flex items-center justify-center space-x-2 space-x-reverse">
+          <span className="text-2xl">🎯</span>
+          <p className="text-lg font-medium">גלו איך להתקבל להייטק ב-2024</p>
+        </div>
+        <div className="p-3 bg-white/10 rounded-lg">
+          <p className="text-sm">
+            ⭐ הצטרפו ל-500+ בוגרים שכבר עובדים בהייטק!
+          </p>
+        </div>
       </div>
-      <div>
-        <input
-          type="email"
-          placeholder="אימייל"
-          required
-          className="form-input"
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-        />
+
+      <div className="space-y-4">
+        <div>
+          <input
+            type="text"
+            placeholder="שם מלא"
+            required
+            className="form-input"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          />
+        </div>
+        <div>
+          <input
+            type="email"
+            placeholder="אימייל"
+            required
+            className="form-input"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          />
+        </div>
+        <div>
+          <input
+            type="tel"
+            placeholder="טלפון"
+            required
+            className="form-input"
+            value={formData.phone}
+            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+          />
+        </div>
       </div>
-      <div>
-        <input
-          type="tel"
-          placeholder="טלפון"
-          required
-          className="form-input"
-          value={formData.phone}
-          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-        />
+
+      <Button 
+        type="submit"
+        className="w-full py-6 text-lg font-bold bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 transition-all duration-300 animate-pulse"
+      >
+        הבטיחו את מקומכם בוובינר! 🚀
+      </Button>
+
+      <div className="space-y-3 text-center text-sm">
+        <div className="flex items-center justify-center space-x-2 space-x-reverse">
+          <span>🔒</span>
+          <p>המידע שלכם מאובטח ולא יועבר לגורמים שלישיים</p>
+        </div>
+        <div className="flex items-center justify-center space-x-2 space-x-reverse">
+          <span>⚡</span>
+          <p>ההרשמה לוקחת פחות מדקה</p>
+        </div>
+        <div className="flex items-center justify-center space-x-2 space-x-reverse">
+          <span>💯</span>
+          <p>100% חינם וללא התחייבות</p>
+        </div>
       </div>
     </form>
   );
