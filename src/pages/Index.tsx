@@ -5,7 +5,6 @@ import { Testimonials } from "@/components/Testimonials";
 import { Speakers } from "@/components/Speakers";
 import { ExclusiveOffer } from "@/components/ExclusiveOffer";
 import { RunningRibbon } from "@/components/RunningRibbon";
-import { Partners } from "@/components/Partners";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -34,8 +33,6 @@ const Index = () => {
       <RunningRibbon />
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto space-y-12">
-          <Partners />
-          
           <div className="text-center space-y-6 animate-fade-in">
             <h1 className="text-4xl sm:text-5xl font-bold leading-tight font-mono">
               <span className="gradient-text">TechTrack Online Career Accelerator</span>
@@ -92,29 +89,6 @@ const Index = () => {
                 </div>
               </div>
             </div>
-
-            <div className="glass-card p-8 transform hover:scale-105 transition-all duration-300">
-              <div className="space-y-6">
-                <h3 className="text-3xl font-bold text-white mb-6 border-b border-white/20 pb-4">
-                  תכנית ההתמחות המעשית שלנו 🚀
-                </h3>
-                <div className="text-right space-y-4">
-                  <p className="text-lg text-white/90">
-                    המצטיינים בתכנית יקבלו הזדמנות ייחודית להתמחות מעשית בחברות הייטק מובילות
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="p-4 bg-white/10 rounded-lg border border-white/20">
-                      <h4 className="text-xl font-bold text-white mb-2">התנסות מעשית</h4>
-                      <p className="text-white/80">עבודה על פרויקטים אמיתיים תחת הנחיה מקצועית</p>
-                    </div>
-                    <div className="p-4 bg-white/10 rounded-lg border border-white/20">
-                      <h4 className="text-xl font-bold text-white mb-2">רשת קשרים</h4>
-                      <p className="text-white/80">הזדמנות ליצור קשרים מקצועיים בתעשייה</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
@@ -134,7 +108,7 @@ const Index = () => {
               <RegistrationForm />
             </div>
           </div>
-          
+      
           {showFloatingButton && (
             <button 
               onClick={handleOfferClick}
