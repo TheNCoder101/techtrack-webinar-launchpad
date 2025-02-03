@@ -1,4 +1,11 @@
 export const ExclusiveOffer = () => {
+  const scrollToRegistration = () => {
+    const form = document.querySelector('form');
+    if (form) {
+      form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
   return (
     <div className="glass-card p-8 space-y-6 animate-fade-in">
       <div className="text-center space-y-4">
@@ -35,6 +42,13 @@ export const ExclusiveOffer = () => {
         <p className="text-lg font-bold text-primary">
           שווי ההטבה: 997₪ | חינם למשתתפי הוובינר! 🎉
         </p>
+
+        <button
+          onClick={scrollToRegistration}
+          className="cta-button mt-6 animate-bounce"
+        >
+          👇 המשיכו לקרוא והירשמו עכשיו!
+        </button>
       </div>
     </div>
   );

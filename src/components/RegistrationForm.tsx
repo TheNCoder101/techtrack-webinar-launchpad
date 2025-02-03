@@ -18,6 +18,15 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!marketingConsent) {
+      toast({
+        title: "שגיאה",
+        description: "יש לאשר קבלת מידע שיווקי כדי להירשם",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     toast({
       title: "תודה על ההרשמה! 🎉",
       description: (
@@ -90,6 +99,7 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
             id="marketing"
             checked={marketingConsent}
             onCheckedChange={(checked) => setMarketingConsent(checked as boolean)}
+            required
           />
           <label
             htmlFor="marketing"
@@ -102,23 +112,15 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
 
       <Button 
         type="submit"
-        className="w-full py-6 text-lg font-bold bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 transition-all duration-300 hover:scale-105"
+        className="w-full py-6 text-lg font-bold bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 transition-all duration-300"
       >
         הבטיחו את מקומכם בוובינר! 🚀
       </Button>
 
-      <div className="space-y-3 text-center text-sm">
+      <div className="text-center text-sm">
         <div className="flex items-center justify-center space-x-2 space-x-reverse">
           <span>🔒</span>
-          <p>המידע שלכם מאובטח ולא יועבר לגורמים שלישיים</p>
-        </div>
-        <div className="flex items-center justify-center space-x-2 space-x-reverse">
-          <span>⚡</span>
-          <p>ההרשמה לוקחת פחות מדקה</p>
-        </div>
-        <div className="flex items-center justify-center space-x-2 space-x-reverse">
-          <span>💯</span>
-          <p>100% חינם וללא התחייבות</p>
+          <p>המידע שלכם מאובטח</p>
         </div>
       </div>
     </form>

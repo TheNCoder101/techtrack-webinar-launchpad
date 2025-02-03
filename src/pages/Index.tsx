@@ -4,6 +4,7 @@ import { Benefits } from "@/components/Benefits";
 import { Testimonials } from "@/components/Testimonials";
 import { Speakers } from "@/components/Speakers";
 import { ExclusiveOffer } from "@/components/ExclusiveOffer";
+import { RunningRibbon } from "@/components/RunningRibbon";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -28,51 +29,54 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto space-y-12">
-        {/* Hero Section */}
-        <div className="text-center space-y-6 animate-fade-in">
-          <h1 className="text-4xl sm:text-5xl font-bold leading-tight">
-            <span className="gradient-text">TechTrack Online Career Accelerator</span>
-            <br />
-            <span className="text-2xl sm:text-3xl text-white/90 mt-4 block">
-              התוכנית שמביאה אותך לקריירה בהייטק
-            </span>
-          </h1>
-          
-          <div className="glass-card p-6 space-y-4">
-            <h2 className="text-2xl font-bold">
-              תשכחו מקורסים תיאורטיים – כאן לומדים מה שבאמת עובד!
-            </h2>
-            <p className="text-lg text-white/90">
-              אם אתם רוצים להיכנס להייטק, <strong>אתם צריכים יותר ממידע – אתם צריכים אסטרטגיה מנצחת!</strong>
-            </p>
-            <p className="text-lg text-white/90">
-              <strong>TechTrack Career Accelerator</strong> היא תוכנית פרקטית שבנויה כדי לתת לכם <strong>יתרון אמיתי</strong> בשוק העבודה ולהכניס אתכם לתפקיד הראשון שלכם בהייטק – גם בלי ניסיון קודם!
-            </p>
-          </div>
-
-          <div className="glass-card p-4 inline-block">
-            <p className="text-xl">📅 חמישי | 6.2 | 20:00 | אונליין</p>
-          </div>
-        </div>
-
-        {/* Countdown Timer */}
-        <CountdownTimer />
-
-        {/* Main Content */}
-        <div className="grid md:grid-cols-2 gap-8">
-          <div className="space-y-8">
-            <div className="glass-card p-6">
-              <h3 className="text-2xl font-bold mb-6">מה תקבלו בתוכנית?</h3>
-              <Benefits />
+    <div className="min-h-screen">
+      <RunningRibbon />
+      <div className="py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto space-y-12">
+          {/* Hero Section */}
+          <div className="text-center space-y-6 animate-fade-in">
+            <h1 className="text-4xl sm:text-5xl font-bold leading-tight font-mono">
+              <span className="gradient-text">TechTrack Online Career Accelerator</span>
+              <br />
+              <span className="text-2xl sm:text-3xl text-white/90 mt-4 block">
+                התוכנית שמביאה אותך לקריירה בהייטק
+              </span>
+            </h1>
+            
+            <div className="glass-card p-6 space-y-4">
+              <h2 className="text-2xl font-bold">
+                תשכחו מקורסים תיאורטיים – כאן לומדים מה שבאמת עובד!
+              </h2>
+              <p className="text-lg text-white/90">
+                אם אתם רוצים להיכנס להייטק, <strong>אתם צריכים יותר ממידע – אתם צריכים אסטרטגיה מנצחת!</strong>
+              </p>
+              <p className="text-lg text-white/90">
+                <strong>TechTrack Career Accelerator</strong> היא תוכנית פרקטית שבנויה כדי לתת לכם <strong>יתרון אמיתי</strong> בשוק העבודה ולהכניס אתכם לתפקיד הראשון שלכם בהייטק – גם בלי ניסיון קודם!
+              </p>
             </div>
-            <Speakers />
-            <Testimonials />
-            <ExclusiveOffer />
+
+            <div className="glass-card p-4 inline-block">
+              <p className="text-xl">📅 חמישי | 6.2 | 20:00 | אונליין</p>
+            </div>
           </div>
-          <div className="sticky top-4">
-            <RegistrationForm hideSubmitButton={!showFloatingButton} />
+
+          {/* Countdown Timer */}
+          <CountdownTimer />
+
+          {/* Main Content */}
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="space-y-8">
+              <div className="glass-card p-6">
+                <h3 className="text-2xl font-bold mb-6">מה תקבלו בתוכנית?</h3>
+                <Benefits />
+              </div>
+              <Speakers />
+              <Testimonials />
+              <ExclusiveOffer />
+            </div>
+            <div className="sticky top-4">
+              <RegistrationForm hideSubmitButton={!showFloatingButton} />
+            </div>
           </div>
         </div>
       </div>
