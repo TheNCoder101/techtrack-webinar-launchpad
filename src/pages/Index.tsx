@@ -43,16 +43,6 @@ const Index = () => {
             <RegistrationForm />
           </div>
         </div>
-
-        {/* Sticky CTA for Mobile */}
-        <div className="fixed bottom-4 left-4 right-4 md:hidden z-50 animate-fade-in">
-          <button 
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="cta-button w-full"
-          >
-            הבטיחו את מקומכם בוובינר &gt;
-          </button>
-        </div>
       </div>
     </div>
   );

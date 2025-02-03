@@ -18,7 +18,7 @@ export const RegistrationForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="glass-card p-6 space-y-4">
+    <form onSubmit={handleSubmit} className="glass-card p-6 space-y-4 sticky bottom-4 md:relative md:bottom-auto">
       <div>
         <input
           type="text"
