@@ -47,54 +47,59 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
   };
 
   return (
-    <form onSubmit={handleSubmit} className="glass-card p-6 space-y-6 sticky top-4">
+    <form onSubmit={handleSubmit} className="glass-card p-6 space-y-6 sticky top-4 transform hover:scale-[1.01] transition-all duration-300">
       <div className="text-center space-y-4 mb-6">
-        <h3 className="text-2xl font-bold gradient-text">
-          הירשמו עכשיו לוובינר החינמי!
-        </h3>
-        <div className="flex items-center justify-center space-x-2 space-x-reverse">
-          <span className="text-2xl">🎯</span>
-          <p className="text-lg font-medium">גלו איך להתקבל להייטק ב-2024</p>
+        <div className="bg-gradient-to-r from-primary/20 via-secondary/20 to-accent/20 p-4 rounded-lg mb-4">
+          <h3 className="text-2xl font-bold gradient-text">
+            הירשמו עכשיו לוובינר החינמי!
+          </h3>
+          <div className="flex items-center justify-center space-x-2 space-x-reverse mt-2">
+            <span className="text-2xl">🎯</span>
+            <p className="text-lg font-medium">גלו איך להתקבל להייטק ב-2024</p>
+          </div>
         </div>
-        <div className="p-3 bg-white/10 rounded-lg">
-          <p className="text-sm">
+        <div className="p-3 bg-white/10 rounded-lg border border-white/20">
+          <p className="text-sm font-bold">
             ⭐ הצטרפו ל-500+ בוגרים שכבר עובדים בהייטק!
           </p>
         </div>
       </div>
 
       <div className="space-y-4">
-        <div>
+        <div className="relative">
           <input
             type="text"
             placeholder="שם מלא"
             required
-            className="form-input"
+            className="form-input pr-8"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
+          <span className="absolute right-2 top-1/2 -translate-y-1/2">👤</span>
         </div>
-        <div>
+        <div className="relative">
           <input
             type="email"
             placeholder="אימייל"
             required
-            className="form-input"
+            className="form-input pr-8"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
           />
+          <span className="absolute right-2 top-1/2 -translate-y-1/2">📧</span>
         </div>
-        <div>
+        <div className="relative">
           <input
             type="tel"
             placeholder="טלפון"
             required
-            className="form-input"
+            className="form-input pr-8"
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
           />
+          <span className="absolute right-2 top-1/2 -translate-y-1/2">📱</span>
         </div>
-        <div className="flex items-center space-x-2 space-x-reverse">
+        <div className="flex items-center space-x-2 space-x-reverse bg-white/5 p-3 rounded-lg">
           <Checkbox
             id="marketing"
             checked={marketingConsent}
@@ -112,7 +117,7 @@ export const RegistrationForm = ({ hideSubmitButton = false }: RegistrationFormP
 
       <Button 
         type="submit"
-        className="w-full py-6 text-lg font-bold bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 transition-all duration-300"
+        className="w-full py-6 text-lg font-bold bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 transition-all duration-300 shadow-lg hover:shadow-xl"
       >
         הבטיחו את מקומכם בוובינר! 🚀
       </Button>

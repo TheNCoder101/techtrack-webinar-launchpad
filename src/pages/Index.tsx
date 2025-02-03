@@ -56,7 +56,7 @@ const Index = () => {
             </div>
 
             <div className="glass-card p-4 inline-block">
-              <p className="text-xl">📅 חמישי | 6.2 | 20:00 | אונליין</p>
+              <p className="text-xl">📅 וובינר הדרכה על התוכנית: חמישי | 6.2 | 20:00 | אונליין</p>
             </div>
           </div>
 

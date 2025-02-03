@@ -45,9 +45,9 @@ export const ExclusiveOffer = () => {
 
         <button
           onClick={scrollToRegistration}
-          className="cta-button mt-6 animate-bounce"
+          className="cta-button mt-6"
         >
-          👇 המשיכו לקרוא והירשמו עכשיו!
+          להרשמה לוובינר 👇
         </button>
       </div>
     </div>
