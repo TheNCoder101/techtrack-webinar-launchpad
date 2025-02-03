@@ -21,10 +21,10 @@ const Index = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleFormSubmit = () => {
-    const form = document.querySelector('form');
-    if (form) {
-      form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const handleOfferClick = () => {
+    const offerSection = document.querySelector('.exclusive-offer-section');
+    if (offerSection) {
+      offerSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
 
@@ -100,7 +100,9 @@ const Index = () => {
               </div>
               <Speakers />
               <Testimonials />
-              <ExclusiveOffer />
+              <div className="exclusive-offer-section">
+                <ExclusiveOffer />
+              </div>
             </div>
             <div className="sticky top-4">
               <RegistrationForm />
@@ -109,10 +111,10 @@ const Index = () => {
       
           {showFloatingButton && (
             <button 
-              onClick={handleFormSubmit}
+              onClick={handleOfferClick}
               className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 glass-card py-4 px-8 text-white font-bold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary via-secondary to-accent hover:scale-105 flex items-center justify-center gap-2 animate-fade-in max-w-xl w-[90%] mx-auto"
             >
-              <span>להרשמה לוובינר - לחצו כאן</span>
+              <span>מתנה בלעדית ל-50 נרשמים הראשונים! 🎁</span>
               <ArrowLeft className="w-5 h-5" />
             </button>
           )}
