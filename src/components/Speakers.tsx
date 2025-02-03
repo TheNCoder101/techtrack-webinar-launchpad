@@ -55,11 +55,11 @@ export const Speakers = () => {
               <div className="w-16 h-16 rounded-full bg-gradient-to-r from-primary via-secondary to-accent flex-shrink-0 flex items-center justify-center">
                 {<speaker.icon className="w-8 h-8 text-white" />}
               </div>
-              <div className="text-right">
+              <div className="text-right flex-grow">
                 <h4 className="text-xl font-bold gradient-text">{speaker.name}</h4>
-                <p className="text-sm text-white/60 mb-1">{speaker.englishTitle}</p>
-                <p className="text-white/80 mb-2">{speaker.title}</p>
-                <p className="text-white/70 text-sm leading-relaxed">{speaker.description}</p>
+                <p className="text-sm text-white/80 mb-1">{speaker.englishTitle}</p>
+                <p className="text-white/90 mb-2">{speaker.title}</p>
+                <p className="text-white/80 text-sm leading-relaxed">{speaker.description}</p>
               </div>
             </div>
             <div className="space-y-2 mt-4">

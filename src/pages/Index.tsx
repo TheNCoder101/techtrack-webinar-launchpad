@@ -89,7 +89,7 @@ const Index = () => {
         </div>
       </div>
       <footer className="max-w-4xl mx-auto px-4 py-8 text-center text-sm text-white/70">
-        <p className="mb-2">© 2024 Tech Track. כל הזכויות שמורות.</p>
+        <p className="mb-2">© 2025 Tech Track. כל הזכויות שמורות.</p>
         <p className="mb-2">
           התכנים המוצגים באתר זה הם למטרות מידע והכוונה בלבד. 
           ההצלחה בתוכנית תלויה במידת ההשקעה והמחויבות האישית של כל משתתף.
