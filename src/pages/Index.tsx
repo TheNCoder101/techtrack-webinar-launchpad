@@ -18,20 +18,28 @@ const Index = () => {
         {/* Hero Section */}
         <div className="text-center space-y-6 animate-fade-in">
           <h1 className="text-4xl sm:text-5xl font-bold leading-tight">
-            <span className="gradient-text">TechTrack Career Accelerator</span>
+            <span className="gradient-text">TechTrack Online Career Accelerator</span>
             <br />
-            <span className="text-2xl sm:text-3xl text-white/80 mt-2 block">High Tech Career Accelerator</span>
-            <span className="mt-4 block">קריירה בהייטק? הצעד הראשון שלך מתחיל כאן!</span>
+            <span className="text-2xl sm:text-3xl text-white/90 mt-4 block">
+              התוכנית שמביאה אותך לקריירה בהייטק
+            </span>
           </h1>
-          <h2 className="text-2xl sm:text-3xl glass-card inline-block px-6 py-3">
-            וובינר אחרון לפני סגירת ההרשמה לתוכנית!
-          </h2>
-          <p className="text-xl tech-card inline-block">
-            📅 חמישי | 6.2 | 20:00 | אונליין
-          </p>
-          <p className="text-xl font-bold glass-card p-4">
-            ⏳ תוכנית TechTrack Career Accelerator יוצאת לדרך ב-9.2!
-          </p>
+          
+          <div className="glass-card p-6 space-y-4">
+            <h2 className="text-2xl font-bold">
+              תשכחו מקורסים תיאורטיים – כאן לומדים מה שבאמת עובד!
+            </h2>
+            <p className="text-lg text-white/90">
+              אם אתם רוצים להיכנס להייטק, <strong>אתם צריכים יותר ממידע – אתם צריכים אסטרטגיה מנצחת!</strong>
+            </p>
+            <p className="text-lg text-white/90">
+              <strong>TechTrack Career Accelerator</strong> היא תוכנית פרקטית שבנויה כדי לתת לכם <strong>יתרון אמיתי</strong> בשוק העבודה ולהכניס אתכם לתפקיד הראשון שלכם בהייטק – גם בלי ניסיון קודם!
+            </p>
+          </div>
+
+          <div className="glass-card p-4 inline-block">
+            <p className="text-xl">📅 חמישי | 6.2 | 20:00 | אונליין</p>
+          </div>
         </div>
 
         {/* Countdown Timer */}
@@ -40,9 +48,14 @@ const Index = () => {
         {/* Main Content */}
         <div className="grid md:grid-cols-2 gap-8">
           <div className="space-y-8">
-            <div className="tech-card">
-              <h3 className="text-xl font-bold mb-6 gradient-text">מה נלמד בוובינר?</h3>
+            <div className="glass-card p-6">
+              <h3 className="text-2xl font-bold mb-6">מה תקבלו בתוכנית?</h3>
               <Benefits />
+              <div className="mt-8 p-4 glass-card text-center">
+                <p className="text-xl font-bold">
+                  🚀 85% מבוגרי התוכנית התקבלו לעבודה בהייטק תוך 3 חודשים!
+                </p>
+              </div>
             </div>
             <Speakers />
             <Testimonials />
@@ -58,7 +71,7 @@ const Index = () => {
         onClick={handleFormSubmit}
         className="fixed bottom-8 left-4 right-4 md:left-8 md:right-8 z-50 glass-card py-4 px-6 text-white font-bold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary via-secondary to-accent hover:scale-105"
       >
-        הבטיחו את מקומכם בוובינר &gt;
+        כן! אני רוצה להבין איך לפרוץ להייטק &gt;
       </button>
     </div>
   );
