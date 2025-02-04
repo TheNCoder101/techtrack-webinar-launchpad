@@ -34,12 +34,16 @@ const Index = () => {
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto space-y-12">
           <div className="text-center space-y-6 animate-fade-in">
-            <h1 className="text-4xl sm:text-5xl font-bold leading-tight font-mono">
-              <span className="gradient-text">TechTrack Online Career Accelerator</span>
-              <br />
-              <span className="text-2xl sm:text-3xl text-white/90 mt-4 block">
-                Your Fast Track to a Tech Career
+            <h1 className="space-y-4">
+              <span className="brand-title block">
+                TechTrack
               </span>
+              <span className="brand-subtitle block">
+                Online Career Accelerator
+              </span>
+              <p className="text-xl text-white/90">
+                Your Fast Track to a Tech Career - Start Your Journey Today
+              </p>
             </h1>
             
             <div className="glass-card p-6 space-y-4">
@@ -112,9 +116,9 @@ const Index = () => {
           {showFloatingButton && (
             <button 
               onClick={handleOfferClick}
-              className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 glass-card py-4 px-8 text-white font-bold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary via-secondary to-accent hover:scale-105 flex items-center justify-center gap-2"
+              className="floating-cta"
             >
-              <span>הטבה מיוחדת! 🎁</span>
+              <span>קחו אותי להרשמה לוובינר!</span>
               <ArrowLeft className="w-5 h-5" />
             </button>
           )}

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&family=Caveat:wght@600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -22,45 +22,41 @@ body {
 }
 
 .form-input {
-  @apply w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300;
+  @apply w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300;
 }
 
 .cta-button {
-  @apply bg-gradient-to-r from-accent via-primary to-secondary text-white font-bold py-3 px-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 animate-pulse-slow hover:scale-105 transform hover:-translate-y-1;
+  @apply bg-gradient-to-r from-accent via-primary to-secondary text-white font-bold py-3 px-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 transform hover:-translate-y-1;
 }
 
 .benefit-item {
-  @apply flex items-center space-x-3 space-x-reverse mb-4 animate-fade-in hover:translate-x-2 transition-transform duration-300 bg-white/5 p-3 rounded-lg;
-}
-
-.gradient-text {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-accent via-primary to-secondary animate-gradient-shift bg-[length:200%_auto];
-}
-
-.tech-card {
-  @apply glass-card p-6 hover:scale-105 transition-transform duration-300 bg-gradient-to-br from-white/10 to-transparent;
-}
-
-.highlight-box {
-  @apply bg-gradient-to-r from-accent/20 via-primary/20 to-secondary/20 p-4 rounded-lg border border-white/10 hover:border-white/20 transition-all duration-300;
-}
-
-.floating-cta {
-  @apply fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 glass-card py-4 px-8 text-white font-bold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-accent via-primary to-secondary hover:scale-105 flex items-center justify-center gap-2 max-w-xl w-[90%] mx-auto;
+  @apply flex items-center space-x-3 space-x-reverse mb-4 animate-fade-in hover:translate-x-2 transition-transform duration-300 bg-white/10 p-4 rounded-lg border border-white/20;
 }
 
 .section-title {
-  @apply text-2xl font-bold mb-6 text-center gradient-text;
+  @apply text-3xl font-bold mb-6 text-center text-white;
 }
 
-.partner-logo {
-  @apply h-16 w-auto object-contain filter brightness-0 invert opacity-70 hover:opacity-100 transition-opacity duration-300 transform hover:scale-110;
+.floating-cta {
+  @apply fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 glass-card py-3 px-6 text-white font-bold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-accent via-primary to-secondary hover:scale-105 flex items-center justify-center gap-2 max-w-xl w-[90%] mx-auto;
 }
 
-.testimonial-card {
-  @apply glass-card p-6 hover:scale-105 transition-all duration-300 bg-gradient-to-br from-white/10 to-transparent;
+.tech-card {
+  @apply glass-card p-6 hover:scale-105 transition-transform duration-300;
 }
 
-.feature-highlight {
-  @apply bg-gradient-to-r from-accent/10 via-primary/10 to-secondary/10 p-4 rounded-lg border border-white/10 hover:border-white/20 transition-all duration-300;
+.speaker-name {
+  @apply text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/90;
+}
+
+.brand-title {
+  @apply text-4xl sm:text-5xl font-bold mb-2 text-white;
+}
+
+.brand-subtitle {
+  @apply text-2xl sm:text-3xl font-handwriting text-white/90 mb-4;
+}
+
+.highlight-box {
+  @apply bg-white/10 p-6 rounded-lg border border-white/20 hover:border-white/30 transition-all duration-300;
 }

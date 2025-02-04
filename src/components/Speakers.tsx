@@ -45,31 +45,31 @@ export const Speakers = () => {
 
   return (
     <div className="glass-card p-6 animate-fade-in space-y-8">
-      <h3 className="text-2xl font-bold mb-8 text-center">
-        <span className="gradient-text">✨ המומחים שילוו אותך להצלחה</span>
+      <h3 className="section-title">
+        ✨ המומחים שילוו אותך להצלחה
       </h3>
       <div className="space-y-12">
         {speakers.map((speaker, index) => (
-          <div key={index} className="glass-card p-6 hover:scale-105 transition-all duration-300">
+          <div key={index} className="tech-card p-6">
             <div className="flex items-start space-x-4 space-x-reverse mb-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-r from-primary via-secondary to-accent flex-shrink-0 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-r from-primary to-secondary flex-shrink-0 flex items-center justify-center">
                 {<speaker.icon className="w-8 h-8 text-white" />}
               </div>
               <div className="text-right flex-grow">
-                <h4 className="text-xl font-bold gradient-text">{speaker.name}</h4>
+                <h4 className="speaker-name">{speaker.name}</h4>
                 <p className="text-sm text-white/80 mb-1">{speaker.englishTitle}</p>
                 <p className="text-white/90 mb-2">{speaker.title}</p>
                 <p className="text-white/80 text-sm leading-relaxed">{speaker.description}</p>
               </div>
             </div>
-            <div className="space-y-2 mt-4">
+            <div className="highlight-box space-y-2">
               {speaker.expertise.map((item, i) => (
                 <div key={i} className="flex items-start space-x-2 space-x-reverse">
                   <p className="text-white/90">{item}</p>
                 </div>
               ))}
             </div>
-            <div className="mt-6 p-4 bg-white/10 rounded-lg">
+            <div className="mt-6 p-4 bg-white/5 rounded-lg border border-white/20">
               <p className="text-white/90 italic">💬 {speaker.testimonial}</p>
             </div>
           </div>
