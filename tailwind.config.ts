@@ -25,15 +25,15 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#8B5CF6", // Updated to more vibrant purple
+          DEFAULT: "#8B5CF6",
           foreground: "#ffffff",
         },
         secondary: {
-          DEFAULT: "#1EAEDB", // Bright blue
+          DEFAULT: "#1EAEDB",
           foreground: "#ffffff",
         },
         accent: {
-          DEFAULT: "#F97316", // Bright orange
+          DEFAULT: "#F97316",
           foreground: "#ffffff",
         },
         tech: {
@@ -43,7 +43,16 @@ export default {
       },
       fontFamily: {
         heebo: ["Heebo", "sans-serif"],
-        handwriting: ["Caveat", "cursive"], // Added handwriting font
+        handwriting: ["Caveat", "cursive"],
+      },
+      keyframes: {
+        "fade-in": {
+          "0%": { opacity: "0", transform: "translateY(10px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+      },
+      animation: {
+        "fade-in": "fade-in 0.5s ease-out forwards",
       },
     },
   },
