@@ -112,9 +112,9 @@ const Index = () => {
           {showFloatingButton && (
             <button 
               onClick={handleOfferClick}
-              className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 glass-card py-4 px-8 text-white font-bold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary via-secondary to-accent hover:scale-105 flex items-center justify-center gap-2 animate-fade-in max-w-xl w-[90%] mx-auto"
+              className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 glass-card py-4 px-8 text-white font-bold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary via-secondary to-accent hover:scale-105 flex items-center justify-center gap-2"
             >
-              <span>מתנה בלעדית ל-50 נרשמים הראשונים! 🎁</span>
+              <span>הטבה מיוחדת! 🎁</span>
               <ArrowLeft className="w-5 h-5" />
             </button>
           )}

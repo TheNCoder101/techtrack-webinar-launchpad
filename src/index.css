@@ -14,7 +14,7 @@
 }
 
 body {
-  @apply font-heebo bg-gradient-to-br from-tech-dark via-primary/90 to-secondary min-h-screen text-white bg-[length:400%_400%] animate-gradient-shift;
+  @apply font-heebo bg-gradient-to-br from-tech-dark via-primary/90 to-secondary min-h-screen text-white;
 }
 
 .glass-card {
@@ -46,7 +46,7 @@ body {
 }
 
 .floating-cta {
-  @apply fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 glass-card py-4 px-8 text-white font-bold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-accent via-primary to-secondary hover:scale-105 flex items-center justify-center gap-2 animate-fade-in max-w-xl w-[90%] mx-auto;
+  @apply fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 glass-card py-4 px-8 text-white font-bold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-accent via-primary to-secondary hover:scale-105 flex items-center justify-center gap-2 max-w-xl w-[90%] mx-auto;
 }
 
 .section-title {
