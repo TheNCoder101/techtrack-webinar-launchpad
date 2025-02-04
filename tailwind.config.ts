@@ -25,16 +25,20 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#8B5CF6", // Vivid purple
+          DEFAULT: "#9b87f5", // Updated to a softer purple
           foreground: "#ffffff",
         },
         secondary: {
-          DEFAULT: "#0EA5E9", // Ocean blue
+          DEFAULT: "#1EAEDB", // Updated to bright blue
           foreground: "#ffffff",
         },
         accent: {
-          DEFAULT: "#D946EF", // Magenta pink
+          DEFAULT: "#F97316", // Updated to bright orange
           foreground: "#ffffff",
+        },
+        tech: {
+          dark: "#1A1F2C",
+          light: "#FEF7CD",
         },
       },
       fontFamily: {
