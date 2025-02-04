@@ -33,18 +33,18 @@ const Index = () => {
       <RunningRibbon />
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto space-y-12">
-          <div className="text-center space-y-6 animate-fade-in">
-            <h1 className="space-y-4">
-              <span className="brand-title block">
+          <div className="text-center space-y-8 animate-fade-in">
+            <div className="space-y-2">
+              <h1 className="brand-title inline-block">
                 TechTrack
-              </span>
-              <span className="brand-subtitle block">
+              </h1>
+              <div className="brand-subtitle">
                 Online Career Accelerator
-              </span>
-              <p className="text-xl text-white/90">
+              </div>
+              <p className="text-xl text-white/90 max-w-2xl mx-auto">
                 Your Fast Track to a Tech Career - Start Your Journey Today
               </p>
-            </h1>
+            </div>
             
             <div className="glass-card p-6 space-y-4">
               <h2 className="text-2xl font-bold">

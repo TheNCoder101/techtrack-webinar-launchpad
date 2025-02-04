@@ -50,11 +50,14 @@ body {
 }
 
 .brand-title {
-  @apply text-4xl sm:text-5xl font-bold mb-2 text-white;
+  @apply text-5xl sm:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-white via-accent to-secondary tracking-tight;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  letter-spacing: -0.02em;
 }
 
 .brand-subtitle {
-  @apply text-2xl sm:text-3xl font-handwriting text-white/90 mb-4;
+  @apply text-2xl sm:text-3xl font-handwriting text-white/90 mb-6;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .highlight-box {
