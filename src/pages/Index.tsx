@@ -34,7 +34,6 @@ const Index = () => {
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto space-y-12">
           <div className="text-center space-y-8 animate-fade-in">
-            <div className="space-y-2">
               <h1 className="brand-title inline-block">
                 TechTrack
               </h1>
@@ -63,25 +62,25 @@ const Index = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-right">
                   <div className="benefit-item">
                     <div className="w-2 h-2 bg-primary rounded-full mr-2 mt-2"></div>
-                    <p className="text-lg">
+                    <p className="text-lg text-white/90">
                       <strong className="text-primary">כוח הקבוצה:</strong> תמיכה הדדית ומוטיבציה גבוהה לאורך כל הדרך
                     </p>
                   </div>
                   <div className="benefit-item">
                     <div className="w-2 h-2 bg-secondary rounded-full mr-2 mt-2"></div>
-                    <p className="text-lg">
+                    <p className="text-lg text-white/90">
                       <strong className="text-secondary">למידה מהירה יותר:</strong> שיתוף ידע וניסיון בין המשתתפים
                     </p>
                   </div>
                   <div className="benefit-item">
                     <div className="w-2 h-2 bg-accent rounded-full mr-2 mt-2"></div>
-                    <p className="text-lg">
+                    <p className="text-lg text-white/90">
                       <strong className="text-accent">נטוורקינג אפקטיבי:</strong> בניית רשת קשרים חזקה בתעשייה
                     </p>
                   </div>
                   <div className="benefit-item">
                     <div className="w-2 h-2 bg-white rounded-full mr-2 mt-2"></div>
-                    <p className="text-lg">
+                    <p className="text-lg text-white/90">
                       <strong className="text-white">מיקוד מקצועי:</strong> תכנית מובנית עם מנטורים מנוסים מההייטק
                     </p>
                   </div>
