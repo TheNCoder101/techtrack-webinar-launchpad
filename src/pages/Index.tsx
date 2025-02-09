@@ -1,3 +1,4 @@
+
 import { RegistrationForm } from "@/components/RegistrationForm";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { Benefits } from "@/components/Benefits";
@@ -5,7 +6,7 @@ import { Testimonials } from "@/components/Testimonials";
 import { Speakers } from "@/components/Speakers";
 import { ExclusiveOffer } from "@/components/ExclusiveOffer";
 import { RunningRibbon } from "@/components/RunningRibbon";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Rocket, Star, Users, Target } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const Index = () => {
@@ -29,65 +30,91 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-tech-dark via-[#1A1F2C] to-[#2C1A2F]">
       <RunningRibbon />
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto space-y-12">
           <div className="text-center space-y-8 animate-fade-in">
+            <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-4">
+              <Rocket className="w-4 h-4 text-accent" />
+              <span className="text-white/90">הוובינר הבא מתחיל בקרוב!</span>
+            </div>
             <h1 className="brand-title inline-block">
-              TechTrack
+              איך להתקבל להייטק ב-2025?
             </h1>
             <div className="brand-subtitle">
-              Online Career Accelerator
+              וובינר חינמי שיחשוף בפניך את השיטה המוכחת
             </div>
-            <p className="text-xl text-white/90 max-w-2xl mx-auto">
-              Your Fast Track to a Tech Career - Start Your Journey Today
-            </p>
+            <div className="max-w-2xl mx-auto space-y-4 text-right">
+              <p className="text-xl text-white/90 font-bold">
+                מרגישים תקועים בחיפוש עבודה בהייטק? 
+              </p>
+              <div className="glass-card p-6 space-y-4 bg-gradient-to-r from-primary/10 to-secondary/10">
+                <p className="text-lg leading-relaxed">
+                  <span className="text-accent font-bold">⚡️ הגיע הזמן לשנות את הגישה:</span> במקום לשלוח עוד ועוד קורות חיים ולקוות לתשובה, 
+                  בואו תגלו איך להפוך לבולטים בשוק העבודה ולקבל הצעות עבודה תוך שבועות ספורים.
+                </p>
+              </div>
+            </div>
           </div>
           
-          <div className="glass-card p-6 space-y-4">
-            <h2 className="text-2xl font-bold">
-              הפכו חודשים של חיפוש עבודה לשבועות ספורים
+          <div className="glass-card p-6 space-y-4 bg-gradient-to-br from-accent/20 via-primary/10 to-secondary/20">
+            <h2 className="text-2xl font-bold text-center mb-6">
+              למה דווקא עכשיו זה הזמן המושלם להיכנס להייטק?
             </h2>
-            <p className="text-lg text-white/90">
-              במקום לבזבז זמן וכסף על קורסים ארוכים, קבלו ליווי ממוקד שיביא אתכם מהר יותר למשרה הראשונה בהייטק
-            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="highlight-box text-right">
+                <Star className="w-5 h-5 text-accent mb-2" />
+                <p className="text-lg">
+                  <span className="text-accent font-bold">שוק העבודה משתנה:</span> חברות מחפשות כישרונות חדשים עם גישה רעננה
+                </p>
+              </div>
+              <div className="highlight-box text-right">
+                <Users className="w-5 h-5 text-primary mb-2" />
+                <p className="text-lg">
+                  <span className="text-primary font-bold">הזדמנויות חדשות:</span> תפקידים חדשים נפתחים בתחומי ה-AI וה-Data
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="glass-card p-8 transform hover:scale-105 transition-all duration-300">
             <div className="space-y-6">
-              <h3 className="text-3xl font-bold text-white mb-6 border-b border-white/20 pb-4">
-                למה ליווי קבוצתי הוא המפתח להצלחה שלך?
-              </h3>
+              <div className="flex items-center justify-between border-b border-white/20 pb-4">
+                <h3 className="text-3xl font-bold text-white">
+                  למה ליווי קבוצתי הוא המפתח להצלחה שלך?
+                </h3>
+                <Target className="w-8 h-8 text-accent" />
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-right">
-                <div className="benefit-item">
+                <div className="benefit-item bg-gradient-to-r from-primary/10 to-transparent">
                   <div className="w-2 h-2 bg-primary rounded-full mr-2 mt-2"></div>
                   <p className="text-lg text-white/90">
-                    <strong className="text-primary">כוח הקבוצה:</strong> תמיכה הדדית ומוטיבציה גבוהה לאורך כל הדרך
+                    <strong className="text-primary">כוח הקבוצה:</strong> תמיכה הדדית ומוטיבציה גבוהה שתדחוף אותך קדימה
                   </p>
                 </div>
-                <div className="benefit-item">
+                <div className="benefit-item bg-gradient-to-r from-secondary/10 to-transparent">
                   <div className="w-2 h-2 bg-secondary rounded-full mr-2 mt-2"></div>
                   <p className="text-lg text-white/90">
-                    <strong className="text-secondary">למידה מהירה יותר:</strong> שיתוף ידע וניסיון בין המשתתפים
+                    <strong className="text-secondary">למידה מהירה יותר:</strong> למידה מניסיון של אחרים במקום ללמוד על בשרך
                   </p>
                 </div>
-                <div className="benefit-item">
+                <div className="benefit-item bg-gradient-to-r from-accent/10 to-transparent">
                   <div className="w-2 h-2 bg-accent rounded-full mr-2 mt-2"></div>
                   <p className="text-lg text-white/90">
-                    <strong className="text-accent">נטוורקינג אפקטיבי:</strong> בניית רשת קשרים חזקה בתעשייה
+                    <strong className="text-accent">נטוורקינג אפקטיבי:</strong> קשרים שיפתחו בפניך דלתות בתעשייה
                   </p>
                 </div>
-                <div className="benefit-item">
+                <div className="benefit-item bg-gradient-to-r from-white/10 to-transparent">
                   <div className="w-2 h-2 bg-white rounded-full mr-2 mt-2"></div>
                   <p className="text-lg text-white/90">
-                    <strong className="text-white">מיקוד מקצועי:</strong> תכנית מובנית עם מנטורים מנוסים מההייטק
+                    <strong className="text-white">מיקוד מקצועי:</strong> קיצור דרך להצלחה עם מנטורים שכבר עשו את הדרך
                   </p>
                 </div>
               </div>
-              <div className="mt-6 p-4 bg-white/10 rounded-lg border border-white/20">
-                <p className="text-lg font-bold text-white">
-                  83% מבוגרי התכנית השתלבו בהייטק תוך פחות מ-3 חודשים!
+              <div className="p-4 bg-gradient-to-r from-accent/20 to-primary/20 rounded-lg border border-white/20">
+                <p className="text-lg font-bold text-white text-center">
+                  🎯 83% מבוגרי התכנית השתלבו בהייטק תוך פחות מ-3 חודשים!
                 </p>
               </div>
             </div>
@@ -97,7 +124,7 @@ const Index = () => {
             <div className="space-y-8">
               <CountdownTimer />
               <div className="glass-card p-6">
-                <h3 className="text-2xl font-bold mb-6">מה תקבלו בתוכנית?</h3>
+                <h3 className="text-2xl font-bold mb-6">מה תקבלו בוובינר?</h3>
                 <Benefits />
               </div>
               <Speakers />
@@ -116,7 +143,7 @@ const Index = () => {
               onClick={handleOfferClick}
               className="floating-cta"
             >
-              <span>קחו אותי להרשמה לוובינר!</span>
+              <span>הבטיחו את מקומכם בוובינר! 🎯</span>
               <ArrowLeft className="w-5 h-5" />
             </button>
           )}
