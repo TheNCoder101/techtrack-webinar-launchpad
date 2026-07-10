@@ -125,6 +125,7 @@
   left: 50%;
   bottom: max(14px, env(safe-area-inset-bottom));
   transform: translateX(-50%);
+  z-index: 15;
   display: flex;
   gap: 8px;
   touch-action: none;
