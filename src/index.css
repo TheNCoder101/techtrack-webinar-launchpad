@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&family=Caveat:wght@600&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -10,59 +8,18 @@
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
   --ring: 222.2 84% 4.9%;
-  direction: rtl;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overscroll-behavior: none;
+  background: #0a0f14;
 }
 
 body {
-  @apply font-heebo bg-gradient-to-br from-tech-dark via-primary/90 to-secondary min-h-screen text-white;
-}
-
-.glass-card {
-  @apply bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300;
-}
-
-.form-input {
-  @apply w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-300;
-}
-
-.cta-button {
-  @apply bg-gradient-to-r from-accent via-primary to-secondary text-white font-bold py-3 px-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 transform hover:-translate-y-1;
-}
-
-.benefit-item {
-  @apply flex items-center space-x-3 space-x-reverse mb-4 animate-fade-in hover:translate-x-2 transition-transform duration-300;
-  @apply bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-white/10;
-  @apply hover:bg-white/10 hover:border-white/20;
-  @apply shadow-lg hover:shadow-xl;
-}
-
-.section-title {
-  @apply text-3xl font-bold mb-6 text-center text-white;
-}
-
-.floating-cta {
-  @apply fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 glass-card py-3 px-6 text-white font-bold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-accent via-primary to-secondary hover:scale-105 flex items-center justify-center gap-2 max-w-xl w-[90%] mx-auto;
-}
-
-.tech-card {
-  @apply glass-card p-6 hover:scale-105 transition-transform duration-300;
-}
-
-.speaker-name {
-  @apply text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/90;
-}
-
-.brand-title {
-  @apply text-5xl sm:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-white via-accent to-secondary tracking-tight;
-  text-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  letter-spacing: -0.02em;
-}
-
-.brand-subtitle {
-  @apply text-2xl sm:text-3xl font-handwriting text-white/90 mb-6;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.highlight-box {
-  @apply bg-white/10 p-6 rounded-lg border border-white/20 hover:border-white/30 transition-all duration-300;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #fff;
 }

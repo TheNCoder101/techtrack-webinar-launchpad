@@ -1,69 +1,57 @@
-# Welcome to your Lovable project
+# Island Strike
 
-## Project info
+A free-roam, low-poly battle-island shooter built to run straight from a mobile
+browser (tested against iPhone 14 Pro / Mobile Safari). Built with
+Vite + React + TypeScript + three.js — no native app, no asset downloads,
+just open the page and tap **PLAY**.
 
-**URL**: https://lovable.dev/projects/691c52af-dc8a-42e4-9a61-7387e2fc286f
+## Gameplay (v1)
 
-## How can I edit this code?
+- **Free roam** a procedurally generated island (hills, beaches, forests, rock
+  outcrops) with a third-person camera.
+- **Default weapon**: a hitscan blaster with a clip, reserve ammo, auto-reload
+  and tracer/muzzle-flash feedback.
+- **Harvest** trees and rocks (shoot them) for wood/stone materials.
+- **Build**: spend materials to drop a defensive wall, snapped to a neat
+  facing in front of you.
+- **Enemies**: wandering bots that aggro and melee you at close range — shoot
+  them for score, they respawn after a short delay.
+- Health, minimap radar, hit markers, damage flash and a respawn loop.
 
-There are several ways of editing your application.
+## Controls (touch-only, designed for phones)
 
-**Use Lovable**
+- Left thumb: virtual joystick — move (magnitude controls walk vs. sprint).
+- Right side: drag to look/aim (crosshair is screen-center; whatever you're
+  aiming at is what FIRE hits, be it an enemy, a tree, or terrain).
+- **FIRE** — shoot (also harvests trees/rocks when aimed at them).
+- **JUMP**
+- **BUILD** — place a wall (costs materials).
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/691c52af-dc8a-42e4-9a61-7387e2fc286f) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Development
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
 npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+npm run dev      # local dev server
+npm run build    # production build
+npm run preview  # serve the production build
 ```
 
-**Edit a file directly in GitHub**
+## Architecture
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+All game code lives under `src/game/`, kept deliberately framework-light so
+the render loop stays smooth on mobile GPUs:
 
-**Use GitHub Codespaces**
+- `game/world` — procedural terrain (hand-rolled value noise), sky, water,
+  prop scattering (trees/rocks/crates/shacks).
+- `game/entities` — player controller + third-person camera rig, bot AI.
+- `game/weapons` — hitscan blaster, GPU particle system (single draw call).
+- `game/building` — wall placement.
+- `game/core` — the `Game` orchestrator/render loop, touch `InputManager`,
+  procedural `AudioManager` (WebAudio oscillators, no audio assets).
+- `game/ui` — DOM-based HUD, updated imperatively every frame (no React
+  re-renders in the hot path).
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with .
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/691c52af-dc8a-42e4-9a61-7387e2fc286f) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+Performance choices for mobile: no shadow maps (cheap fake blob shadows
+instead), shared geometries/materials across scattered props, fog-limited
+draw distance, capped device pixel ratio, and a single draw call for all
+particle effects.

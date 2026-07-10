@@ -1,0 +1,170 @@
+import * as THREE from "three";
+import {
+  GRAVITY,
+  PLAYER_RADIUS,
+  PLAYER_EYE_HEIGHT,
+  PLAYER_WALK_SPEED,
+  PLAYER_SPRINT_MULT,
+  PLAYER_JUMP_SPEED,
+  CAMERA_DISTANCE,
+  CAMERA_HEIGHT,
+  CAMERA_MIN_PITCH,
+  CAMERA_MAX_PITCH,
+  LOOK_SENSITIVITY,
+  WORLD_RADIUS,
+} from "../core/constants";
+import type { PlayerInput } from "../core/types";
+import { World } from "../world/World";
+import { createPlayerMesh } from "./playerMesh";
+import { createBlobShadow } from "../world/blobShadow";
+
+export class Player {
+  group: THREE.Group;
+  gunTip: THREE.Object3D;
+  position: THREE.Vector3;
+  velocity = new THREE.Vector3();
+  yaw = 0;
+  pitch = 0.06;
+  grounded = false;
+  sprinting = false;
+
+  health = 100;
+  maxHealth = 100;
+  materials = 40;
+  invulnerableUntil = 0;
+  dead = false;
+
+  aimDir = new THREE.Vector3(0, 0, -1);
+  eyePos = new THREE.Vector3();
+
+  private shadow: THREE.Mesh;
+
+  onDamaged?: () => void;
+  onDeath?: () => void;
+
+  constructor(scene: THREE.Scene) {
+    const { group, gunTip } = createPlayerMesh();
+    this.group = group;
+    this.gunTip = gunTip;
+    this.position = group.position;
+    this.position.set(0, 1, 4);
+    scene.add(group);
+
+    this.shadow = createBlobShadow(0.6);
+    scene.add(this.shadow);
+  }
+
+  takeDamage(amount: number, nowSec: number): void {
+    if (this.dead || nowSec < this.invulnerableUntil) return;
+    this.health -= amount;
+    this.onDamaged?.();
+    if (this.health <= 0) {
+      this.health = 0;
+      this.dead = true;
+      this.onDeath?.();
+    }
+  }
+
+  respawn(nowSec: number, world: World): void {
+    this.dead = false;
+    this.health = this.maxHealth;
+    this.invulnerableUntil = nowSec + 2.5;
+    this.position.set(0, 0, 4);
+    this.position.y = world.getHeightAt(0, 4) + 0.1;
+    this.velocity.set(0, 0, 0);
+  }
+
+  update(dt: number, input: PlayerInput, world: World): void {
+    if (this.dead) return;
+
+    const look = input.consumeLook();
+    this.yaw -= look.dx * LOOK_SENSITIVITY;
+    this.pitch = THREE.MathUtils.clamp(
+      this.pitch - look.dy * LOOK_SENSITIVITY,
+      CAMERA_MIN_PITCH,
+      CAMERA_MAX_PITCH
+    );
+
+    const forward = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
+    const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
+
+    const rawX = THREE.MathUtils.clamp(input.moveX, -1, 1);
+    const rawY = THREE.MathUtils.clamp(input.moveY, -1, 1);
+    const magnitude = Math.min(1, Math.hypot(rawX, rawY));
+
+    this.sprinting = magnitude > 0.85;
+    const speed = PLAYER_WALK_SPEED * (1 + (PLAYER_SPRINT_MULT - 1) * magnitude);
+
+    const moveDir = new THREE.Vector3()
+      .addScaledVector(forward, rawY)
+      .addScaledVector(right, rawX);
+    if (moveDir.lengthSq() > 1) moveDir.normalize();
+
+    this.velocity.x = moveDir.x * speed;
+    this.velocity.z = moveDir.z * speed;
+
+    if (input.consumeJump() && this.grounded) {
+      this.velocity.y = PLAYER_JUMP_SPEED;
+      this.grounded = false;
+    }
+    this.velocity.y -= GRAVITY * dt;
+
+    this.position.x += this.velocity.x * dt;
+    this.position.z += this.velocity.z * dt;
+
+    for (const c of world.colliders) {
+      const dx = this.position.x - c.position.x;
+      const dz = this.position.z - c.position.z;
+      const dist = Math.hypot(dx, dz);
+      const minDist = c.radius + PLAYER_RADIUS;
+      if (dist > 0.0001 && dist < minDist) {
+        const push = (minDist - dist) / dist;
+        this.position.x += dx * push;
+        this.position.z += dz * push;
+      }
+    }
+
+    const distFromCenter = Math.hypot(this.position.x, this.position.z);
+    const boundary = WORLD_RADIUS * 0.93;
+    if (distFromCenter > boundary) {
+      const s = boundary / distFromCenter;
+      this.position.x *= s;
+      this.position.z *= s;
+    }
+
+    this.position.y += this.velocity.y * dt;
+    const groundY = world.getHeightAt(this.position.x, this.position.z);
+    if (this.position.y <= groundY) {
+      this.position.y = groundY;
+      this.velocity.y = 0;
+      this.grounded = true;
+    } else {
+      this.grounded = false;
+    }
+
+    this.group.rotation.y = this.yaw;
+    this.shadow.position.set(this.position.x, groundY + 0.03, this.position.z);
+
+    this.eyePos.set(this.position.x, this.position.y + PLAYER_EYE_HEIGHT, this.position.z);
+    this.aimDir.set(
+      Math.sin(this.yaw) * Math.cos(this.pitch) * -1,
+      Math.sin(this.pitch),
+      Math.cos(this.yaw) * Math.cos(this.pitch) * -1
+    );
+  }
+
+  updateCamera(camera: THREE.PerspectiveCamera, world: World, dt: number): void {
+    const camDir = this.aimDir.clone().multiplyScalar(-1);
+    const desired = this.eyePos.clone().addScaledVector(camDir, CAMERA_DISTANCE);
+    desired.y += CAMERA_HEIGHT;
+
+    const groundY = world.getHeightAt(desired.x, desired.z);
+    desired.y = Math.max(desired.y, groundY + 0.5);
+
+    const smoothing = 1 - Math.pow(0.0008, dt);
+    camera.position.lerp(desired, smoothing);
+
+    const lookTarget = this.eyePos.clone().addScaledVector(this.aimDir, 8);
+    camera.lookAt(lookTarget);
+  }
+}
