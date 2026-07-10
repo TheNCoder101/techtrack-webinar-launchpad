@@ -30,13 +30,13 @@ export default defineConfig(({ mode }) => ({
           {
             urlPattern: ({ request }) => request.mode === "navigate",
             handler: "NetworkFirst",
-            options: { cacheName: "island-strike-pages" },
+            options: { cacheName: "elronite-pages" },
           },
         ],
       },
       manifest: {
-        name: "Island Strike",
-        short_name: "Island Strike",
+        name: "ElroNite",
+        short_name: "ElroNite",
         description: "Free-roam low-poly battle island shooter for mobile browsers.",
         theme_color: "#0a0f14",
         background_color: "#0a0f14",
