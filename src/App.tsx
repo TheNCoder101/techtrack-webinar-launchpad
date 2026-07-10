@@ -3,7 +3,7 @@ import GamePage from "./pages/GamePage";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
-  <BrowserRouter>
+  <BrowserRouter basename={import.meta.env.BASE_URL}>
     <Routes>
       <Route path="/" element={<GamePage />} />
       <Route path="*" element={<NotFound />} />
