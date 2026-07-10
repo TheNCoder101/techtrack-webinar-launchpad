@@ -2,9 +2,11 @@ import * as THREE from "three";
 import { BOT_MAX_HP, BOT_WANDER_SPEED, BOT_RESPAWN_TIME, WORLD_RADIUS } from "../core/constants";
 import { World } from "../world/World";
 import { createBlobShadow } from "../world/blobShadow";
+import { randomEnemySkin, type CharacterSkin } from "./skinDefs";
 
 const bodyGeo = new THREE.CapsuleGeometry(0.4, 0.9, 4, 8);
 const headGeo = new THREE.SphereGeometry(0.3, 10, 8);
+const helmetGeo = new THREE.SphereGeometry(0.35, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.65);
 
 const ATTACK_RANGE = 2.3;
 const ATTACK_COOLDOWN = 1.4;
@@ -16,8 +18,10 @@ export class Bot {
   group: THREE.Group;
   bodyMesh: THREE.Mesh;
   headMesh: THREE.Mesh;
+  helmetMesh: THREE.Mesh;
   bodyMat: THREE.MeshLambertMaterial;
   headMat: THREE.MeshLambertMaterial;
+  helmetMat: THREE.MeshLambertMaterial;
   shadow: THREE.Mesh;
 
   hp = BOT_MAX_HP;
@@ -28,17 +32,16 @@ export class Bot {
   attackCooldown = 0;
   hitFlashUntil = 0;
 
-  private baseBodyColor: THREE.Color;
-  private baseHeadColor: THREE.Color;
+  private baseBodyColor = new THREE.Color();
+  private baseHeadColor = new THREE.Color();
 
   constructor(id: number, scene: THREE.Scene) {
     this.id = id;
     this.group = new THREE.Group();
 
-    this.baseBodyColor = new THREE.Color().setHSL(0.02, 0.55, 0.42);
-    this.baseHeadColor = new THREE.Color().setHSL(0.07, 0.4, 0.5);
-    this.bodyMat = new THREE.MeshLambertMaterial({ color: this.baseBodyColor.clone() });
-    this.headMat = new THREE.MeshLambertMaterial({ color: this.baseHeadColor.clone() });
+    this.bodyMat = new THREE.MeshLambertMaterial();
+    this.headMat = new THREE.MeshLambertMaterial();
+    this.helmetMat = new THREE.MeshLambertMaterial();
 
     this.bodyMesh = new THREE.Mesh(bodyGeo, this.bodyMat);
     this.bodyMesh.position.y = 1.05;
@@ -50,13 +53,31 @@ export class Bot {
     this.headMesh.userData = { kind: "bot", refId: id };
     this.group.add(this.headMesh);
 
+    this.helmetMesh = new THREE.Mesh(helmetGeo, this.helmetMat);
+    this.helmetMesh.position.y = 1.7;
+    this.helmetMesh.userData = { kind: "bot", refId: id };
+    this.group.add(this.helmetMesh);
+
+    this.applySkin(randomEnemySkin());
+
     this.shadow = createBlobShadow(0.55);
     scene.add(this.shadow);
     scene.add(this.group);
   }
 
   get meshes(): THREE.Mesh[] {
-    return [this.bodyMesh, this.headMesh];
+    return [this.bodyMesh, this.headMesh, this.helmetMesh];
+  }
+
+  applySkin(skin: CharacterSkin): void {
+    this.baseBodyColor.set(skin.bodyColor);
+    this.baseHeadColor.set(skin.headColor);
+    this.bodyMat.color.copy(this.baseBodyColor);
+    this.headMat.color.copy(this.baseHeadColor);
+    this.helmetMesh.visible = skin.helmet;
+    if (skin.helmet) {
+      this.helmetMat.color.set(skin.helmetColor ?? 0x222222);
+    }
   }
 
   pickWanderTarget(): void {
@@ -71,6 +92,7 @@ export class Bot {
     this.hp = BOT_MAX_HP;
     this.group.visible = true;
     this.shadow.visible = true;
+    this.applySkin(randomEnemySkin());
     const angle = Math.random() * Math.PI * 2;
     const r = 20 + Math.random() * WORLD_RADIUS * 0.6;
     const x = Math.cos(angle) * r;

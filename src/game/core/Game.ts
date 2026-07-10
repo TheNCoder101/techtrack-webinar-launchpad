@@ -3,6 +3,7 @@ import { WORLD_RADIUS } from "./constants";
 import { World } from "../world/World";
 import { Player } from "../entities/Player";
 import { BotManager } from "../entities/BotManager";
+import type { CharacterSkin } from "../entities/skinDefs";
 import { WeaponSystem } from "../weapons/WeaponSystem";
 import { AirdropManager } from "../weapons/AirdropManager";
 import { WEAPON_DEFS } from "../weapons/weaponDefs";
@@ -56,7 +57,8 @@ export class Game {
     private canvas: HTMLCanvasElement,
     private input: InputManager,
     private hud: HUDController,
-    uiContainer: HTMLElement
+    uiContainer: HTMLElement,
+    playerSkin: CharacterSkin
   ) {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(
@@ -78,7 +80,7 @@ export class Game {
     this.world = new World(this.scene);
     this.world.build();
 
-    this.player = new Player(this.scene);
+    this.player = new Player(this.scene, playerSkin);
     this.player.onDamaged = () => {
       this.hud.pulseDamage();
       this.audio.playerHurt();

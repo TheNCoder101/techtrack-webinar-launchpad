@@ -17,6 +17,7 @@ import type { PlayerInput } from "../core/types";
 import { World } from "../world/World";
 import { createPlayerMesh } from "./playerMesh";
 import { createBlobShadow } from "../world/blobShadow";
+import { PLAYER_SKINS, type CharacterSkin } from "./skinDefs";
 
 export class Player {
   group: THREE.Group;
@@ -44,8 +45,8 @@ export class Player {
   onDamaged?: () => void;
   onDeath?: () => void;
 
-  constructor(scene: THREE.Scene) {
-    const { group, gunTip, gunGroup, pickaxeGroup } = createPlayerMesh();
+  constructor(scene: THREE.Scene, skin: CharacterSkin = PLAYER_SKINS[0]) {
+    const { group, gunTip, gunGroup, pickaxeGroup } = createPlayerMesh(skin);
     this.group = group;
     this.gunTip = gunTip;
     this.gunGroup = gunGroup;
