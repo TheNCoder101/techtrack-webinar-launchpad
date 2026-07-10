@@ -1,14 +1,12 @@
 import * as THREE from "three";
 import type { CharacterSkin } from "./skinDefs";
+import { buildHumanoid } from "./humanoid";
 
-const bodyGeo = new THREE.CapsuleGeometry(0.42, 1.0, 4, 8);
-const headGeo = new THREE.SphereGeometry(0.32, 10, 8);
-const packGeo = new THREE.BoxGeometry(0.5, 0.6, 0.28);
+const packGeo = new THREE.BoxGeometry(0.46, 0.5, 0.24);
 const gunBodyGeo = new THREE.BoxGeometry(0.14, 0.16, 0.7);
 const gunGripGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.28, 6);
 const pickHandleGeo = new THREE.CylinderGeometry(0.045, 0.045, 0.75, 6);
 const pickHeadGeo = new THREE.BoxGeometry(0.09, 0.09, 0.5);
-const helmetGeo = new THREE.SphereGeometry(0.37, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.65);
 
 export interface PlayerMeshParts {
   group: THREE.Group;
@@ -18,32 +16,15 @@ export interface PlayerMeshParts {
 }
 
 export function createPlayerMesh(skin: CharacterSkin): PlayerMeshParts {
-  const group = new THREE.Group();
-
-  const bodyMat = new THREE.MeshLambertMaterial({ color: skin.bodyColor });
-  const body = new THREE.Mesh(bodyGeo, bodyMat);
-  body.position.y = 1.15;
-  group.add(body);
-
-  const headMat = new THREE.MeshLambertMaterial({ color: skin.headColor });
-  const head = new THREE.Mesh(headGeo, headMat);
-  head.position.y = 1.85;
-  group.add(head);
-
-  if (skin.helmet) {
-    const helmetMat = new THREE.MeshLambertMaterial({ color: skin.helmetColor ?? 0x222222 });
-    const helmet = new THREE.Mesh(helmetGeo, helmetMat);
-    helmet.position.y = 1.85;
-    group.add(helmet);
-  }
+  const { group, rightHandAnchor } = buildHumanoid(skin);
 
   const packMat = new THREE.MeshLambertMaterial({ color: skin.packColor ?? 0x224a33 });
   const pack = new THREE.Mesh(packGeo, packMat);
-  pack.position.set(0, 1.25, 0.32);
+  pack.position.set(0, 1.35, 0.3);
   group.add(pack);
 
   const gunGroup = new THREE.Group();
-  gunGroup.position.set(0.32, 1.1, -0.25);
+  gunGroup.position.copy(rightHandAnchor);
   const gunMat = new THREE.MeshLambertMaterial({ color: 0x2a2a2e });
   const gunBody = new THREE.Mesh(gunBodyGeo, gunMat);
   gunBody.position.z = -0.2;
@@ -54,7 +35,7 @@ export function createPlayerMesh(skin: CharacterSkin): PlayerMeshParts {
   group.add(gunGroup);
 
   const pickaxeGroup = new THREE.Group();
-  pickaxeGroup.position.set(0.32, 1.1, -0.25);
+  pickaxeGroup.position.copy(rightHandAnchor);
   pickaxeGroup.rotation.x = -0.5;
   pickaxeGroup.visible = false;
   const pickMat = new THREE.MeshLambertMaterial({ color: 0x6b4a2f });
@@ -67,7 +48,8 @@ export function createPlayerMesh(skin: CharacterSkin): PlayerMeshParts {
   group.add(pickaxeGroup);
 
   const gunTip = new THREE.Object3D();
-  gunTip.position.set(0.32, 1.1, -0.6);
+  gunTip.position.copy(rightHandAnchor);
+  gunTip.position.z -= 0.55;
   group.add(gunTip);
 
   return { group, gunTip, gunGroup, pickaxeGroup };

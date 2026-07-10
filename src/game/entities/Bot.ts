@@ -3,10 +3,7 @@ import { BOT_MAX_HP, BOT_WANDER_SPEED, BOT_RESPAWN_TIME, WORLD_RADIUS } from "..
 import { World } from "../world/World";
 import { createBlobShadow } from "../world/blobShadow";
 import { randomEnemySkin, type CharacterSkin } from "./skinDefs";
-
-const bodyGeo = new THREE.CapsuleGeometry(0.4, 0.9, 4, 8);
-const headGeo = new THREE.SphereGeometry(0.3, 10, 8);
-const helmetGeo = new THREE.SphereGeometry(0.35, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.65);
+import { buildHumanoid, applyHumanoidSkin, type HumanoidBuild } from "./humanoid";
 
 const ATTACK_RANGE = 2.3;
 const ATTACK_COOLDOWN = 1.4;
@@ -16,13 +13,11 @@ const AGGRO_RANGE = 22;
 export class Bot {
   id: number;
   group: THREE.Group;
-  bodyMesh: THREE.Mesh;
-  headMesh: THREE.Mesh;
-  helmetMesh: THREE.Mesh;
-  bodyMat: THREE.MeshLambertMaterial;
-  headMat: THREE.MeshLambertMaterial;
-  helmetMat: THREE.MeshLambertMaterial;
   shadow: THREE.Mesh;
+
+  private humanoid: HumanoidBuild;
+  private baseBodyColor = new THREE.Color();
+  private baseHeadColor = new THREE.Color();
 
   hp = BOT_MAX_HP;
   alive = true;
@@ -32,33 +27,17 @@ export class Bot {
   attackCooldown = 0;
   hitFlashUntil = 0;
 
-  private baseBodyColor = new THREE.Color();
-  private baseHeadColor = new THREE.Color();
-
   constructor(id: number, scene: THREE.Scene) {
     this.id = id;
-    this.group = new THREE.Group();
+    this.humanoid = buildHumanoid(randomEnemySkin());
+    this.group = this.humanoid.group;
 
-    this.bodyMat = new THREE.MeshLambertMaterial();
-    this.headMat = new THREE.MeshLambertMaterial();
-    this.helmetMat = new THREE.MeshLambertMaterial();
+    for (const mesh of this.humanoid.hittableMeshes) {
+      mesh.userData = { kind: "bot", refId: id };
+    }
 
-    this.bodyMesh = new THREE.Mesh(bodyGeo, this.bodyMat);
-    this.bodyMesh.position.y = 1.05;
-    this.bodyMesh.userData = { kind: "bot", refId: id };
-    this.group.add(this.bodyMesh);
-
-    this.headMesh = new THREE.Mesh(headGeo, this.headMat);
-    this.headMesh.position.y = 1.7;
-    this.headMesh.userData = { kind: "bot", refId: id };
-    this.group.add(this.headMesh);
-
-    this.helmetMesh = new THREE.Mesh(helmetGeo, this.helmetMat);
-    this.helmetMesh.position.y = 1.7;
-    this.helmetMesh.userData = { kind: "bot", refId: id };
-    this.group.add(this.helmetMesh);
-
-    this.applySkin(randomEnemySkin());
+    this.baseBodyColor.copy(this.humanoid.bodyMat.color);
+    this.baseHeadColor.copy(this.humanoid.headMat.color);
 
     this.shadow = createBlobShadow(0.55);
     scene.add(this.shadow);
@@ -66,18 +45,13 @@ export class Bot {
   }
 
   get meshes(): THREE.Mesh[] {
-    return [this.bodyMesh, this.headMesh, this.helmetMesh];
+    return this.humanoid.hittableMeshes;
   }
 
   applySkin(skin: CharacterSkin): void {
-    this.baseBodyColor.set(skin.bodyColor);
-    this.baseHeadColor.set(skin.headColor);
-    this.bodyMat.color.copy(this.baseBodyColor);
-    this.headMat.color.copy(this.baseHeadColor);
-    this.helmetMesh.visible = skin.helmet;
-    if (skin.helmet) {
-      this.helmetMat.color.set(skin.helmetColor ?? 0x222222);
-    }
+    applyHumanoidSkin(this.humanoid, skin);
+    this.baseBodyColor.copy(this.humanoid.bodyMat.color);
+    this.baseHeadColor.copy(this.humanoid.headMat.color);
   }
 
   pickWanderTarget(): void {
@@ -105,8 +79,8 @@ export class Bot {
     if (!this.alive) return false;
     this.hp -= amount;
     this.hitFlashUntil = performance.now() / 1000 + 0.12;
-    this.bodyMat.color.set(0xffffff);
-    this.headMat.color.set(0xffffff);
+    this.humanoid.bodyMat.color.set(0xffffff);
+    this.humanoid.headMat.color.set(0xffffff);
     if (this.hp <= 0) {
       this.alive = false;
       this.group.visible = false;
@@ -129,9 +103,9 @@ export class Bot {
       return;
     }
 
-    if (nowSec >= this.hitFlashUntil && this.bodyMat.color.r > this.baseBodyColor.r) {
-      this.bodyMat.color.copy(this.baseBodyColor);
-      this.headMat.color.copy(this.baseHeadColor);
+    if (nowSec >= this.hitFlashUntil && this.humanoid.bodyMat.color.r > this.baseBodyColor.r) {
+      this.humanoid.bodyMat.color.copy(this.baseBodyColor);
+      this.humanoid.headMat.color.copy(this.baseHeadColor);
     }
 
     const pos = this.group.position;
