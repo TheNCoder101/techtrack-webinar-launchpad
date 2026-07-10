@@ -2,7 +2,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Game } from "@/game/core/Game";
 import { InputManager } from "@/game/core/InputManager";
 import { HUDController } from "@/game/ui/HUDController";
+import { PLAYER_SKINS } from "@/game/entities/skinDefs";
 import "@/game/ui/hud.css";
+
+const SKIN_STORAGE_KEY = "elronite-skin";
+
+function hexToCss(hex: number): string {
+  return `#${hex.toString(16).padStart(6, "0")}`;
+}
+
+function loadSavedSkinIndex(): number {
+  const saved = Number(localStorage.getItem(SKIN_STORAGE_KEY));
+  return Number.isInteger(saved) && saved >= 0 && saved < PLAYER_SKINS.length ? saved : 0;
+}
 
 export default function GamePage() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -13,6 +25,12 @@ export default function GamePage() {
   const hudRef = useRef<HUDController | null>(null);
 
   const [started, setStarted] = useState(false);
+  const [skinIndex, setSkinIndex] = useState(loadSavedSkinIndex);
+
+  const selectSkin = useCallback((index: number) => {
+    setSkinIndex(index);
+    localStorage.setItem(SKIN_STORAGE_KEY, String(index));
+  }, []);
 
   const handlePlay = useCallback(() => {
     const container = containerRef.current;
@@ -21,7 +39,7 @@ export default function GamePage() {
 
     const input = new InputManager(container);
     const hud = new HUDController(container);
-    const game = new Game(canvas, input, hud, container);
+    const game = new Game(canvas, input, hud, container, PLAYER_SKINS[skinIndex]);
 
     inputRef.current = input;
     hudRef.current = hud;
@@ -37,7 +55,7 @@ export default function GamePage() {
 
     game.start();
     setStarted(true);
-  }, []);
+  }, [skinIndex]);
 
   useEffect(() => {
     return () => {
@@ -58,6 +76,29 @@ export default function GamePage() {
             Free-roam a low-poly battle island. Swing a pickaxe to harvest wood &amp; stone,
             blast wandering raiders with your blaster, catch airdrops for SMGs, shotguns,
             snipers and heavies, and drop defensive walls to survive.
+          </div>
+          <div className="gj-skin-select">
+            {PLAYER_SKINS.map((skin, i) => (
+              <button
+                key={skin.id}
+                type="button"
+                className={`gj-skin-swatch${i === skinIndex ? " gj-skin-swatch-active" : ""}`}
+                onClick={() => selectSkin(i)}
+              >
+                <span
+                  className="gj-skin-swatch-body"
+                  style={{ background: hexToCss(skin.bodyColor) }}
+                >
+                  {skin.helmet && (
+                    <span
+                      className="gj-skin-swatch-helmet"
+                      style={{ background: hexToCss(skin.helmetColor ?? 0x222222) }}
+                    />
+                  )}
+                </span>
+                <span className="gj-skin-swatch-label">{skin.name}</span>
+              </button>
+            ))}
           </div>
           <button className="gj-play-btn" onClick={handlePlay}>
             ▶ PLAY

@@ -399,6 +399,58 @@
   line-height: 1.5;
 }
 
+.gj-skin-select {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.gj-skin-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+}
+
+.gj-skin-swatch-body {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  transition: border-color 0.15s ease, transform 0.1s ease;
+}
+
+.gj-skin-swatch-helmet {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 16px;
+  border-radius: 16px 16px 0 0;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-bottom: none;
+}
+
+.gj-skin-swatch-active .gj-skin-swatch-body {
+  border-color: #facc15;
+  transform: scale(1.1);
+  box-shadow: 0 0 14px rgba(250, 204, 21, 0.5);
+}
+
+.gj-skin-swatch-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  opacity: 0.85;
+}
+
 .gj-play-btn {
   padding: 16px 52px;
   font-size: 20px;
