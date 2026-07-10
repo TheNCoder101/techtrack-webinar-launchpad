@@ -9,6 +9,8 @@ export interface HUDState {
   ammo: number;
   reserve: number;
   reloading: boolean;
+  isMelee: boolean;
+  weaponName: string;
   score: number;
   kills: number;
 }
@@ -28,9 +30,12 @@ export class HUDController {
   private eliminatedBanner: HTMLDivElement;
   private minimapCanvas: HTMLCanvasElement;
   private minimapCtx: CanvasRenderingContext2D;
+  private weaponNameEl: HTMLDivElement;
+  private pickupToast: HTMLDivElement;
 
   private hitMarkerTimeout: number | null = null;
   private damageFlashTimeout: number | null = null;
+  private pickupToastTimeout: number | null = null;
 
   constructor(container: HTMLElement) {
     this.root = document.createElement("div");
@@ -56,9 +61,11 @@ export class HUDController {
         <canvas class="gj-minimap" width="140" height="140"></canvas>
       </div>
       <div class="gj-ammo">
+        <div class="gj-weapon-name">Blaster</div>
         <div class="gj-ammo-text">30 / 150</div>
         <div class="gj-reload-text"></div>
       </div>
+      <div class="gj-pickup-toast"></div>
     `;
 
     this.healthFill = this.root.querySelector(".gj-health-fill")!;
@@ -71,6 +78,8 @@ export class HUDController {
     this.eliminatedBanner = this.root.querySelector(".gj-eliminated")!;
     this.minimapCanvas = this.root.querySelector(".gj-minimap")!;
     this.minimapCtx = this.minimapCanvas.getContext("2d")!;
+    this.weaponNameEl = this.root.querySelector(".gj-weapon-name")!;
+    this.pickupToast = this.root.querySelector(".gj-pickup-toast")!;
   }
 
   update(state: HUDState): void {
@@ -82,8 +91,14 @@ export class HUDController {
     this.materialsText.textContent = String(state.materials);
     this.scoreText.textContent = `${state.score} (${state.kills} kills)`;
 
+    this.weaponNameEl.textContent = state.weaponName;
+
     const reloadEl = this.root.querySelector(".gj-reload-text") as HTMLDivElement;
-    if (state.reloading) {
+    if (state.isMelee) {
+      this.ammoText.style.opacity = "1";
+      reloadEl.textContent = "";
+      this.ammoText.textContent = "MELEE";
+    } else if (state.reloading) {
       this.ammoText.style.opacity = "0.35";
       reloadEl.textContent = "RELOADING…";
     } else {
@@ -91,6 +106,15 @@ export class HUDController {
       reloadEl.textContent = "";
       this.ammoText.textContent = `${state.ammo} / ${Math.floor(state.reserve)}`;
     }
+  }
+
+  showPickup(weaponName: string, isNew: boolean): void {
+    this.pickupToast.textContent = isNew ? `New weapon: ${weaponName}!` : `${weaponName} restocked`;
+    this.pickupToast.classList.add("gj-pickup-toast-active");
+    if (this.pickupToastTimeout) window.clearTimeout(this.pickupToastTimeout);
+    this.pickupToastTimeout = window.setTimeout(() => {
+      this.pickupToast.classList.remove("gj-pickup-toast-active");
+    }, 2200);
   }
 
   pulseHit(killed: boolean): void {
@@ -117,7 +141,11 @@ export class HUDController {
     this.eliminatedBanner.style.display = show ? "flex" : "none";
   }
 
-  drawMinimap(player: Player, botManager: BotManager): void {
+  drawMinimap(
+    player: Player,
+    botManager: BotManager,
+    airdropPos?: { x: number; z: number } | null
+  ): void {
     const ctx = this.minimapCtx;
     const size = 140;
     ctx.clearRect(0, 0, size, size);
@@ -152,6 +180,19 @@ export class HUDController {
       ctx.beginPath();
       ctx.arc(mx, my, 3.2, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    if (airdropPos) {
+      const [ax, ay] = toMap(airdropPos.x, airdropPos.z);
+      if (ax >= 0 && ax <= size && ay >= 0 && ay <= size) {
+        ctx.fillStyle = "#ffd166";
+        ctx.beginPath();
+        ctx.arc(ax, ay, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,0.8)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
     }
 
     ctx.save();

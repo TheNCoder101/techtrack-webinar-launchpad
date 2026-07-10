@@ -21,7 +21,7 @@ export default function GamePage() {
 
     const input = new InputManager(container);
     const hud = new HUDController(container);
-    const game = new Game(canvas, input, hud);
+    const game = new Game(canvas, input, hud, container);
 
     inputRef.current = input;
     hudRef.current = hud;
@@ -55,8 +55,9 @@ export default function GamePage() {
         <div className="gj-start-screen">
           <div className="gj-title">ELRONITE</div>
           <div className="gj-subtitle">
-            Free-roam a low-poly battle island. Harvest wood &amp; stone, blast wandering
-            raiders, and drop defensive walls to survive.
+            Free-roam a low-poly battle island. Swing a pickaxe to harvest wood &amp; stone,
+            blast wandering raiders with your blaster, catch airdrops for SMGs, shotguns,
+            snipers and heavies, and drop defensive walls to survive.
           </div>
           <button className="gj-play-btn" onClick={handlePlay}>
             ▶ PLAY
@@ -64,7 +65,8 @@ export default function GamePage() {
           <div className="gj-controls-help">
             <div>🕹️ Left thumb — move</div>
             <div>👉 Right side drag — look / aim</div>
-            <div>🔫 FIRE — shoot / harvest</div>
+            <div>🔫 FIRE — shoot / swing</div>
+            <div>🎒 Bottom slots — switch weapons</div>
             <div>⬆️ JUMP</div>
             <div>🧱 BUILD — place wall</div>
           </div>

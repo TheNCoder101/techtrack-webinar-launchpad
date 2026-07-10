@@ -91,4 +91,21 @@ export class AudioManager {
   botKill(): void {
     this.tone(500, 900, 0.18, "triangle", 0.25);
   }
+
+  pickaxeSwing(): void {
+    this.tone(220, 140, 0.09, "square", 0.18);
+  }
+
+  switchWeapon(): void {
+    this.tone(400, 600, 0.06, "square", 0.12);
+  }
+
+  pickupWeapon(): void {
+    this.tone(400, 800, 0.22, "triangle", 0.22);
+  }
+
+  airdropLand(): void {
+    this.noiseBurst(0.25, 0.22);
+    this.tone(160, 60, 0.3, "sawtooth", 0.2);
+  }
 }

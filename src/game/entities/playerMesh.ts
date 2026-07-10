@@ -5,10 +5,14 @@ const headGeo = new THREE.SphereGeometry(0.32, 10, 8);
 const packGeo = new THREE.BoxGeometry(0.5, 0.6, 0.28);
 const gunBodyGeo = new THREE.BoxGeometry(0.14, 0.16, 0.7);
 const gunGripGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.28, 6);
+const pickHandleGeo = new THREE.CylinderGeometry(0.045, 0.045, 0.75, 6);
+const pickHeadGeo = new THREE.BoxGeometry(0.09, 0.09, 0.5);
 
 export interface PlayerMeshParts {
   group: THREE.Group;
   gunTip: THREE.Object3D;
+  gunGroup: THREE.Group;
+  pickaxeGroup: THREE.Group;
 }
 
 export function createPlayerMesh(): PlayerMeshParts {
@@ -40,9 +44,22 @@ export function createPlayerMesh(): PlayerMeshParts {
   gunGroup.add(gunGrip);
   group.add(gunGroup);
 
+  const pickaxeGroup = new THREE.Group();
+  pickaxeGroup.position.set(0.32, 1.1, -0.25);
+  pickaxeGroup.rotation.x = -0.5;
+  pickaxeGroup.visible = false;
+  const pickMat = new THREE.MeshLambertMaterial({ color: 0x6b4a2f });
+  const pickHandle = new THREE.Mesh(pickHandleGeo, pickMat);
+  pickaxeGroup.add(pickHandle);
+  const pickHeadMat = new THREE.MeshLambertMaterial({ color: 0x9a9a9a });
+  const pickHead = new THREE.Mesh(pickHeadGeo, pickHeadMat);
+  pickHead.position.y = 0.4;
+  pickaxeGroup.add(pickHead);
+  group.add(pickaxeGroup);
+
   const gunTip = new THREE.Object3D();
   gunTip.position.set(0.32, 1.1, -0.6);
   group.add(gunTip);
 
-  return { group, gunTip };
+  return { group, gunTip, gunGroup, pickaxeGroup };
 }
