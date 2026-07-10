@@ -120,6 +120,43 @@
   border-color: rgba(147, 197, 253, 0.6);
 }
 
+.gj-weapon-bar {
+  position: absolute;
+  left: 50%;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  touch-action: none;
+}
+
+.gj-weapon-slot {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #fff;
+  background: rgba(20, 24, 30, 0.55);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  transition: transform 0.08s ease, border-color 0.12s ease;
+}
+
+.gj-weapon-slot-empty {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 13px;
+  background: rgba(20, 24, 30, 0.3);
+  border-style: dashed;
+}
+
+.gj-weapon-slot-active {
+  border-color: #facc15;
+  transform: translateY(-4px) scale(1.08);
+  box-shadow: 0 0 12px rgba(250, 204, 21, 0.5);
+}
+
 /* ---------- HUD overlay (non-interactive) ---------- */
 
 .gj-hud {
@@ -293,6 +330,36 @@
   font-weight: 700;
   color: #facc15;
   letter-spacing: 0.05em;
+}
+
+.gj-weapon-name {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.75;
+  margin-bottom: 2px;
+}
+
+.gj-pickup-toast {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  transform: translate(-50%, -50%);
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffd166;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 8px 16px;
+  border-radius: 10px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.gj-pickup-toast-active {
+  opacity: 1;
 }
 
 /* ---------- Start / orientation overlays (React-rendered) ---------- */

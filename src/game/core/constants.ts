@@ -37,3 +37,9 @@ export const BOT_RESPAWN_TIME = 6;
 export const TREE_COUNT = 46;
 export const ROCK_COUNT = 28;
 export const CRATE_COUNT = 10;
+
+export const AIRDROP_MIN_INTERVAL = 24;
+export const AIRDROP_MAX_INTERVAL = 42;
+export const AIRDROP_FALL_SPEED = 9;
+export const AIRDROP_SPAWN_HEIGHT = 55;
+export const AIRDROP_PICKUP_RADIUS = 2.4;

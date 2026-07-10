@@ -21,6 +21,8 @@ import { createBlobShadow } from "../world/blobShadow";
 export class Player {
   group: THREE.Group;
   gunTip: THREE.Object3D;
+  private gunGroup: THREE.Group;
+  private pickaxeGroup: THREE.Group;
   position: THREE.Vector3;
   velocity = new THREE.Vector3();
   yaw = 0;
@@ -43,9 +45,11 @@ export class Player {
   onDeath?: () => void;
 
   constructor(scene: THREE.Scene) {
-    const { group, gunTip } = createPlayerMesh();
+    const { group, gunTip, gunGroup, pickaxeGroup } = createPlayerMesh();
     this.group = group;
     this.gunTip = gunTip;
+    this.gunGroup = gunGroup;
+    this.pickaxeGroup = pickaxeGroup;
     this.position = group.position;
     this.position.set(0, 1, 4);
     scene.add(group);
@@ -72,6 +76,11 @@ export class Player {
     this.position.set(0, 0, 4);
     this.position.y = world.getHeightAt(0, 4) + 0.1;
     this.velocity.set(0, 0, 0);
+  }
+
+  setActiveWeaponVisual(isMelee: boolean): void {
+    this.pickaxeGroup.visible = isMelee;
+    this.gunGroup.visible = !isMelee;
   }
 
   update(dt: number, input: PlayerInput, world: World): void {
