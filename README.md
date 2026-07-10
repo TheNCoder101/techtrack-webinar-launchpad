@@ -1,4 +1,4 @@
-# Island Strike
+# ElroNite
 
 A free-roam, low-poly battle-island shooter built to run straight from a mobile
 browser (tested against iPhone 14 Pro / Mobile Safari). Built with

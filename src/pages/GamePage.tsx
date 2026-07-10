@@ -53,7 +53,7 @@ export default function GamePage() {
 
       {!started && (
         <div className="gj-start-screen">
-          <div className="gj-title">ISLAND STRIKE</div>
+          <div className="gj-title">ELRONITE</div>
           <div className="gj-subtitle">
             Free-roam a low-poly battle island. Harvest wood &amp; stone, blast wandering
             raiders, and drop defensive walls to survive.
