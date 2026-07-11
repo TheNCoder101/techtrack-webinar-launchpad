@@ -108,6 +108,7 @@ export class Game {
       const id = this.weapons.slots[index].id;
       this.player.setActiveWeaponVisual(id ? WEAPON_DEFS[id].isMelee : false);
     };
+    this.weapons.onMeleeSwing = () => this.player.triggerPickaxeSwing();
 
     this.buildingManager = new BuildingManager(this.scene, this.world);
 
@@ -173,6 +174,7 @@ export class Game {
     }
 
     this.player.updateCamera(this.camera, this.world, dt);
+    this.player.updateWeaponPose(dt, this.input.fireHeld && !this.player.dead);
     this.botManager.update(dt, nowSec, this.world, this.player.position);
     this.world.update(nowSec);
     this.weapons.update(
