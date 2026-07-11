@@ -52,7 +52,11 @@ export class Player {
   onDamaged?: () => void;
   onDeath?: () => void;
 
-  constructor(scene: THREE.Scene, skin: CharacterSkin = PLAYER_SKINS[0]) {
+  /** Multiplier applied on top of the base LOOK_SENSITIVITY constant, from GameSettings. */
+  private lookSensitivity: number;
+
+  constructor(scene: THREE.Scene, skin: CharacterSkin = PLAYER_SKINS[0], lookSensitivity = 1) {
+    this.lookSensitivity = lookSensitivity;
     const { group, gunTip, gunGroup, pickaxeGroup } = createPlayerMesh(skin);
     this.group = group;
     this.gunTip = gunTip;
@@ -117,9 +121,10 @@ export class Player {
     if (this.dead) return;
 
     const look = input.consumeLook();
-    this.yaw -= look.dx * LOOK_SENSITIVITY;
+    const sensitivity = LOOK_SENSITIVITY * this.lookSensitivity;
+    this.yaw -= look.dx * sensitivity;
     this.pitch = THREE.MathUtils.clamp(
-      this.pitch - look.dy * LOOK_SENSITIVITY,
+      this.pitch - look.dy * sensitivity,
       CAMERA_MIN_PITCH,
       CAMERA_MAX_PITCH
     );

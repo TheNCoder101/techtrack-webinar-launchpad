@@ -1,8 +1,18 @@
 // Tiny procedural SFX via WebAudio oscillators — no audio assets to
 // download, works offline, negligible CPU cost on mobile.
+const BASE_MASTER_GAIN = 0.35;
+
 export class AudioManager {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
+  private sfxVolume = 1;
+
+  /** 0-1 master SFX volume, driven by GameSettings.sfxVolume. Safe to call
+   *  before or after unlock() — applied immediately once the gain node exists. */
+  setSfxVolume(volume: number): void {
+    this.sfxVolume = Math.min(1, Math.max(0, volume));
+    if (this.master) this.master.gain.value = BASE_MASTER_GAIN * this.sfxVolume;
+  }
 
   unlock(): void {
     if (this.ctx) {
@@ -12,7 +22,7 @@ export class AudioManager {
     const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     this.ctx = new Ctx();
     this.master = this.ctx.createGain();
-    this.master.gain.value = 0.35;
+    this.master.gain.value = BASE_MASTER_GAIN * this.sfxVolume;
     this.master.connect(this.ctx.destination);
   }
 

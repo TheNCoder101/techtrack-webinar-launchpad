@@ -13,8 +13,22 @@ import { AudioManager } from "./AudioManager";
 import { InputManager } from "./InputManager";
 import { HUDController } from "../ui/HUDController";
 import { WeaponBar } from "../ui/WeaponBar";
+import {
+  QUALITY_TIERS,
+  hasExplicitQualityChoice,
+  saveSettings,
+  type GameSettings,
+} from "./Settings";
 
 const RESPAWN_DELAY = 3;
+
+// Auto perf-downgrade: sample real frame time for the first second or so of
+// gameplay, and if the device is visibly struggling while still sitting on
+// the untouched "medium" default, drop to "low" and persist it. Never
+// auto-upgrades, and never overrides a tier the player picked explicitly.
+const PERF_SAMPLE_MAX_FRAMES = 60;
+const PERF_SAMPLE_MIN_SECONDS = 1;
+const PERF_DOWNGRADE_FRAME_MS = 33; // ~30fps
 
 export class Game {
   private renderer: THREE.WebGLRenderer;
@@ -38,6 +52,11 @@ export class Game {
   private kills = 0;
   private respawnAt = 0;
 
+  private settings: GameSettings;
+  private perfSampleDone = false;
+  private perfSampleFrames = 0;
+  private perfSampleSeconds = 0;
+
   private onResize = (): void => {
     const { clientWidth, clientHeight } = this.canvas;
     this.camera.aspect = clientWidth / clientHeight;
@@ -58,8 +77,12 @@ export class Game {
     private input: InputManager,
     private hud: HUDController,
     uiContainer: HTMLElement,
-    playerSkin: CharacterSkin
+    playerSkin: CharacterSkin,
+    settings: GameSettings
   ) {
+    this.settings = { ...settings };
+    this.audio.setSfxVolume(this.settings.sfxVolume);
+
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(
       68,
@@ -73,14 +96,13 @@ export class Game {
       antialias: true,
       powerPreference: "high-performance",
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
-    this.renderer.shadowMap.enabled = false;
+    this.applyQualityTier();
 
     this.world = new World(this.scene);
     this.world.build();
 
-    this.player = new Player(this.scene, playerSkin);
+    this.player = new Player(this.scene, playerSkin, this.settings.lookSensitivity);
     this.player.onDamaged = () => {
       this.hud.pulseDamage();
       this.audio.playerHurt();
@@ -126,6 +148,42 @@ export class Game {
     document.addEventListener("visibilitychange", this.onVisibility);
   }
 
+  /** Applies the resolved QualitySettings for the current tier to the renderer.
+   *  Shadows stay disabled regardless of tier for now — this phase only wires
+   *  the flag through; real shadow rendering lands in a later phase. */
+  private applyQualityTier(): void {
+    const quality = QUALITY_TIERS[this.settings.qualityTier];
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, quality.pixelRatioCap));
+    this.renderer.shadowMap.enabled = false;
+  }
+
+  /** Accumulates real frame time for the first ~1s of gameplay. If the device
+   *  is struggling (sustained <30fps) while still on the untouched "medium"
+   *  default, auto-downgrades to "low" and persists it. Only ever downgrades,
+   *  never upgrades, and never overrides a tier the player picked explicitly.
+   *  Short-circuits after the first decision so it costs nothing thereafter. */
+  private samplePerf(dt: number): void {
+    if (this.perfSampleDone) return;
+
+    this.perfSampleFrames += 1;
+    this.perfSampleSeconds += dt;
+    if (this.perfSampleFrames < PERF_SAMPLE_MAX_FRAMES && this.perfSampleSeconds < PERF_SAMPLE_MIN_SECONDS) {
+      return;
+    }
+
+    this.perfSampleDone = true;
+    const avgFrameMs = (this.perfSampleSeconds / this.perfSampleFrames) * 1000;
+    if (
+      avgFrameMs > PERF_DOWNGRADE_FRAME_MS &&
+      this.settings.qualityTier === "medium" &&
+      !hasExplicitQualityChoice()
+    ) {
+      this.settings.qualityTier = "low";
+      saveSettings(this.settings);
+      this.applyQualityTier();
+    }
+  }
+
   start(): void {
     if (this.running) return;
     this.running = true;
@@ -160,6 +218,8 @@ export class Game {
 
     const dt = Math.min(this.clock.getDelta(), 0.05);
     const nowSec = performance.now() / 1000;
+
+    this.samplePerf(dt);
 
     if (this.player.dead) {
       if (nowSec >= this.respawnAt) {

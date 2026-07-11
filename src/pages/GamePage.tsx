@@ -3,9 +3,17 @@ import { Game } from "@/game/core/Game";
 import { InputManager } from "@/game/core/InputManager";
 import { HUDController } from "@/game/ui/HUDController";
 import { PLAYER_SKINS } from "@/game/entities/skinDefs";
+import {
+  loadSettings,
+  saveSettings,
+  markQualityTierExplicit,
+  type GameSettings,
+  type QualityTier,
+} from "@/game/core/Settings";
 import "@/game/ui/hud.css";
 
 const SKIN_STORAGE_KEY = "elronite-skin";
+const QUALITY_TIER_OPTIONS: QualityTier[] = ["low", "medium", "high"];
 
 function hexToCss(hex: number): string {
   return `#${hex.toString(16).padStart(6, "0")}`;
@@ -26,10 +34,36 @@ export default function GamePage() {
 
   const [started, setStarted] = useState(false);
   const [skinIndex, setSkinIndex] = useState(loadSavedSkinIndex);
+  const [settings, setSettings] = useState<GameSettings>(loadSettings);
 
   const selectSkin = useCallback((index: number) => {
     setSkinIndex(index);
     localStorage.setItem(SKIN_STORAGE_KEY, String(index));
+  }, []);
+
+  const selectQualityTier = useCallback((tier: QualityTier) => {
+    setSettings((prev) => {
+      const next = { ...prev, qualityTier: tier };
+      saveSettings(next);
+      markQualityTierExplicit();
+      return next;
+    });
+  }, []);
+
+  const updateLookSensitivity = useCallback((value: number) => {
+    setSettings((prev) => {
+      const next = { ...prev, lookSensitivity: value };
+      saveSettings(next);
+      return next;
+    });
+  }, []);
+
+  const updateSfxVolume = useCallback((value: number) => {
+    setSettings((prev) => {
+      const next = { ...prev, sfxVolume: value };
+      saveSettings(next);
+      return next;
+    });
   }, []);
 
   const handlePlay = useCallback(() => {
@@ -39,7 +73,7 @@ export default function GamePage() {
 
     const input = new InputManager(container);
     const hud = new HUDController(container);
-    const game = new Game(canvas, input, hud, container, PLAYER_SKINS[skinIndex]);
+    const game = new Game(canvas, input, hud, container, PLAYER_SKINS[skinIndex], settings);
 
     inputRef.current = input;
     hudRef.current = hud;
@@ -55,7 +89,7 @@ export default function GamePage() {
 
     game.start();
     setStarted(true);
-  }, [skinIndex]);
+  }, [skinIndex, settings]);
 
   useEffect(() => {
     return () => {
@@ -100,6 +134,52 @@ export default function GamePage() {
               </button>
             ))}
           </div>
+
+          <div className="gj-settings-section">
+            <div className="gj-settings-title">Settings</div>
+
+            <div className="gj-quality-picker">
+              {QUALITY_TIER_OPTIONS.map((tier) => (
+                <button
+                  key={tier}
+                  type="button"
+                  className={`gj-quality-btn${settings.qualityTier === tier ? " gj-quality-btn-active" : ""}`}
+                  onClick={() => selectQualityTier(tier)}
+                >
+                  {tier.charAt(0).toUpperCase() + tier.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            <label className="gj-slider-row">
+              <span className="gj-slider-label">Look Sensitivity</span>
+              <input
+                className="gj-slider-input"
+                type="range"
+                min={0.5}
+                max={2}
+                step={0.05}
+                value={settings.lookSensitivity}
+                onChange={(e) => updateLookSensitivity(Number(e.target.value))}
+              />
+              <span className="gj-slider-value">{settings.lookSensitivity.toFixed(2)}x</span>
+            </label>
+
+            <label className="gj-slider-row">
+              <span className="gj-slider-label">SFX Volume</span>
+              <input
+                className="gj-slider-input"
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={settings.sfxVolume}
+                onChange={(e) => updateSfxVolume(Number(e.target.value))}
+              />
+              <span className="gj-slider-value">{Math.round(settings.sfxVolume * 100)}%</span>
+            </label>
+          </div>
+
           <button className="gj-play-btn" onClick={handlePlay}>
             ▶ PLAY
           </button>

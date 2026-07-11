@@ -379,6 +379,12 @@
   font-family: system-ui, -apple-system, sans-serif;
   text-align: center;
   padding: 24px;
+  /* Settings + skin-select can make this taller than short landscape
+     viewports (e.g. phones in landscape); scroll within the overlay itself
+     rather than silently clipping content against gj-game-root's overflow:hidden. */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .gj-title {
@@ -448,6 +454,80 @@
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.03em;
+  opacity: 0.85;
+}
+
+.gj-settings-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 320px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 14px 18px;
+}
+
+.gj-settings-title {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.gj-quality-picker {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.gj-quality-btn {
+  flex: 1;
+  padding: 8px 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+
+.gj-quality-btn-active {
+  color: #14202a;
+  background: #facc15;
+  border-color: #facc15;
+}
+
+.gj-slider-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.gj-slider-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  opacity: 0.85;
+}
+
+.gj-slider-input {
+  width: 100%;
+}
+
+.gj-slider-value {
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 38px;
+  text-align: right;
   opacity: 0.85;
 }
 
