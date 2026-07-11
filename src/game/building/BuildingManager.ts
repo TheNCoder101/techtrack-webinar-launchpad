@@ -37,6 +37,7 @@ export class BuildingManager {
     mesh.userData = { kind: "wall" };
     this.scene.add(mesh);
     this.world.raycastTargets.push(mesh);
+    this.world.raycastTargetsDirty = true;
 
     const collider: Collider = {
       position: new THREE.Vector3(pos.x, pos.y, pos.z),
@@ -62,5 +63,6 @@ export class BuildingManager {
     if (ci >= 0) this.world.colliders.splice(ci, 1);
     const ti = this.world.raycastTargets.indexOf(wall.mesh);
     if (ti >= 0) this.world.raycastTargets.splice(ti, 1);
+    this.world.raycastTargetsDirty = true;
   }
 }

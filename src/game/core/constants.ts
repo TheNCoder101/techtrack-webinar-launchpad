@@ -34,9 +34,14 @@ export const BOT_MAX_HP = 45;
 export const BOT_WANDER_SPEED = 2.1;
 export const BOT_RESPAWN_TIME = 6;
 
-export const TREE_COUNT = 46;
-export const ROCK_COUNT = 28;
-export const CRATE_COUNT = 10;
+// Base (high-tier) prop counts. Instancing (Phase 3) flattened prop draw
+// calls to one per geometry, so these were raised ~1.6-1.7x from the original
+// per-object-Group era; QualitySettings.propDrawDistance further scales the
+// *placed* count down on lower tiers (see World.scatterProps).
+export const TREE_COUNT = 78;
+export const ROCK_COUNT = 48;
+export const CRATE_COUNT = 16;
+export const SHACK_COUNT = 8;
 
 export const AIRDROP_MIN_INTERVAL = 24;
 export const AIRDROP_MAX_INTERVAL = 42;

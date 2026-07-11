@@ -62,6 +62,10 @@ export class WeaponSystem {
   private cooldown = 0;
   private raycaster = new THREE.Raycaster();
   private tracers: Tracer[] = [];
+  // Merged [...world.raycastTargets, ...botManager.raycastTargets] array,
+  // rebuilt only when World.raycastTargetsDirty is set (wall add/remove) —
+  // instead of allocating a fresh array on every single shot/swing.
+  private cachedTargets: THREE.Object3D[] = [];
 
   onHitBot?: () => void;
   onKillBot?: () => void;
@@ -226,10 +230,16 @@ export class WeaponSystem {
     player: Player
   ): boolean {
     const ud = hit.object.userData as HitUserData;
+    // Non-instanced hits (bots, walls, terrain) carry a plain `refId`.
+    // InstancedMesh hits (trees, rocks) carry `refIds` indexed by the
+    // raycast intersection's `instanceId`, resolved here so the rest of
+    // this method's dispatch logic — and its external behavior (damage,
+    // particles, audio) — is unchanged from the pre-instancing version.
+    const refId = ud.refIds ? ud.refIds[hit.instanceId ?? -1] : ud.refId;
 
     if (ud.kind === "bot") {
-      if (ud.refId === undefined || !botManager.isAlive(ud.refId)) return false;
-      const killed = botManager.damage(ud.refId, def.damage);
+      if (refId === undefined || !botManager.isAlive(refId)) return false;
+      const killed = botManager.damage(refId, def.damage);
       particles.burst(hit.point, COLOR_BLOOD, 12, 4.5, 1, 9, 0.4);
       this.onHitBot?.();
       if (killed) {
@@ -238,20 +248,20 @@ export class WeaponSystem {
       } else {
         audio.hitBot();
       }
-      this.applySplash(def, hit.point, ud.refId, botManager, particles, audio);
+      this.applySplash(def, hit.point, refId, botManager, particles, audio);
       return true;
     }
 
     if (ud.kind === "harvestable") {
-      if (ud.refId === undefined) return false;
-      const h = world.getHarvestable(ud.refId);
+      if (refId === undefined) return false;
+      const h = world.getHarvestable(refId);
       if (!h || !h.alive) return false;
       if (!def.canHarvest) {
         particles.burst(hit.point, COLOR_SPARK, 6, 3, 0.9, 5, 0.3);
         audio.impact();
         return true;
       }
-      const gained = world.harvest(ud.refId);
+      const gained = world.harvest(refId);
       player.materials += gained;
       particles.burst(hit.point, h.kind === "tree" ? COLOR_WOOD : COLOR_STONE, 10, 3.5, 1, 6, 0.4);
       audio.harvestHit();
@@ -261,6 +271,18 @@ export class WeaponSystem {
     particles.burst(hit.point, ud.kind === "terrain" ? COLOR_DUST : COLOR_SPARK, 7, 3, 0.9, 5, 0.3);
     audio.impact();
     return true;
+  }
+
+  /** Returns the merged raycast target list, rebuilding it only when
+   *  `world.raycastTargetsDirty` is set (BuildingManager wall add/remove).
+   *  Previously this array was reallocated from scratch on every shot and
+   *  every melee swing. */
+  private getRaycastTargets(world: World, botManager: BotManager): THREE.Object3D[] {
+    if (world.raycastTargetsDirty) {
+      this.cachedTargets = [...world.raycastTargets, ...botManager.raycastTargets];
+      world.raycastTargetsDirty = false;
+    }
+    return this.cachedTargets;
   }
 
   private applySplash(
@@ -307,7 +329,7 @@ export class WeaponSystem {
 
     particles.burst(gunTipWorld, COLOR_MUZZLE, 4, 2.5, 0.5, 1, 0.1);
 
-    const targets = [...world.raycastTargets, ...botManager.raycastTargets];
+    const targets = this.getRaycastTargets(world, botManager);
     this.raycaster.far = def.range;
 
     for (let p = 0; p < def.pellets; p++) {
@@ -357,7 +379,7 @@ export class WeaponSystem {
     this.raycaster.set(origin, dir);
     this.raycaster.far = def.range;
 
-    const targets = [...world.raycastTargets, ...botManager.raycastTargets];
+    const targets = this.getRaycastTargets(world, botManager);
     const hits = this.raycaster.intersectObjects(targets, false);
 
     for (const hit of hits) {

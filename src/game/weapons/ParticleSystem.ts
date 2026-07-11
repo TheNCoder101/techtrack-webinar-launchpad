@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-const MAX_PARTICLES = 220;
+const DEFAULT_MAX_PARTICLES = 220;
 
 interface ParticleSlot {
   active: boolean;
@@ -29,6 +29,7 @@ function makeDotTexture(): THREE.CanvasTexture {
 // pool, no per-spawn allocation) used for hit sparks, muzzle flash and
 // harvest debris.
 export class ParticleSystem {
+  private maxParticles: number;
   private geometry: THREE.BufferGeometry;
   private points: THREE.Points;
   private positions: Float32Array;
@@ -36,10 +37,11 @@ export class ParticleSystem {
   private sizes: Float32Array;
   private slots: ParticleSlot[] = [];
 
-  constructor(scene: THREE.Scene) {
-    this.positions = new Float32Array(MAX_PARTICLES * 3);
-    this.colors = new Float32Array(MAX_PARTICLES * 3);
-    this.sizes = new Float32Array(MAX_PARTICLES);
+  constructor(scene: THREE.Scene, maxParticles: number = DEFAULT_MAX_PARTICLES) {
+    this.maxParticles = maxParticles;
+    this.positions = new Float32Array(this.maxParticles * 3);
+    this.colors = new Float32Array(this.maxParticles * 3);
+    this.sizes = new Float32Array(this.maxParticles);
 
     this.geometry = new THREE.BufferGeometry();
     this.geometry.setAttribute("position", new THREE.BufferAttribute(this.positions, 3));
@@ -80,7 +82,7 @@ export class ParticleSystem {
     this.points.frustumCulled = false;
     scene.add(this.points);
 
-    for (let i = 0; i < MAX_PARTICLES; i++) {
+    for (let i = 0; i < this.maxParticles; i++) {
       this.slots.push({
         active: false,
         velocity: new THREE.Vector3(),
@@ -103,7 +105,7 @@ export class ParticleSystem {
     life = 0.5
   ): void {
     let spawned = 0;
-    for (let i = 0; i < MAX_PARTICLES && spawned < count; i++) {
+    for (let i = 0; i < this.maxParticles && spawned < count; i++) {
       const slot = this.slots[i];
       if (slot.active) continue;
 
@@ -134,7 +136,7 @@ export class ParticleSystem {
 
   update(dt: number): void {
     let anyActive = false;
-    for (let i = 0; i < MAX_PARTICLES; i++) {
+    for (let i = 0; i < this.maxParticles; i++) {
       const slot = this.slots[i];
       if (!slot.active) continue;
       anyActive = true;

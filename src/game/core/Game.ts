@@ -100,7 +100,7 @@ export class Game {
     this.applyQualityTier();
 
     this.world = new World(this.scene);
-    this.world.build();
+    this.world.build(QUALITY_TIERS[this.settings.qualityTier]);
 
     this.player = new Player(this.scene, playerSkin, this.settings.lookSensitivity);
     this.player.onDamaged = () => {
@@ -121,7 +121,7 @@ export class Game {
       this.kills += 1;
     };
 
-    this.particles = new ParticleSystem(this.scene);
+    this.particles = new ParticleSystem(this.scene, QUALITY_TIERS[this.settings.qualityTier].particlePoolSize);
 
     this.weapons = new WeaponSystem(this.scene);
     this.weapons.onHitBot = () => this.hud.pulseHit(false);
