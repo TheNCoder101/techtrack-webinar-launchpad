@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { CharacterSkin } from "./skinDefs";
-import { buildHumanoid } from "./humanoid";
+import { buildHumanoid, type HumanoidBuild } from "./humanoid";
 
 const packGeo = new THREE.BoxGeometry(0.46, 0.5, 0.24);
 const gunBodyGeo = new THREE.BoxGeometry(0.14, 0.16, 0.7);
@@ -13,10 +13,13 @@ export interface PlayerMeshParts {
   gunTip: THREE.Object3D;
   gunGroup: THREE.Group;
   pickaxeGroup: THREE.Group;
+  /** Shared humanoid rig, exposed so the player can drive walk-cycle/lean animation. */
+  humanoid: HumanoidBuild;
 }
 
 export function createPlayerMesh(skin: CharacterSkin): PlayerMeshParts {
-  const { group, rightHandAnchor } = buildHumanoid(skin);
+  const humanoid = buildHumanoid(skin);
+  const { group, rightHandAnchor } = humanoid;
 
   const packMat = new THREE.MeshLambertMaterial({ color: skin.packColor ?? 0x224a33 });
   const pack = new THREE.Mesh(packGeo, packMat);
@@ -52,5 +55,5 @@ export function createPlayerMesh(skin: CharacterSkin): PlayerMeshParts {
   gunTip.position.z -= 0.55;
   group.add(gunTip);
 
-  return { group, gunTip, gunGroup, pickaxeGroup };
+  return { group, gunTip, gunGroup, pickaxeGroup, humanoid };
 }

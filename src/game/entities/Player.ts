@@ -18,12 +18,14 @@ import { World } from "../world/World";
 import { createPlayerMesh } from "./playerMesh";
 import { createBlobShadow } from "../world/blobShadow";
 import { PLAYER_SKINS, type CharacterSkin } from "./skinDefs";
+import { animateHumanoidLocomotion, type HumanoidBuild } from "./humanoid";
 
 export class Player {
   group: THREE.Group;
   gunTip: THREE.Object3D;
   private gunGroup: THREE.Group;
   private pickaxeGroup: THREE.Group;
+  private humanoid: HumanoidBuild;
   position: THREE.Vector3;
   velocity = new THREE.Vector3();
   yaw = 0;
@@ -49,6 +51,13 @@ export class Player {
   private static readonly GUN_REST_ANGLE = 0.55;
   private static readonly GUN_AIM_ANGLE = 0.05;
 
+  private locomotionPhase = 0;
+  private landingSquashT = 1;
+  private static readonly LANDING_SQUASH_DURATION = 0.16;
+  private static readonly LANDING_SQUASH_AMOUNT = 0.16;
+  private static readonly AIM_LEAN_FACTOR = 0.14;
+  private static readonly AIM_LEAN_MAX = 0.12;
+
   onDamaged?: () => void;
   onDeath?: () => void;
 
@@ -57,11 +66,12 @@ export class Player {
 
   constructor(scene: THREE.Scene, skin: CharacterSkin = PLAYER_SKINS[0], lookSensitivity = 1) {
     this.lookSensitivity = lookSensitivity;
-    const { group, gunTip, gunGroup, pickaxeGroup } = createPlayerMesh(skin);
+    const { group, gunTip, gunGroup, pickaxeGroup, humanoid } = createPlayerMesh(skin);
     this.group = group;
     this.gunTip = gunTip;
     this.gunGroup = gunGroup;
     this.pickaxeGroup = pickaxeGroup;
+    this.humanoid = humanoid;
     this.position = group.position;
     this.position.set(0, 1, 4);
     scene.add(group);
@@ -119,6 +129,8 @@ export class Player {
 
   update(dt: number, input: PlayerInput, world: World): void {
     if (this.dead) return;
+
+    const wasGrounded = this.grounded;
 
     const look = input.consumeLook();
     const sensitivity = LOOK_SENSITIVITY * this.lookSensitivity;
@@ -185,6 +197,9 @@ export class Player {
     } else {
       this.grounded = false;
     }
+    if (!wasGrounded && this.grounded) {
+      this.landingSquashT = 0;
+    }
 
     this.group.rotation.y = this.yaw;
     this.shadow.position.set(this.position.x, groundY + 0.03, this.position.z);
@@ -195,6 +210,36 @@ export class Player {
       Math.sin(this.pitch),
       Math.cos(this.yaw) * Math.cos(this.pitch) * -1
     );
+
+    // Walk-cycle: phase advances faster the closer the player is to max speed.
+    const horizSpeed = Math.hypot(this.velocity.x, this.velocity.z);
+    const maxSpeed = PLAYER_WALK_SPEED * PLAYER_SPRINT_MULT;
+    const speedT = THREE.MathUtils.clamp(horizSpeed / maxSpeed, 0, 1);
+    const strideHz = 1.7 + speedT * 1.6;
+    this.locomotionPhase += dt * strideHz * Math.PI * 2;
+    animateHumanoidLocomotion(this.humanoid, speedT, this.locomotionPhase, dt);
+
+    // Aim-lean: subtle torso tilt toward the current pitch (looking up leans
+    // back, looking down leans forward).
+    const leanTarget = THREE.MathUtils.clamp(
+      this.pitch * Player.AIM_LEAN_FACTOR,
+      -Player.AIM_LEAN_MAX,
+      Player.AIM_LEAN_MAX
+    );
+    this.humanoid.torsoMesh.rotation.x = THREE.MathUtils.lerp(
+      this.humanoid.torsoMesh.rotation.x,
+      leanTarget,
+      Math.min(1, dt * 8)
+    );
+
+    // Landing squash: a brief scale pulse on the false->true grounded transition.
+    if (this.landingSquashT < 1) {
+      this.landingSquashT = Math.min(1, this.landingSquashT + dt / Player.LANDING_SQUASH_DURATION);
+    }
+    const squashArc = Math.sin(Math.min(this.landingSquashT, 1) * Math.PI);
+    const squashY = 1 - Player.LANDING_SQUASH_AMOUNT * squashArc;
+    const squashXZ = 1 + Player.LANDING_SQUASH_AMOUNT * 0.5 * squashArc;
+    this.group.scale.set(squashXZ, squashY, squashXZ);
   }
 
   updateCamera(camera: THREE.PerspectiveCamera, world: World, dt: number): void {

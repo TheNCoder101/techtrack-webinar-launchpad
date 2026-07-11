@@ -3,7 +3,12 @@ import { BOT_MAX_HP, BOT_WANDER_SPEED, BOT_RESPAWN_TIME, WORLD_RADIUS } from "..
 import { World } from "../world/World";
 import { createBlobShadow } from "../world/blobShadow";
 import { randomEnemySkin, type CharacterSkin } from "./skinDefs";
-import { buildHumanoid, applyHumanoidSkin, type HumanoidBuild } from "./humanoid";
+import {
+  buildHumanoid,
+  applyHumanoidSkin,
+  animateHumanoidLocomotion,
+  type HumanoidBuild,
+} from "./humanoid";
 
 const ATTACK_RANGE = 2.3;
 const ATTACK_COOLDOWN = 1.4;
@@ -18,6 +23,7 @@ export class Bot {
   private humanoid: HumanoidBuild;
   private baseBodyColor = new THREE.Color();
   private baseHeadColor = new THREE.Color();
+  private locomotionPhase = 0;
 
   hp = BOT_MAX_HP;
   alive = true;
@@ -133,15 +139,22 @@ export class Bot {
     const toTarget = new THREE.Vector3().subVectors(moveTarget, pos);
     toTarget.y = 0;
     const dist = toTarget.length();
+    const maxBotSpeed = BOT_WANDER_SPEED * 1.7;
+    let speedT = 0;
     if (dist > 0.4) {
       toTarget.normalize();
-      const speed = distToPlayer < AGGRO_RANGE ? BOT_WANDER_SPEED * 1.7 : BOT_WANDER_SPEED;
+      const speed = distToPlayer < AGGRO_RANGE ? maxBotSpeed : BOT_WANDER_SPEED;
       pos.x += toTarget.x * speed * dt;
       pos.z += toTarget.z * speed * dt;
       this.group.rotation.y = Math.atan2(toTarget.x, toTarget.z);
+      speedT = speed / maxBotSpeed;
     }
 
     pos.y = world.getHeightAt(pos.x, pos.z);
     this.shadow.position.set(pos.x, pos.y + 0.03, pos.z);
+
+    const strideHz = 1.6 + speedT * 1.6;
+    this.locomotionPhase += dt * strideHz * Math.PI * 2;
+    animateHumanoidLocomotion(this.humanoid, speedT, this.locomotionPhase, dt);
   }
 }
