@@ -36,7 +36,7 @@ export function createPlayerMesh(skin: CharacterSkin): PlayerMeshParts {
 
   const pickaxeGroup = new THREE.Group();
   pickaxeGroup.position.copy(rightHandAnchor);
-  pickaxeGroup.rotation.x = -0.5;
+  pickaxeGroup.rotation.x = -0.9;
   pickaxeGroup.visible = false;
   const pickMat = new THREE.MeshLambertMaterial({ color: 0x6b4a2f });
   const pickHandle = new THREE.Mesh(pickHandleGeo, pickMat);

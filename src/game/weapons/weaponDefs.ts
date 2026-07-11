@@ -39,7 +39,7 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
     clipSize: 0,
     reserveMax: 0,
     reloadTime: 0,
-    range: 2.6,
+    range: 3.4,
     pellets: 1,
     spread: 0,
     splashRadius: 0,

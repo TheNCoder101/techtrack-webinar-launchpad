@@ -66,6 +66,7 @@ export class WeaponSystem {
   onHitBot?: () => void;
   onKillBot?: () => void;
   onSwitch?: (index: number) => void;
+  onMeleeSwing?: () => void;
 
   constructor(private scene: THREE.Scene) {
     this.slots = new Array(WEAPON_SLOT_COUNT).fill(null).map((_, i) => {
@@ -345,8 +346,12 @@ export class WeaponSystem {
     player: Player
   ): void {
     audio.pickaxeSwing();
+    this.onMeleeSwing?.();
 
-    const origin = camera.position.clone();
+    // Melee range is short (~3 units), so the ray must start at the player's
+    // body, not the camera — the camera sits ~5.5 units behind the player
+    // (CAMERA_DISTANCE), which alone exceeds the swing's reach.
+    const origin = player.eyePos.clone();
     const dir = new THREE.Vector3();
     camera.getWorldDirection(dir);
     this.raycaster.set(origin, dir);

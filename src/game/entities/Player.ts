@@ -42,6 +42,13 @@ export class Player {
 
   private shadow: THREE.Mesh;
 
+  private pickaxeSwingT = 1;
+  private static readonly PICKAXE_REST_ANGLE = -0.9;
+  private static readonly PICKAXE_STRIKE_ANGLE = 0.55;
+  private static readonly PICKAXE_SWING_DURATION = 0.32;
+  private static readonly GUN_REST_ANGLE = 0.55;
+  private static readonly GUN_AIM_ANGLE = 0.05;
+
   onDamaged?: () => void;
   onDeath?: () => void;
 
@@ -82,6 +89,28 @@ export class Player {
   setActiveWeaponVisual(isMelee: boolean): void {
     this.pickaxeGroup.visible = isMelee;
     this.gunGroup.visible = !isMelee;
+  }
+
+  /** Kicks off a one-shot swing arc; called each time the pickaxe actually connects/swings. */
+  triggerPickaxeSwing(): void {
+    this.pickaxeSwingT = 0;
+  }
+
+  /** Raises the gun toward an aiming pose while firing, and animates the pickaxe swing arc. */
+  updateWeaponPose(dt: number, firing: boolean): void {
+    const targetGunAngle = firing ? Player.GUN_AIM_ANGLE : Player.GUN_REST_ANGLE;
+    this.gunGroup.rotation.x = THREE.MathUtils.lerp(
+      this.gunGroup.rotation.x,
+      targetGunAngle,
+      Math.min(1, dt * 12)
+    );
+
+    if (this.pickaxeSwingT < 1) {
+      this.pickaxeSwingT = Math.min(1, this.pickaxeSwingT + dt / Player.PICKAXE_SWING_DURATION);
+    }
+    const arc = Math.sin(this.pickaxeSwingT * Math.PI);
+    this.pickaxeGroup.rotation.x =
+      Player.PICKAXE_REST_ANGLE + (Player.PICKAXE_STRIKE_ANGLE - Player.PICKAXE_REST_ANGLE) * arc;
   }
 
   update(dt: number, input: PlayerInput, world: World): void {
