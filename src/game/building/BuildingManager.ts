@@ -34,6 +34,9 @@ export class BuildingManager {
     const mesh = new THREE.Mesh(wallGeo, wallMat);
     mesh.position.copy(pos);
     mesh.rotation.y = snappedYaw;
+    // Inert unless a quality tier enables shadow mapping (none do by default).
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
     mesh.userData = { kind: "wall" };
     this.scene.add(mesh);
     this.world.raycastTargets.push(mesh);

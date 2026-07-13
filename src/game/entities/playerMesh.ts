@@ -55,5 +55,10 @@ export function createPlayerMesh(skin: CharacterSkin): PlayerMeshParts {
   gunTip.position.z -= 0.55;
   group.add(gunTip);
 
+  // Inert unless a quality tier enables shadow mapping (see humanoid.ts).
+  for (const mesh of [pack, gunBody, gunGrip, pickHandle, pickHead]) {
+    mesh.castShadow = true;
+  }
+
   return { group, gunTip, gunGroup, pickaxeGroup, humanoid };
 }

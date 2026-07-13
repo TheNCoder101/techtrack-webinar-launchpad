@@ -35,6 +35,24 @@ void main() {
 }
 `;
 
+// --- Sun shadow frustum ----------------------------------------------------
+// Direction from any point toward the sun; must match buildLights' original
+// sun position (120, 180, 80) relative to its (0,0,0) target so that moving
+// the light along this axis (to follow the player) never changes the actual
+// lighting direction — a DirectionalLight only cares about position-minus-
+// target, which stays constant.
+const SUN_DIR = new THREE.Vector3(120, 180, 80).normalize();
+// How far up-sun the shadow-casting light sits from the player.
+const SHADOW_LIGHT_DISTANCE = 90;
+// Half-extent of the orthographic shadow box (~30 units across). A tight
+// player-following box like this is the only viable shape on a phone GPU —
+// a fixed world-wide frustum at WORLD_RADIUS 150 would need a gigantic map
+// to avoid mush.
+const SHADOW_BOX_HALF = 15;
+// Depth slack either side of the player along the sun axis, generously
+// covering tall trees/shacks/walls and terrain relief inside the box.
+const SHADOW_DEPTH_SLACK = 60;
+
 // Scratch objects reused across setMatrixAt calls to avoid per-instance
 // allocation (props.scatterProps writes hundreds of instances at boot, and
 // harvest() writes a handful every hit).
@@ -113,6 +131,49 @@ export class World {
     return terrainHeight(x, z);
   }
 
+  /** Turns real sun shadow-casting on/off and (when on) configures the tight
+   *  player-following orthographic shadow box + map size for the active
+   *  quality tier. Mesh-level castShadow/receiveShadow flags are set
+   *  unconditionally at build time (inert while renderer.shadowMap.enabled is
+   *  false), so this plus Game.applyQualityFeatures is the entire on-switch.
+   *  Real shadows are a hybrid addition near the player — the cheap blob
+   *  shadows (blobShadow.ts) stay active everywhere regardless. */
+  setSunShadows(enabled: boolean, mapSize: number): void {
+    const sun = this.sunLight;
+    sun.castShadow = enabled;
+    if (!enabled) return;
+
+    const shadow = sun.shadow;
+    if (shadow.mapSize.x !== mapSize) {
+      shadow.mapSize.set(mapSize, mapSize);
+      // Force the (possibly already-allocated) map to be recreated at the new size.
+      shadow.map?.dispose();
+      shadow.map = null;
+    }
+    const cam = shadow.camera;
+    cam.left = -SHADOW_BOX_HALF;
+    cam.right = SHADOW_BOX_HALF;
+    cam.top = SHADOW_BOX_HALF;
+    cam.bottom = -SHADOW_BOX_HALF;
+    cam.near = SHADOW_LIGHT_DISTANCE - SHADOW_DEPTH_SLACK;
+    cam.far = SHADOW_LIGHT_DISTANCE + SHADOW_DEPTH_SLACK;
+    cam.updateProjectionMatrix();
+    // Tuned against the low-poly Lambert meshes: enough bias to kill acne on
+    // the terrain without visibly detaching character shadows from their feet.
+    shadow.bias = -0.0005;
+    shadow.normalBias = 0.05;
+  }
+
+  /** Re-centers the sun's shadow box on the player every frame. Moving the
+   *  light and its target by the same offset keeps the lighting direction
+   *  (SUN_DIR) bit-identical, so this is invisible except to the shadow
+   *  camera. No-op unless shadows are enabled for the current tier. */
+  updateShadowFrustum(playerPos: THREE.Vector3): void {
+    if (!this.sunLight.castShadow) return;
+    this.sunLight.position.copy(playerPos).addScaledVector(SUN_DIR, SHADOW_LIGHT_DISTANCE);
+    this.sunLight.target.position.copy(playerPos);
+  }
+
   private buildSky(): void {
     const geo = new THREE.SphereGeometry(WORLD_RADIUS * 6, 16, 12);
     const mat = new THREE.ShaderMaterial({
@@ -141,6 +202,9 @@ export class World {
     sun.position.set(120, 180, 80);
     sun.castShadow = false;
     this.scene.add(sun);
+    // The target must be in the scene graph for its matrixWorld to update when
+    // updateShadowFrustum re-aims the light at the player each frame.
+    this.scene.add(sun.target);
     this.sunLight = sun;
 
     const fill = new THREE.AmbientLight(0xffffff, 0.25);
@@ -186,6 +250,9 @@ export class World {
 
     const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
     const mesh = new THREE.Mesh(geo, mat);
+    // Inert while renderer.shadowMap.enabled is false (the shipped default
+    // for every tier); when a tier enables shadows, the ground catches them.
+    mesh.receiveShadow = true;
     mesh.userData = { kind: "terrain" } satisfies HitUserData;
     this.scene.add(mesh);
     this.terrainMesh = mesh;
@@ -247,9 +314,20 @@ export class World {
       this.shackWallMesh,
       this.shackRoofMesh,
     ]) {
+      // Shadow flags are inert unless a quality tier turns shadow mapping on
+      // (none do in this shipped version). InstancedMesh casts as a whole —
+      // instances outside the tight player-following shadow box are clipped
+      // by the shadow camera, so only nearby props actually land in the map.
+      mesh.castShadow = true;
       this.scene.add(mesh);
       this.raycastTargets.push(mesh);
     }
+    // Flat-ish props the player stands next to also catch character/tree
+    // shadows; skip the trees' trunk/leaves where receiving mostly buys acne.
+    this.rockMesh.receiveShadow = true;
+    this.crateMesh.receiveShadow = true;
+    this.shackWallMesh.receiveShadow = true;
+    this.shackRoofMesh.receiveShadow = true;
 
     this.scatterTrees(treeCount, 0.75, kindOuterRadius);
     this.scatterRocks(rockCount, 1.1, kindOuterRadius);

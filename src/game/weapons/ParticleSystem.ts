@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { BLOOM_LAYER } from "../core/constants";
 
 const DEFAULT_MAX_PARTICLES = 220;
 
@@ -80,6 +81,11 @@ export class ParticleSystem {
 
     this.points = new THREE.Points(this.geometry, material);
     this.points.frustumCulled = false;
+    // Additive tag (layer 0 stays set, so normal rendering is unchanged):
+    // marks the additive-blended glow particles — muzzle flash foremost — as
+    // selective-bloom sources for the optional postFX pipeline (core/postfx.ts).
+    // Completely inert while postFX is off, the shipped default for all tiers.
+    this.points.layers.enable(BLOOM_LAYER);
     scene.add(this.points);
 
     for (let i = 0; i < this.maxParticles; i++) {

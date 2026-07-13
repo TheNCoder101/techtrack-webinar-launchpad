@@ -19,6 +19,10 @@ import {
   saveSettings,
   type GameSettings,
 } from "./Settings";
+// Type-only import: erased at compile time, so it does NOT pull the
+// postprocessing module tree into the main chunk — the runtime code is only
+// ever loaded via the dynamic import() in initPostFX below.
+import type { PostFXPipeline } from "./postfx";
 
 const RESPAWN_DELAY = 3;
 
@@ -57,11 +61,19 @@ export class Game {
   private perfSampleFrames = 0;
   private perfSampleSeconds = 0;
 
+  // Lazily-created EffectComposer pipeline; null whenever the current tier
+  // has postFX off (the shipped default for every tier), in which case the
+  // loop renders directly and pays zero composer overhead.
+  private postFX: PostFXPipeline | null = null;
+  private postFXLoading = false;
+  private disposed = false;
+
   private onResize = (): void => {
     const { clientWidth, clientHeight } = this.canvas;
     this.camera.aspect = clientWidth / clientHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(clientWidth, clientHeight, false);
+    this.postFX?.setSize(clientWidth, clientHeight);
   };
 
   private onVisibility = (): void => {
@@ -97,6 +109,10 @@ export class Game {
       powerPreference: "high-performance",
     });
     this.renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+    // Soft-edged maps are the only type worth paying for on the tight
+    // player-following frustum; setting the type is free while shadow mapping
+    // itself stays disabled (the shipped default for every tier).
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.applyQualityTier();
 
     this.world = new World(this.scene);
@@ -146,15 +162,80 @@ export class Game {
 
     window.addEventListener("resize", this.onResize);
     document.addEventListener("visibilitychange", this.onVisibility);
+
+    // Deferred past construction of world/player/particles: shadow + postFX
+    // sync needs those to exist. Both features are currently false for every
+    // tier, so this is a no-op in the shipped defaults — but the full enable
+    // path below is implemented and live the moment a tier flips them on.
+    this.applyQualityFeatures();
   }
 
   /** Applies the resolved QualitySettings for the current tier to the renderer.
-   *  Shadows stay disabled regardless of tier for now — this phase only wires
-   *  the flag through; real shadow rendering lands in a later phase. */
+   *  Only covers what is safe before the world exists (see
+   *  applyQualityFeatures for shadows/postFX). */
   private applyQualityTier(): void {
     const quality = QUALITY_TIERS[this.settings.qualityTier];
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, quality.pixelRatioCap));
-    this.renderer.shadowMap.enabled = false;
+  }
+
+  /** Syncs the tier-gated heavyweight features — real shadow mapping and the
+   *  postFX composer — with the current tier. Idempotent; called after
+   *  construction and again on auto-downgrade. Every tier currently ships
+   *  with both off (hard product requirement until verified on a real
+   *  iPhone), so by default this disables/no-ops everything. */
+  private applyQualityFeatures(): void {
+    const quality = QUALITY_TIERS[this.settings.qualityTier];
+
+    const shadowsChanged = this.renderer.shadowMap.enabled !== quality.shadows;
+    this.renderer.shadowMap.enabled = quality.shadows;
+    this.world.setSunShadows(quality.shadows, quality.shadowMapSize);
+    if (shadowsChanged) {
+      // Toggling shadow mapping after materials have compiled requires a
+      // program rebuild. Never hit on the shipped defaults (off stays off);
+      // one-time cost when a future tier change flips shadows mid-session.
+      this.scene.traverse((obj) => {
+        const material = (obj as THREE.Mesh).material as
+          | THREE.Material
+          | THREE.Material[]
+          | undefined;
+        if (!material) return;
+        if (Array.isArray(material)) {
+          for (const m of material) m.needsUpdate = true;
+        } else {
+          material.needsUpdate = true;
+        }
+      });
+    }
+
+    if (quality.postFX && !this.postFX && !this.postFXLoading) {
+      void this.initPostFX();
+    } else if (!quality.postFX && this.postFX) {
+      this.postFX.dispose();
+      this.postFX = null;
+    }
+  }
+
+  /** Dynamically loads the postprocessing chunk and builds the composer
+   *  pipeline. The import() keeps EffectComposer + passes out of the main
+   *  bundle for tiers that never enable postFX (currently: all of them). */
+  private async initPostFX(): Promise<void> {
+    this.postFXLoading = true;
+    try {
+      const { createPostFXPipeline } = await import("./postfx");
+      // The tier may have downgraded (or the game been disposed) while the
+      // chunk was in flight — re-check before committing to the pipeline.
+      if (this.disposed || !QUALITY_TIERS[this.settings.qualityTier].postFX || this.postFX) {
+        return;
+      }
+      this.postFX = createPostFXPipeline(this.renderer, this.scene, this.camera);
+      this.postFX.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
+    } catch (err) {
+      // Chunk failed to load (offline before it was cached, etc.) — the loop
+      // keeps using the direct renderer.render path, which is always valid.
+      console.warn("PostFX pipeline unavailable, staying on direct rendering", err);
+    } finally {
+      this.postFXLoading = false;
+    }
   }
 
   /** Accumulates real frame time for the first ~1s of gameplay. If the device
@@ -181,6 +262,7 @@ export class Game {
       this.settings.qualityTier = "low";
       saveSettings(this.settings);
       this.applyQualityTier();
+      this.applyQualityFeatures();
     }
   }
 
@@ -205,10 +287,13 @@ export class Game {
   }
 
   dispose(): void {
+    this.disposed = true;
     this.pause();
     window.removeEventListener("resize", this.onResize);
     document.removeEventListener("visibilitychange", this.onVisibility);
     this.weaponBar.dispose();
+    this.postFX?.dispose();
+    this.postFX = null;
     this.renderer.dispose();
   }
 
@@ -267,6 +352,15 @@ export class Game {
     this.hud.drawMinimap(this.player, this.botManager, this.airdrops.activePosition);
     this.weaponBar.update(this.weapons.slots, this.weapons.activeSlotIndex);
 
-    this.renderer.render(this.scene, this.camera);
+    // Keeps the tight sun-shadow box centered on the player; no-op while
+    // shadows are off (every tier's shipped default).
+    this.world.updateShadowFrustum(this.player.position);
+
+    if (this.postFX) {
+      this.postFX.render();
+    } else {
+      // Direct render — the only path exercised by the shipped defaults.
+      this.renderer.render(this.scene, this.camera);
+    }
   };
 }

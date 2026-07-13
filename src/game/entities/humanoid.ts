@@ -106,6 +106,13 @@ export function buildHumanoid(skin: CharacterSkin): HumanoidBuild {
   rightLegPivot.add(rightLeg);
   group.add(rightLegPivot);
 
+  // Characters cast into the player-following sun shadow map when a quality
+  // tier enables shadow mapping; a no-op flag otherwise (the shipped default —
+  // every tier currently leaves renderer.shadowMap.enabled false).
+  for (const mesh of [torso, headMesh, helmetMesh, leftArm, rightArm, leftLeg, rightLeg]) {
+    mesh.castShadow = true;
+  }
+
   return {
     group,
     bodyMat,

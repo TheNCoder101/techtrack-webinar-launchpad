@@ -43,6 +43,14 @@ export const ROCK_COUNT = 48;
 export const CRATE_COUNT = 16;
 export const SHACK_COUNT = 8;
 
+// Object layer used to tag bloom targets (muzzle-flash particles, tracers)
+// for the selective bloom pass in core/postfx.ts. Membership is additive
+// (objects keep layer 0) and completely inert unless the postFX pipeline is
+// active. Lives here — not in postfx.ts — so tagging call sites don't
+// statically import the postprocessing module tree, which must stay behind a
+// dynamic import() (see Game.initPostFX).
+export const BLOOM_LAYER = 1;
+
 export const AIRDROP_MIN_INTERVAL = 24;
 export const AIRDROP_MAX_INTERVAL = 42;
 export const AIRDROP_FALL_SPEED = 9;

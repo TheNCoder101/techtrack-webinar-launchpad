@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { BLOOM_LAYER } from "../core/constants";
 import type { HitUserData } from "../core/types";
 import { World } from "../world/World";
 import { BotManager } from "../entities/BotManager";
@@ -92,6 +93,9 @@ export class WeaponSystem {
       });
       const line = new THREE.Line(geo, mat);
       line.frustumCulled = false;
+      // Tag tracers as selective-bloom sources for the optional postFX
+      // pipeline (see ParticleSystem for the same pattern); inert by default.
+      line.layers.enable(BLOOM_LAYER);
       scene.add(line);
       this.tracers.push({ line, life: 0, active: false });
     }

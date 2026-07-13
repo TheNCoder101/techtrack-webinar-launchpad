@@ -13,10 +13,19 @@ export interface QualitySettings {
   terrainSegments: number;
   /** Max distance (world units) at which props are considered for rendering. */
   propDrawDistance: number;
-  /** Whether shadow mapping is enabled. Real shadows land in a later phase —
-   *  for now this is wired through as a flag only and stays a no-op. */
+  /** Whether real shadow mapping (player-following sun frustum) is enabled.
+   *  Fully implemented (see World.setSunShadows / Game.applyQualityFeatures),
+   *  but intentionally `false` for EVERY tier in this shipped version: it can
+   *  only be safely defaulted on after frame-time verification on a real
+   *  iPhone, which desktop/Playwright testing cannot certify. Flip per-tier
+   *  once on-device numbers are in. */
   shadows: boolean;
-  /** Whether post-processing effects are enabled. Ships in a later phase. */
+  /** Shadow map resolution (per side) used when `shadows` is true. */
+  shadowMapSize: number;
+  /** Whether the EffectComposer post pipeline (SMAA + selective bloom on
+   *  muzzle flash/tracers) is enabled. Fully implemented (see core/postfx.ts,
+   *  lazily import()-ed), but intentionally `false` for EVERY tier pending
+   *  the same on-device verification as `shadows` above. */
   postFX: boolean;
 }
 
@@ -27,6 +36,7 @@ export const QUALITY_TIERS: Record<QualityTier, QualitySettings> = {
     terrainSegments: 80,
     propDrawDistance: 90,
     shadows: false,
+    shadowMapSize: 1024,
     postFX: false,
   },
   medium: {
@@ -35,6 +45,7 @@ export const QUALITY_TIERS: Record<QualityTier, QualitySettings> = {
     terrainSegments: 110,
     propDrawDistance: 150,
     shadows: false,
+    shadowMapSize: 1024,
     postFX: false,
   },
   high: {
@@ -42,8 +53,12 @@ export const QUALITY_TIERS: Record<QualityTier, QualitySettings> = {
     particlePoolSize: 220,
     terrainSegments: 140,
     propDrawDistance: 220,
-    shadows: true,
-    postFX: true,
+    // shadows/postFX intentionally false even on "high" — the code paths are
+    // complete but stay dark until real-iPhone frame-time verification (see
+    // the QualitySettings field docs above).
+    shadows: false,
+    shadowMapSize: 2048,
+    postFX: false,
   },
 };
 
