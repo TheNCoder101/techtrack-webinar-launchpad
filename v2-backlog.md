@@ -49,11 +49,13 @@ Drop a file named `.ralph-stop` in the repo root to halt the loop before the nex
 - [ ] Wire storm damage into `Player.takeDamage` when outside the zone.
 - [ ] Manual playtest note: flag shrink speed/damage tuning as needing human playtesting feedback, not just correctness — do not treat "compiles and runs" as "tuned."
 
-## Phase 6 — Bot AI: Obstacle Avoidance + Ranged Enemies
+## Phase 6 — Bot AI: Obstacle Avoidance + Ranged Enemies + Difficulty Scaling
 - [ ] Copy `Player.update`'s collider push-out loop into `Bot.update` (fixes confirmed bug: bots currently walk through trees/rocks with zero avoidance).
+- [ ] **(user-requested)** Verify this avoidance fix explicitly covers built walls, not just static props: `BuildingManager.placeWall` already pushes each wall's collider into `world.colliders` (confirmed via grep, same array `Player.update` and the new `Bot.update` avoidance both read), so walls should be avoided "for free" once the fix above lands. QA must explicitly test bots against a freshly-placed wall (dynamic add) and after `WALL_MAX_COUNT` eviction (dynamic remove) — not just static trees/rocks — since walls are the one collider type that's added/removed at runtime.
 - [ ] Add forward-lookahead steering against `world.colliders` for smoother avoidance (no navmesh/pathfinding library — disproportionate for this world size).
 - [ ] Add a `kind: "melee" | "ranged"` field to `Bot.ts`.
 - [ ] Implement ranged bot hitscan using `WeaponSystem.shoot`'s pattern, simplified to distance+cooldown, with a lightweight capsule/sphere LOS/range check against `world.colliders` (the player currently has no hittable representation — add a minimal one for this check).
+- [ ] **(user-requested)** Bot density & challenge scaling across difficulty: reuse the existing `QualityTier` (`low`/`medium`/`high` in `Settings.ts`, already selectable on the start screen) as the difficulty axis too, rather than adding a second selector — the user's own phrasing ("game level/tiers... easy medium High") maps directly onto the tier names already in the game. Scale `BOT_COUNT` up per tier (e.g. low≈5, medium≈7 current default, high≈10-11), and scale bot aggression/challenge per tier (aggro radius, ranged-bot fire rate/accuracy, or damage — pick 1-2 concrete knobs, don't overdesign). Document the reused-tier decision inline in `Settings.ts` since "quality" now also means "difficulty," which isn't obvious from the field name alone.
 
 ## Phase 7 — Building System Depth
 - [ ] Convert `BuildingManager.ts`'s hardcoded wall into a data-driven piece catalog: `BUILD_PIECE_DEFS: Record<"wall"|"floor"|"ramp", {...}>`, mirroring `weaponDefs.ts`.
@@ -65,3 +67,20 @@ Drop a file named `.ralph-stop` in the repo root to halt the loop before the nex
 - [ ] Add a match-end summary screen (kills/score/survival time) in `GamePage.tsx`.
 - [ ] Add a `localStorage`-backed lifetime stats ledger, using the same storage mechanism as the existing `elronite-skin` key.
 - [ ] Extend `CharacterSkin` with an optional `unlockCondition`, gate 1-2 new skins behind stat thresholds (add new skins rather than locking existing ones, so this doesn't feel punitive on the current 4-skin roster).
+
+## Phase 10 — Start Screen Responsive Design (user-requested, added mid-flight)
+**Context:** Phase 1's settings panel already needed one reactive scroll-fix (`.gj-start-screen { overflow-y: auto }`) and there's a single `@media (orientation: portrait)` block plus a portrait→landscape hint overlay already in `hud.css` — this item is a full pass, not a from-scratch build.
+- [ ] Audit the full start screen (title, skin selector grid, settings panel, PLAY button, control-hint text) at the iPhone 14 Pro viewport in both portrait and landscape via Playwright screenshots — identify any clipped, overlapping, or overflowing elements in either orientation.
+- [ ] Fix layout with responsive CSS (flexbox/grid + media queries, consistent with the existing pattern in `hud.css`) rather than fixed pixel values where the audit finds problems.
+- [ ] Re-check the existing portrait→landscape hint overlay still makes sense once the rest of the layout is responsive (it may become redundant if portrait now works fine, or may still be worth keeping — use judgment, note the reasoning).
+- [ ] Also spot-check one other common phone aspect ratio (e.g. a narrower/shorter Android-like viewport via Playwright's device presets) as a cheap regression guard, not just iPhone 14 Pro.
+
+## Phase 11 — Apple Trees (user-requested, added mid-flight)
+**Context:** builds directly on Phase 3's instancing architecture — read `World.ts`'s existing tree harvest path in full first (`treeTrunkRefIds`/`treeLeafRefIds`/`harvestableByRefId`, `Harvestable` type in `core/types.ts`, `World.harvest(refId)`) before changing anything; this is the same instance-index-to-object dispatch pattern that was the highest-regression-risk part of Phase 3, so get the read-before-write step right.
+- [ ] Add an apple-fruit `THREE.InstancedMesh` (small red/green spheres, low-poly) in `props.ts`, following the exact pattern of the existing trunk/leaves instanced meshes.
+- [ ] When scattering trees in `World.ts`, mark ~25% of trees (deterministic-looking but randomized, e.g. `Math.random() < 0.25` per tree at scatter time) as apple trees; for those, additionally place 2-4 apple instances among their leaf clusters.
+- [ ] Extend the `Harvestable` type (`core/types.ts`) with a variant flag (e.g. `treeVariant?: "apple"`) so `World.harvest(refId)` can tell an apple tree from a regular oak tree.
+- [ ] Extend `World.harvest`'s return contract so apple-tree hits yield both wood (same materials formula as a regular tree) AND a heal amount — do not silently change the existing return type in a way that breaks `WeaponSystem`'s current `player.materials += gained` call; make the contract explicit (e.g. return `{ materials: number, heal: number }` and update the one call site) rather than overloading a single number.
+- [ ] Add a `Player.heal(amount)` method (there's currently only `takeDamage`, no heal) — clamp to `maxHealth`.
+- [ ] When an apple tree is destroyed, its apple instances must also be zeroed out (same zero-scale-matrix technique Phase 3 used for destroyed trees/rocks) — don't leave floating apple meshes with no tree.
+- [ ] QA must specifically verify: harvesting a regular (non-apple) tree still yields wood only and does NOT heal (no regression), harvesting an apple tree yields both wood and a visible HP increase capped at max health, and destroying an apple tree removes its apples visually.
