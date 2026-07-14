@@ -1,7 +1,7 @@
 import * as THREE from "three";
-import { BOT_COUNT } from "../core/constants";
+import type { BotDifficultySettings } from "../core/Settings";
 import { World } from "../world/World";
-import { Bot } from "./Bot";
+import { Bot, type BotKind } from "./Bot";
 
 export class BotManager {
   bots: Bot[] = [];
@@ -9,9 +9,14 @@ export class BotManager {
   onPlayerDamaged?: (amount: number) => void;
   onKill?: (bot: Bot) => void;
 
-  constructor(scene: THREE.Scene, world: World) {
-    for (let i = 0; i < BOT_COUNT; i++) {
-      const bot = new Bot(i, scene);
+  /** `difficulty` comes from BOT_DIFFICULTY[settings.qualityTier] in Game's
+   *  constructor — the quality tier doubles as the difficulty axis. */
+  constructor(scene: THREE.Scene, world: World, difficulty: BotDifficultySettings) {
+    for (let i = 0; i < difficulty.botCount; i++) {
+      // Every 3rd bot (ids 2, 5, 8, ...) is the ranged archetype —
+      // deterministic, and every tier's count includes at least one.
+      const kind: BotKind = i % 3 === 2 ? "ranged" : "melee";
+      const bot = new Bot(i, scene, kind, difficulty);
       bot.respawn(world);
       this.bots.push(bot);
       this.raycastTargets.push(...bot.meshes);

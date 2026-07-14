@@ -2,6 +2,9 @@
 // used for weapons (see weapons/weaponDefs.ts). Kept in one place so mobile
 // perf tuning stays a data edit rather than a code change.
 
+// NOTE: despite the name, the tier is ALSO the game's difficulty axis (no
+// separate difficulty selector). BOT_DIFFICULTY below maps each tier to bot
+// count / aggression knobs, consumed by BotManager via Game's constructor.
 export type QualityTier = "low" | "medium" | "high";
 
 export interface QualitySettings {
@@ -60,6 +63,28 @@ export const QUALITY_TIERS: Record<QualityTier, QualitySettings> = {
     shadowMapSize: 2048,
     postFX: false,
   },
+};
+
+/** Per-tier bot difficulty knobs (see the QualityTier note above: the quality
+ *  tier doubles as the difficulty axis). "medium" is exactly the pre-scaling
+ *  baseline — 7 bots, aggro radius 22 — so the default experience is
+ *  unchanged; "low" is a lighter island, "high" a meaner one. This also
+ *  aligns with perf: weaker devices simulate/render fewer bots. */
+export interface BotDifficultySettings {
+  /** How many bots BotManager spawns (every 3rd is a ranged archetype). */
+  botCount: number;
+  /** Distance at which a bot switches from wandering to chasing the player. */
+  aggroRange: number;
+  /** Seconds between ranged-bot shots. */
+  rangedFireCooldown: number;
+  /** Damage per successful ranged-bot hit. */
+  rangedDamage: number;
+}
+
+export const BOT_DIFFICULTY: Record<QualityTier, BotDifficultySettings> = {
+  low: { botCount: 5, aggroRange: 18, rangedFireCooldown: 2.4, rangedDamage: 4 },
+  medium: { botCount: 7, aggroRange: 22, rangedFireCooldown: 1.8, rangedDamage: 5 },
+  high: { botCount: 10, aggroRange: 28, rangedFireCooldown: 1.2, rangedDamage: 6 },
 };
 
 export interface GameSettings {

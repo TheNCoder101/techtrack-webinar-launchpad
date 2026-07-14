@@ -17,6 +17,7 @@ import { WeaponBar } from "../ui/WeaponBar";
 import { BuildPieceBar } from "../ui/BuildPieceBar";
 import {
   QUALITY_TIERS,
+  BOT_DIFFICULTY,
   hasExplicitQualityChoice,
   saveSettings,
   type GameSettings,
@@ -135,7 +136,15 @@ export class Game {
       this.hud.showEliminated(true);
     };
 
-    this.botManager = new BotManager(this.scene, this.world);
+    // The quality tier doubles as the difficulty axis: it sets the bot
+    // count and per-bot aggression knobs (see BOT_DIFFICULTY in Settings.ts).
+    // Resolved once here — a mid-session perf auto-downgrade does not
+    // retroactively despawn bots.
+    this.botManager = new BotManager(
+      this.scene,
+      this.world,
+      BOT_DIFFICULTY[this.settings.qualityTier]
+    );
     this.botManager.onPlayerDamaged = (amount) => {
       this.player.takeDamage(amount, performance.now() / 1000);
     };

@@ -30,7 +30,7 @@ export const HARVEST_RANGE = 90;
 // total placed pieces (walls + floors); the oldest is evicted past the cap.
 export const WALL_MAX_COUNT = 14;
 
-export const BOT_COUNT = 7;
+// Bot count is tier-scaled since Phase 6 — see BOT_DIFFICULTY in core/Settings.ts.
 export const BOT_MAX_HP = 45;
 export const BOT_WANDER_SPEED = 2.1;
 export const BOT_RESPAWN_TIME = 6;
