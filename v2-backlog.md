@@ -66,10 +66,10 @@ Drop a file named `.ralph-stop` in the repo root to halt the loop before the nex
 - [x] New wall-vs-floor picker (`BuildPieceBar.ts`, mirrors the existing `WeaponBar` slot idiom) — verified via Playwright screenshots to not overlap JUMP/FIRE/ammo in landscape; a harmless near-miss with the minimap corner in portrait, noted not blocking.
 - [x] Verified existing wall-shooting (Phase 3 raycast contract) still works: fired at a placed wall, ammo decremented, zero errors — confirms walls and instanced props still coexist correctly in the shared `raycastTargets`/`colliders` arrays. Independently spot-checked by re-reading the `raycastTargetsDirty`/`colliders.push` wiring directly.
 
-## Phase 8 — Progression & Persistence
-- [ ] Add a match-end summary screen (kills/score/survival time) in `GamePage.tsx`.
-- [ ] Add a `localStorage`-backed lifetime stats ledger, using the same storage mechanism as the existing `elronite-skin` key.
-- [ ] Extend `CharacterSkin` with an optional `unlockCondition`, gate 1-2 new skins behind stat thresholds (add new skins rather than locking existing ones, so this doesn't feel punitive on the current 4-skin roster).
+## Phase 8 — Progression & Persistence ✅ done (07eba2f)
+- [x] Add a match-end summary screen (kills/score/survival time) in `GamePage.tsx`. Death is treated as the match-end boundary (this game has no timer/elimination end condition) — a non-blocking (`pointer-events: none`), auto-dismissing overlay fires via a new `Game.onDeath(summary)` callback, wired alongside the existing `showEliminated`/`RESPAWN_DELAY` flow with zero changes to that flow's own logic. Independently reviewed the diff to confirm the respawn timer is untouched.
+- [x] Add a `localStorage`-backed lifetime stats ledger (`elronite-stats`, new `core/Stats.ts`), following the exact load/save idiom already used for `elronite-settings`. Tracks total kills, total deaths, best single-life score, rough playtime.
+- [x] Extend `CharacterSkin` with an optional `unlockCondition`, gate 2 new skins (Goldrush at 10 lifetime kills, Volt at 50 score in one life) behind stat thresholds — all 4 original skins remain free, exactly as scoped. **Independently re-verified visually**: took a fresh screenshot of the merged start screen — locked skins render grayed with a lock icon and requirement text, stats readout displays correctly, no overlap or layout regression against Phase 10's responsive redesign.
 
 ## Phase 10 — Start Screen Responsive Design (user-requested, added mid-flight) ✅ done (2775ede)
 **Context:** Phase 1's settings panel already needed one reactive scroll-fix (`.gj-start-screen { overflow-y: auto }`) and there's a single `@media (orientation: portrait)` block plus a portrait→landscape hint overlay already in `hud.css` — this item is a full pass, not a from-scratch build.
