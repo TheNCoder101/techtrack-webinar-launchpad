@@ -57,11 +57,13 @@ Drop a file named `.ralph-stop` in the repo root to halt the loop before the nex
 - [ ] Implement ranged bot hitscan using `WeaponSystem.shoot`'s pattern, simplified to distance+cooldown, with a lightweight capsule/sphere LOS/range check against `world.colliders` (the player currently has no hittable representation — add a minimal one for this check).
 - [ ] **(user-requested)** Bot density & challenge scaling across difficulty: reuse the existing `QualityTier` (`low`/`medium`/`high` in `Settings.ts`, already selectable on the start screen) as the difficulty axis too, rather than adding a second selector — the user's own phrasing ("game level/tiers... easy medium High") maps directly onto the tier names already in the game. Scale `BOT_COUNT` up per tier (e.g. low≈5, medium≈7 current default, high≈10-11), and scale bot aggression/challenge per tier (aggro radius, ranged-bot fire rate/accuracy, or damage — pick 1-2 concrete knobs, don't overdesign). Document the reused-tier decision inline in `Settings.ts` since "quality" now also means "difficulty," which isn't obvious from the field name alone.
 
-## Phase 7 — Building System Depth
-- [ ] Convert `BuildingManager.ts`'s hardcoded wall into a data-driven piece catalog: `BUILD_PIECE_DEFS: Record<"wall"|"floor"|"ramp", {...}>`, mirroring `weaponDefs.ts`.
-- [ ] Add a placement ghost/preview: a semi-transparent clone tracks the snapped position while BUILD is held, confirmed on release, reusing the existing snap-to-grid math in `tryBuild`.
-- [ ] Add floor pieces as a straightforward extension of the wall pattern.
-- [ ] Ramps: scope as follow-up only if walls+floors+preview ship clean and time remains — requires a targeted downward raycast against placed-structure colliders, which the player controller does not currently do (it only uses the analytic heightfield).
+## Phase 7 — Building System Depth ✅ done (50d3dee)
+- [x] Convert `BuildingManager.ts`'s hardcoded wall into a data-driven piece catalog: `BUILD_PIECE_DEFS`, mirroring `weaponDefs.ts` (new `src/game/building/buildPieceDefs.ts`).
+- [x] Add a placement ghost/preview: BUILD input changed from tap-to-place to hold-then-preview-then-confirm-on-release (`InputManager` gained `buildHeld`); semi-transparent ghost tracks the snapped position, turns red when materials are insufficient and places nothing on release.
+- [x] Add floor pieces as a straightforward extension of the wall pattern. **Accepted limitation, in scope per the plan's own note**: floors are visible/shootable but not walkable-on (ground height is still the analytic heightfield only — the raycast-based ground extension ramps would also need doesn't exist yet). Cosmetic/cover flooring for now.
+- [x] Ramps: correctly skipped, exactly as scoped.
+- [x] New wall-vs-floor picker (`BuildPieceBar.ts`, mirrors the existing `WeaponBar` slot idiom) — verified via Playwright screenshots to not overlap JUMP/FIRE/ammo in landscape; a harmless near-miss with the minimap corner in portrait, noted not blocking.
+- [x] Verified existing wall-shooting (Phase 3 raycast contract) still works: fired at a placed wall, ammo decremented, zero errors — confirms walls and instanced props still coexist correctly in the shared `raycastTargets`/`colliders` arrays. Independently spot-checked by re-reading the `raycastTargetsDirty`/`colliders.push` wiring directly.
 
 ## Phase 8 — Progression & Persistence
 - [ ] Add a match-end summary screen (kills/score/survival time) in `GamePage.tsx`.
