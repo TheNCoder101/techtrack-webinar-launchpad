@@ -10,10 +10,13 @@ export class InputManager implements PlayerInput {
   moveX = 0;
   moveY = 0;
   fireHeld = false;
+  /** True while the BUILD button is pressed — drives the placement ghost. */
+  buildHeld = false;
 
   private lookDx = 0;
   private lookDy = 0;
   private jumpQueued = false;
+  // Queued on BUILD release (confirm), not press — press starts the preview.
   private buildQueued = false;
 
   private root: HTMLDivElement;
@@ -162,9 +165,19 @@ export class InputManager implements PlayerInput {
     });
     this.jumpBtn.textContent = "JUMP";
 
+    // BUILD is hold-to-preview / release-to-place: pointerdown shows the
+    // placement ghost (buildHeld), pointerup queues the actual placement.
+    // pointercancel drops the hold without placing — a free cancel gesture.
     this.buildBtn = this.makeButton("gj-btn gj-btn-build", () => {
-      this.buildQueued = true;
+      this.buildHeld = true;
     });
+    this.buildBtn.addEventListener("pointerup", () => {
+      if (this.buildHeld) {
+        this.buildHeld = false;
+        this.buildQueued = true;
+      }
+    });
+    this.buildBtn.addEventListener("pointercancel", () => (this.buildHeld = false));
     this.buildBtn.textContent = "BUILD";
   }
 

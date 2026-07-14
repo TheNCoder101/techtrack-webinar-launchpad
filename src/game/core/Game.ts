@@ -14,6 +14,7 @@ import { StormManager } from "./StormManager";
 import { InputManager } from "./InputManager";
 import { HUDController } from "../ui/HUDController";
 import { WeaponBar } from "../ui/WeaponBar";
+import { BuildPieceBar } from "../ui/BuildPieceBar";
 import {
   QUALITY_TIERS,
   hasExplicitQualityChoice,
@@ -52,6 +53,7 @@ export class Game {
   private particles: ParticleSystem;
   private buildingManager: BuildingManager;
   private weaponBar: WeaponBar;
+  private buildPieceBar: BuildPieceBar;
   audio = new AudioManager();
 
   private score = 0;
@@ -165,6 +167,11 @@ export class Game {
     this.weaponBar = new WeaponBar(uiContainer);
     this.weaponBar.onSelect = (index) => {
       this.weapons.switchTo(index, this.audio);
+    };
+
+    this.buildPieceBar = new BuildPieceBar(uiContainer);
+    this.buildPieceBar.onSelect = (id) => {
+      this.buildingManager.selectPiece(id);
     };
 
     window.addEventListener("resize", this.onResize);
@@ -299,6 +306,7 @@ export class Game {
     window.removeEventListener("resize", this.onResize);
     document.removeEventListener("visibilitychange", this.onVisibility);
     this.weaponBar.dispose();
+    this.buildPieceBar.dispose();
     this.storm.dispose();
     this.postFX?.dispose();
     this.postFX = null;
@@ -325,6 +333,9 @@ export class Game {
         this.buildingManager.tryBuild(this.player, this.audio);
       }
     }
+    // Ghost preview tracks the snapped placement while BUILD is held; hidden
+    // otherwise (and always while dead).
+    this.buildingManager.updatePreview(this.player, this.input.buildHeld && !this.player.dead);
 
     // Storm: advance the shrink state machine, shift the fog while the player
     // is caught outside, and tick zone damage (1 Hz, dt-driven countdown).

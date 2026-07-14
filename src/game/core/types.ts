@@ -63,7 +63,10 @@ export interface PlayerInput {
   moveX: number;
   moveY: number;
   fireHeld: boolean;
+  /** True while the BUILD button is held — drives the placement preview ghost. */
+  buildHeld: boolean;
   consumeLook(): { dx: number; dy: number };
   consumeJump(): boolean;
+  /** Fires once on BUILD release — confirms placement of the previewed piece. */
   consumeBuild(): boolean;
 }

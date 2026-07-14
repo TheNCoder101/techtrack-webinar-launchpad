@@ -26,7 +26,8 @@ export const WEAPON_RESERVE_REGEN = 2; // ammo per second, arcade-friendly so th
 
 export const HARVEST_YIELD = 6;
 export const HARVEST_RANGE = 90;
-export const WALL_COST = 20;
+// Per-piece material costs live in building/buildPieceDefs.ts. This caps the
+// total placed pieces (walls + floors); the oldest is evicted past the cap.
 export const WALL_MAX_COUNT = 14;
 
 export const BOT_COUNT = 7;

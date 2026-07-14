@@ -120,6 +120,50 @@
   border-color: rgba(147, 197, 253, 0.6);
 }
 
+/* Wall/floor picker for the build tool: vertical column left of the
+   JUMP/BUILD cluster, styled after the weapon-bar slots. */
+.gj-build-bar {
+  position: absolute;
+  right: max(200px, calc(env(safe-area-inset-right) + 200px));
+  bottom: max(112px, calc(env(safe-area-inset-bottom) + 112px));
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  touch-action: none;
+}
+
+.gj-build-slot {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #fff;
+  background: rgba(20, 24, 30, 0.55);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  transition: transform 0.08s ease, border-color 0.12s ease;
+}
+
+.gj-build-slot-cost {
+  position: absolute;
+  right: 3px;
+  bottom: 1px;
+  font-family: system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.gj-build-slot-active {
+  border-color: #93c5fd;
+  box-shadow: 0 0 10px rgba(96, 165, 250, 0.55);
+}
+
 .gj-weapon-bar {
   position: absolute;
   left: 50%;
