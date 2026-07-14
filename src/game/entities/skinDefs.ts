@@ -1,6 +1,12 @@
 // Character skins are pure data (no new geometry) so they're free to add —
 // see .claude/skills/game-skin-designer/SKILL.md for the design method.
 
+/** Simple, checkable unlock gate for progression-locked skins. Thresholds
+ *  are checked against the persisted lifetime stats ledger (core/Stats.ts). */
+export type SkinUnlockCondition =
+  | { type: "totalKills"; threshold: number }
+  | { type: "bestScore"; threshold: number };
+
 export interface CharacterSkin {
   id: string;
   name: string;
@@ -9,6 +15,35 @@ export interface CharacterSkin {
   packColor?: number;
   helmet: boolean;
   helmetColor?: number;
+  /** Absent = always available (all original skins stay free). */
+  unlockCondition?: SkinUnlockCondition;
+}
+
+/** True when the skin has no unlock gate or the given lifetime stats meet
+ *  its threshold. Takes a structural subset of LifetimeStats so this module
+ *  stays decoupled from the persistence layer. */
+export function isSkinUnlocked(
+  skin: CharacterSkin,
+  stats: { totalKills: number; bestScore: number }
+): boolean {
+  const cond = skin.unlockCondition;
+  if (!cond) return true;
+  switch (cond.type) {
+    case "totalKills":
+      return stats.totalKills >= cond.threshold;
+    case "bestScore":
+      return stats.bestScore >= cond.threshold;
+  }
+}
+
+/** Short human-readable requirement text for locked-skin UI. */
+export function describeUnlock(cond: SkinUnlockCondition): string {
+  switch (cond.type) {
+    case "totalKills":
+      return `${cond.threshold} lifetime kills`;
+    case "bestScore":
+      return `${cond.threshold} score in one life`;
+  }
 }
 
 export const PLAYER_SKINS: CharacterSkin[] = [
@@ -46,6 +81,31 @@ export const PLAYER_SKINS: CharacterSkin[] = [
     packColor: 0x7a2f9a,
     helmet: true,
     helmetColor: 0x111111,
+  },
+  // --- Unlockable skins (progression rewards; see unlockCondition) ---
+  {
+    // "Gilded champion" — a flashy trophy skin earned by racking up kills.
+    // Saturated gold body against a dark bronze face for a strong lightness
+    // split; bare head keeps a plain-silhouette option among the unlocks.
+    id: "goldrush",
+    name: "Goldrush",
+    bodyColor: 0xf0b429,
+    headColor: 0x35261a,
+    packColor: 0x1f3a7a,
+    helmet: false,
+    unlockCondition: { type: "totalKills", threshold: 10 },
+  },
+  {
+    // "Storm-charged night trooper" — dark slate suit under an electric-cyan
+    // dome, pale visor face for body/head lightness contrast, yellow pack pop.
+    id: "volt",
+    name: "Volt",
+    bodyColor: 0x2a2f45,
+    headColor: 0xd8e6f2,
+    packColor: 0xffd51e,
+    helmet: true,
+    helmetColor: 0x35e0ff,
+    unlockCondition: { type: "bestScore", threshold: 50 },
   },
 ];
 

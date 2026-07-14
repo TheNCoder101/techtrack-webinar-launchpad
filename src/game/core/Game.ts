@@ -29,6 +29,18 @@ import type { PostFXPipeline } from "./postfx";
 
 const RESPAWN_DELAY = 3;
 
+/** Snapshot of the life that just ended, handed to Game.onDeath. A death is
+ *  this game's natural "match end" boundary (there is no timer/elimination
+ *  end condition), so the React layer uses this for the match summary. */
+export interface LifeSummary {
+  /** Kills scored during the life that just ended. */
+  kills: number;
+  /** Score earned during the life that just ended. */
+  score: number;
+  /** Seconds survived from (re)spawn to death. */
+  survivalSeconds: number;
+}
+
 // Auto perf-downgrade: sample real frame time for the first second or so of
 // gameplay, and if the device is visibly struggling while still sitting on
 // the untouched "medium" default, drop to "low" and persist it. Never
@@ -60,6 +72,23 @@ export class Game {
   private score = 0;
   private kills = 0;
   private respawnAt = 0;
+  // Per-life baselines for the match-end summary: score/kills accumulate for
+  // the whole session, so "this life" is the delta from these snapshots.
+  private lifeStartAt = performance.now() / 1000;
+  private lifeStartKills = 0;
+  private lifeStartScore = 0;
+
+  // Upward hooks for the React layer (same optional-callback idiom as
+  // Player.onDamaged / BotManager.onKill). None of these alter gameplay —
+  // the auto-respawn countdown runs exactly as before whether or not they
+  // are assigned.
+  /** Fired on every bot kill (feeds the lifetime stats ledger). */
+  onKill?: () => void;
+  /** Fired at the moment of death, alongside showEliminated(true) and before
+   *  the respawn countdown starts. */
+  onDeath?: (summary: LifeSummary) => void;
+  /** Fired when the automatic respawn actually happens. */
+  onRespawn?: () => void;
   // Storm damage ticks at 1 Hz while the player stays outside the safe zone
   // (per-frame takeDamage would retrigger the hurt sound/flash 60x a second).
   private stormTickIn = 1;
@@ -132,8 +161,14 @@ export class Game {
       this.audio.playerHurt();
     };
     this.player.onDeath = () => {
-      this.respawnAt = performance.now() / 1000 + RESPAWN_DELAY;
+      const nowSec = performance.now() / 1000;
+      this.respawnAt = nowSec + RESPAWN_DELAY;
       this.hud.showEliminated(true);
+      this.onDeath?.({
+        kills: this.kills - this.lifeStartKills,
+        score: this.score - this.lifeStartScore,
+        survivalSeconds: nowSec - this.lifeStartAt,
+      });
     };
 
     // The quality tier doubles as the difficulty axis: it sets the bot
@@ -151,6 +186,7 @@ export class Game {
     this.botManager.onKill = () => {
       this.score += 10;
       this.kills += 1;
+      this.onKill?.();
     };
 
     this.particles = new ParticleSystem(this.scene, QUALITY_TIERS[this.settings.qualityTier].particlePoolSize);
@@ -335,6 +371,10 @@ export class Game {
       if (nowSec >= this.respawnAt) {
         this.player.respawn(nowSec, this.world);
         this.hud.showEliminated(false);
+        this.lifeStartAt = nowSec;
+        this.lifeStartKills = this.kills;
+        this.lifeStartScore = this.score;
+        this.onRespawn?.();
       }
     } else {
       this.player.update(dt, this.input, this.world);
