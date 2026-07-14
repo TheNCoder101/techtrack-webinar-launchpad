@@ -105,99 +105,105 @@ export default function GamePage() {
 
       {!started && (
         <div className="gj-start-screen">
-          <div className="gj-title">ELRONITE</div>
-          <div className="gj-subtitle">
-            Free-roam a low-poly battle island. Swing a pickaxe to harvest wood &amp; stone,
-            blast wandering raiders with your blaster, catch airdrops for SMGs, shotguns,
-            snipers and heavies, and drop defensive walls to survive.
-          </div>
-          <div className="gj-skin-select">
-            {PLAYER_SKINS.map((skin, i) => (
-              <button
-                key={skin.id}
-                type="button"
-                className={`gj-skin-swatch${i === skinIndex ? " gj-skin-swatch-active" : ""}`}
-                onClick={() => selectSkin(i)}
-              >
-                <span
-                  className="gj-skin-swatch-body"
-                  style={{ background: hexToCss(skin.bodyColor) }}
-                >
-                  {skin.helmet && (
-                    <span
-                      className="gj-skin-swatch-helmet"
-                      style={{ background: hexToCss(skin.helmetColor ?? 0x222222) }}
-                    />
-                  )}
-                </span>
-                <span className="gj-skin-swatch-label">{skin.name}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="gj-settings-section">
-            <div className="gj-settings-title">Settings</div>
-
-            <div className="gj-quality-picker">
-              {QUALITY_TIER_OPTIONS.map((tier) => (
+          <div className="gj-start-inner">
+            <div className="gj-title">ELRONITE</div>
+            <div className="gj-subtitle">
+              Free-roam a low-poly battle island. Swing a pickaxe to harvest wood &amp; stone,
+              blast wandering raiders with your blaster, catch airdrops for SMGs, shotguns,
+              snipers and heavies, and drop defensive walls to survive.
+            </div>
+            <div className="gj-skin-select">
+              {PLAYER_SKINS.map((skin, i) => (
                 <button
-                  key={tier}
+                  key={skin.id}
                   type="button"
-                  className={`gj-quality-btn${settings.qualityTier === tier ? " gj-quality-btn-active" : ""}`}
-                  onClick={() => selectQualityTier(tier)}
+                  className={`gj-skin-swatch${i === skinIndex ? " gj-skin-swatch-active" : ""}`}
+                  onClick={() => selectSkin(i)}
                 >
-                  {tier.charAt(0).toUpperCase() + tier.slice(1)}
+                  <span
+                    className="gj-skin-swatch-body"
+                    style={{ background: hexToCss(skin.bodyColor) }}
+                  >
+                    {skin.helmet && (
+                      <span
+                        className="gj-skin-swatch-helmet"
+                        style={{ background: hexToCss(skin.helmetColor ?? 0x222222) }}
+                      />
+                    )}
+                  </span>
+                  <span className="gj-skin-swatch-label">{skin.name}</span>
                 </button>
               ))}
             </div>
 
-            <label className="gj-slider-row">
-              <span className="gj-slider-label">Look Sensitivity</span>
-              <input
-                className="gj-slider-input"
-                type="range"
-                min={0.5}
-                max={2}
-                step={0.05}
-                value={settings.lookSensitivity}
-                onChange={(e) => updateLookSensitivity(Number(e.target.value))}
-              />
-              <span className="gj-slider-value">{settings.lookSensitivity.toFixed(2)}x</span>
-            </label>
+            <div className="gj-settings-section">
+              <div className="gj-settings-title">Settings</div>
 
-            <label className="gj-slider-row">
-              <span className="gj-slider-label">SFX Volume</span>
-              <input
-                className="gj-slider-input"
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={settings.sfxVolume}
-                onChange={(e) => updateSfxVolume(Number(e.target.value))}
-              />
-              <span className="gj-slider-value">{Math.round(settings.sfxVolume * 100)}%</span>
-            </label>
-          </div>
+              <div className="gj-quality-picker">
+                {QUALITY_TIER_OPTIONS.map((tier) => (
+                  <button
+                    key={tier}
+                    type="button"
+                    className={`gj-quality-btn${settings.qualityTier === tier ? " gj-quality-btn-active" : ""}`}
+                    onClick={() => selectQualityTier(tier)}
+                  >
+                    {tier.charAt(0).toUpperCase() + tier.slice(1)}
+                  </button>
+                ))}
+              </div>
 
-          <button className="gj-play-btn" onClick={handlePlay}>
-            ▶ PLAY
-          </button>
-          <div className="gj-controls-help">
-            <div>🕹️ Left thumb — move</div>
-            <div>👉 Right side drag — look / aim</div>
-            <div>🔫 FIRE — shoot / swing</div>
-            <div>🎒 Bottom slots — switch weapons</div>
-            <div>⬆️ JUMP</div>
-            <div>🧱 BUILD — place wall</div>
+              <label className="gj-slider-row">
+                <span className="gj-slider-label">Look Sensitivity</span>
+                <input
+                  className="gj-slider-input"
+                  type="range"
+                  min={0.5}
+                  max={2}
+                  step={0.05}
+                  value={settings.lookSensitivity}
+                  onChange={(e) => updateLookSensitivity(Number(e.target.value))}
+                />
+                <span className="gj-slider-value">{settings.lookSensitivity.toFixed(2)}x</span>
+              </label>
+
+              <label className="gj-slider-row">
+                <span className="gj-slider-label">SFX Volume</span>
+                <input
+                  className="gj-slider-input"
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={settings.sfxVolume}
+                  onChange={(e) => updateSfxVolume(Number(e.target.value))}
+                />
+                <span className="gj-slider-value">{Math.round(settings.sfxVolume * 100)}%</span>
+              </label>
+            </div>
+
+            <button className="gj-play-btn" onClick={handlePlay}>
+              ▶ PLAY
+            </button>
+            <div className="gj-controls-help">
+              <div>🕹️ Left thumb — move</div>
+              <div>👉 Right side drag — look / aim</div>
+              <div>🔫 FIRE — shoot / swing</div>
+              <div>🎒 Bottom slots — switch weapons</div>
+              <div>⬆️ JUMP</div>
+              <div>🧱 BUILD — place wall</div>
+            </div>
           </div>
         </div>
       )}
 
-      <div className="gj-rotate-hint gj-rotate-visible">
-        <div style={{ fontSize: 40 }}>🔄</div>
-        <div>Rotate your device to landscape for the best experience</div>
-      </div>
+      {/* In-game only: the start screen now lays out fine in portrait, but the
+          dual-thumb touch controls still play best in landscape. */}
+      {started && (
+        <div className="gj-rotate-hint gj-rotate-visible">
+          <div>🔄</div>
+          <div>Rotate your device to landscape for the best experience</div>
+        </div>
+      )}
     </div>
   );
 }

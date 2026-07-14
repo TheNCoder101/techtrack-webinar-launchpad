@@ -398,21 +398,32 @@
   inset: 0;
   z-index: 40;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 22px;
   background: radial-gradient(ellipse at 50% 20%, #1c3a52 0%, #0a1420 70%);
   color: #fff;
   font-family: system-ui, -apple-system, sans-serif;
   text-align: center;
-  padding: 24px;
-  /* Settings + skin-select can make this taller than short landscape
-     viewports (e.g. phones in landscape); scroll within the overlay itself
-     rather than silently clipping content against gj-game-root's overflow:hidden. */
+  /* Settings + skin-select can make this taller than short viewports; scroll
+     within the overlay itself rather than silently clipping content against
+     gj-game-root's overflow:hidden. Centering lives on .gj-start-inner via
+     margin:auto — justify-content:center here would push overflowing content
+     above the scrollable region, where it can never be scrolled back into view. */
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
+}
+
+.gj-start-inner {
+  /* Centers when content fits; collapses to 0 (top-anchored, fully
+     scrollable) when it doesn't. */
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 480px;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
 }
 
 .gj-title {
@@ -427,10 +438,10 @@
 }
 
 .gj-subtitle {
-  font-size: 15px;
+  font-size: 14px;
   opacity: 0.8;
   max-width: 340px;
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
 .gj-skin-select {
@@ -489,13 +500,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   width: 100%;
   max-width: 320px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 14px;
-  padding: 14px 18px;
+  padding: 12px 16px;
 }
 
 .gj-settings-title {
@@ -534,7 +545,9 @@
 
 .gj-slider-row {
   display: grid;
-  grid-template-columns: 1fr 2fr auto;
+  /* auto label column + nowrap keeps "Look Sensitivity" on one line instead
+     of wrapping and doubling the row height. */
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   width: 100%;
@@ -544,6 +557,7 @@
   font-size: 12px;
   font-weight: 600;
   text-align: left;
+  white-space: nowrap;
   opacity: 0.85;
 }
 
@@ -560,7 +574,7 @@
 }
 
 .gj-play-btn {
-  padding: 16px 52px;
+  padding: 14px 52px;
   font-size: 20px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -569,22 +583,94 @@
   border: none;
   border-radius: 999px;
   box-shadow: 0 6px 18px rgba(34, 197, 94, 0.4);
+  cursor: pointer;
 }
 
 .gj-controls-help {
   display: flex;
-  gap: 18px;
+  gap: 8px;
   flex-wrap: wrap;
   justify-content: center;
-  font-size: 12px;
+  font-size: 11px;
   opacity: 0.75;
   max-width: 380px;
 }
 
 .gj-controls-help div {
   background: rgba(255, 255, 255, 0.08);
-  padding: 6px 10px;
+  padding: 4px 8px;
   border-radius: 8px;
+  white-space: nowrap;
+}
+
+/* Short landscape phones: split into two columns (intro + skins left,
+   settings + play right) so the whole screen fits without scrolling. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .gj-start-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "title settings"
+      "subtitle settings"
+      "skins play"
+      "help help";
+    grid-template-rows: auto auto auto auto;
+    align-items: center;
+    justify-items: center;
+    column-gap: 24px;
+    row-gap: 10px;
+    max-width: 740px;
+    padding: max(10px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+      max(10px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  }
+  .gj-title {
+    grid-area: title;
+    font-size: clamp(24px, 8vh, 40px);
+    align-self: end;
+  }
+  .gj-subtitle {
+    grid-area: subtitle;
+    font-size: 12px;
+    line-height: 1.4;
+    align-self: start;
+  }
+  .gj-skin-select {
+    grid-area: skins;
+  }
+  .gj-settings-section {
+    grid-area: settings;
+    padding: 10px 14px;
+    gap: 8px;
+  }
+  .gj-play-btn {
+    grid-area: play;
+    padding: 12px 44px;
+    font-size: 18px;
+  }
+  .gj-controls-help {
+    grid-area: help;
+    max-width: none;
+    font-size: 10.5px;
+  }
+}
+
+/* Very narrow phones (e.g. 320px-wide): tighten the skin row so all four
+   swatches stay on one line instead of orphaning the last one. */
+@media (max-width: 380px) {
+  .gj-skin-select {
+    gap: 6px;
+  }
+  .gj-skin-swatch-body {
+    width: 46px;
+    height: 46px;
+  }
+  .gj-subtitle {
+    font-size: 12.5px;
+    line-height: 1.4;
+  }
+  .gj-start-inner {
+    gap: 10px;
+  }
 }
 
 /* Non-blocking hint: informs portrait players landscape plays better
