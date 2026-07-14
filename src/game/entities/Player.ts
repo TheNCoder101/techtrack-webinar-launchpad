@@ -91,6 +91,12 @@ export class Player {
     }
   }
 
+  /** Restores health (apple-tree harvest bites), clamped to maxHealth. */
+  heal(amount: number): void {
+    if (this.dead) return;
+    this.health = Math.min(this.maxHealth, this.health + amount);
+  }
+
   respawn(nowSec: number, world: World): void {
     this.dead = false;
     this.health = this.maxHealth;

@@ -265,8 +265,10 @@ export class WeaponSystem {
         audio.impact();
         return true;
       }
-      const gained = world.harvest(refId);
-      player.materials += gained;
+      const { materials, heal } = world.harvest(refId);
+      player.materials += materials;
+      // Apple trees only — regular trees and rocks always report heal: 0.
+      if (heal > 0) player.heal(heal);
       particles.burst(hit.point, h.kind === "tree" ? COLOR_WOOD : COLOR_STONE, 10, 3.5, 1, 6, 0.4);
       audio.harvestHit();
       return true;

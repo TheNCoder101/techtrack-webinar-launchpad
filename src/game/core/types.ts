@@ -27,6 +27,10 @@ export interface HarvestablePart {
 
 export interface Harvestable {
   kind: HarvestKind;
+  /** Set on apple trees only — each harvest hit also grants a small heal
+   *  (see World.harvest / HarvestResult.heal). Absent on regular trees and
+   *  every rock. */
+  treeVariant?: "apple";
   parts: HarvestablePart[];
   hp: number;
   maxHp: number;
@@ -34,6 +38,13 @@ export interface Harvestable {
   respawnAt: number;
   collider: Collider;
   basePosition: THREE.Vector3;
+}
+
+/** What one successful World.harvest hit yields. `heal` is 0 for everything
+ *  except apple trees, which restore a little HP per hit on top of the wood. */
+export interface HarvestResult {
+  materials: number;
+  heal: number;
 }
 
 // Attached as mesh.userData so a single raycast against a flat list of

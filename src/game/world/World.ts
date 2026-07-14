@@ -1,14 +1,16 @@
 import * as THREE from "three";
 import { WORLD_RADIUS, TREE_COUNT, ROCK_COUNT, CRATE_COUNT, SHACK_COUNT, HARVEST_YIELD } from "../core/constants";
-import type { Collider, Harvestable, HarvestablePart, HitUserData } from "../core/types";
+import type { Collider, Harvestable, HarvestablePart, HarvestResult, HitUserData } from "../core/types";
 import { QUALITY_TIERS, type QualitySettings } from "../core/Settings";
 import { terrainHeight } from "./terrain";
 import {
   createTreeInstancedMeshes,
+  createAppleInstancedMesh,
   createRockInstancedMesh,
   createCrateInstancedMesh,
   createShackInstancedMeshes,
   makeTreeLayout,
+  makeAppleLayouts,
   makeRockLayout,
   makeCrateLayout,
   makeShackLayout,
@@ -52,6 +54,12 @@ const SHADOW_BOX_HALF = 15;
 // Depth slack either side of the player along the sun axis, generously
 // covering tall trees/shacks/walls and terrain relief inside the box.
 const SHADOW_DEPTH_SLACK = 60;
+
+// Fraction of scattered trees that are apple trees (rolled per tree at
+// scatter time), and how much HP each successful harvest hit on one restores
+// on top of the normal wood yield.
+const APPLE_TREE_CHANCE = 0.25;
+const APPLE_HEAL_PER_HIT = 6;
 
 // Scratch objects reused across setMatrixAt calls to avoid per-instance
 // allocation (props.scatterProps writes hundreds of instances at boot, and
@@ -99,6 +107,7 @@ export class World {
 
   private treeTrunkMesh!: THREE.InstancedMesh;
   private treeLeafMesh!: THREE.InstancedMesh;
+  private appleMesh!: THREE.InstancedMesh;
   private rockMesh!: THREE.InstancedMesh;
   private crateMesh!: THREE.InstancedMesh;
   private shackWallMesh!: THREE.InstancedMesh;
@@ -110,6 +119,7 @@ export class World {
   // intersection.instanceId back to the right Harvestable.
   private treeTrunkRefIds: number[] = [];
   private treeLeafRefIds: number[] = [];
+  private appleRefIds: number[] = [];
   private rockRefIds: number[] = [];
 
   private nextRefId = 0;
@@ -293,6 +303,7 @@ export class World {
     const treeMeshes = createTreeInstancedMeshes(treeCount);
     this.treeTrunkMesh = treeMeshes.trunk;
     this.treeLeafMesh = treeMeshes.leaves;
+    this.appleMesh = createAppleInstancedMesh(treeCount);
     this.rockMesh = createRockInstancedMesh(rockCount);
     this.crateMesh = createCrateInstancedMesh(crateCount);
     const shackMeshes = createShackInstancedMeshes(shackCount);
@@ -301,6 +312,9 @@ export class World {
 
     this.treeTrunkMesh.userData = { kind: "harvestable", refIds: this.treeTrunkRefIds } satisfies HitUserData;
     this.treeLeafMesh.userData = { kind: "harvestable", refIds: this.treeLeafRefIds } satisfies HitUserData;
+    // Apples are parts of their tree: a raycast hit on an apple resolves to
+    // the owning tree's refId, exactly like a hit on its trunk or leaves.
+    this.appleMesh.userData = { kind: "harvestable", refIds: this.appleRefIds } satisfies HitUserData;
     this.rockMesh.userData = { kind: "harvestable", refIds: this.rockRefIds } satisfies HitUserData;
     this.crateMesh.userData = { kind: "prop" } satisfies HitUserData;
     this.shackWallMesh.userData = { kind: "prop" } satisfies HitUserData;
@@ -309,6 +323,7 @@ export class World {
     for (const mesh of [
       this.treeTrunkMesh,
       this.treeLeafMesh,
+      this.appleMesh,
       this.rockMesh,
       this.crateMesh,
       this.shackWallMesh,
@@ -352,6 +367,7 @@ export class World {
 
   private scatterTrees(count: number, radius: number, outerRadius: number): void {
     let placed = 0;
+    let applesPlaced = 0;
     let attempts = 0;
     while (placed < count && attempts < count * 20) {
       attempts++;
@@ -398,6 +414,30 @@ export class World {
         });
       }
 
+      // ~25% of trees are apple trees: same trunk/leaves, plus 2-4 apple
+      // instances tucked into the leaf tiers. The apples join `parts`, so
+      // every existing per-part behavior — health scaling, the zero-scale
+      // destroy, respawn restore — covers them with no extra bookkeeping.
+      const isAppleTree = Math.random() < APPLE_TREE_CHANCE;
+      if (isAppleTree) {
+        for (const apple of makeAppleLayouts(layout.leaves)) {
+          const appleInstanceId = applesPlaced++;
+          this.appleMesh.setMatrixAt(
+            appleInstanceId,
+            composeInstanceMatrix(anchor, apple.position, apple.quaternion, apple.scale, 1)
+          );
+          this.appleMesh.setColorAt(appleInstanceId, apple.color);
+          this.appleRefIds[appleInstanceId] = refId;
+          parts.push({
+            mesh: this.appleMesh,
+            instanceId: appleInstanceId,
+            basePos: apple.position,
+            baseQuat: apple.quaternion,
+            baseScale: apple.scale,
+          });
+        }
+      }
+
       const collider: Collider = { position: anchor, radius };
       this.colliders.push(collider);
 
@@ -411,6 +451,7 @@ export class World {
         collider,
         basePosition: anchor,
       };
+      if (isAppleTree) harvestable.treeVariant = "apple";
       this.harvestableByRefId.set(refId, harvestable);
       this.harvestables.push(harvestable);
 
@@ -419,9 +460,12 @@ export class World {
 
     this.treeTrunkMesh.count = placed;
     this.treeLeafMesh.count = placed * 3;
+    this.appleMesh.count = applesPlaced;
     this.treeTrunkMesh.instanceMatrix.needsUpdate = true;
     this.treeLeafMesh.instanceMatrix.needsUpdate = true;
+    this.appleMesh.instanceMatrix.needsUpdate = true;
     if (this.treeLeafMesh.instanceColor) this.treeLeafMesh.instanceColor.needsUpdate = true;
+    if (this.appleMesh.instanceColor) this.appleMesh.instanceColor.needsUpdate = true;
   }
 
   private scatterRocks(count: number, radius: number, outerRadius: number): void {
@@ -548,14 +592,18 @@ export class World {
     }
   }
 
-  /** Returns the amount of material yielded (0 if the target was already depleted). */
-  harvest(refId: number): number {
+  /** Applies one harvest hit and returns what it yielded — materials, plus a
+   *  small heal when the target is an apple tree (0 heal for regular trees,
+   *  rocks, and anything already depleted). */
+  harvest(refId: number): HarvestResult {
     const h = this.harvestableByRefId.get(refId);
-    if (!h || !h.alive) return 0;
+    if (!h || !h.alive) return { materials: 0, heal: 0 };
     h.hp -= HARVEST_YIELD * 4;
     if (h.hp <= 0) {
       h.alive = false;
       h.respawnAt = performance.now() / 1000 + 14;
+      // Zero-scale collapses every part of this harvestable — for an apple
+      // tree that includes its apple instances, which live in h.parts.
       this.setHarvestableScale(h, 0);
       const idx = this.colliders.indexOf(h.collider);
       if (idx >= 0) this.colliders.splice(idx, 1);
@@ -563,7 +611,7 @@ export class World {
       const s = THREE.MathUtils.clamp(h.hp / h.maxHp, 0.35, 1);
       this.setHarvestableScale(h, s);
     }
-    return HARVEST_YIELD;
+    return { materials: HARVEST_YIELD, heal: h.treeVariant === "apple" ? APPLE_HEAL_PER_HIT : 0 };
   }
 
   update(nowSec: number): void {
