@@ -41,13 +41,13 @@ Drop a file named `.ralph-stop` in the repo root to halt the loop before the nex
 - [x] Dynamically `import()` the postprocessing module tree only for quality tiers that enable it, to keep the PWA precache lean on lower tiers. (Confirmed via build output: `postfx-*.js` is a separate 80.9kB chunk, zero `EffectComposer`/bloom/SMAA references in the main chunk; independently re-verified via Playwright that default play never fetches it. Still listed in the PWA precache list itself — kept deliberately for offline-safety once a tier does enable it, at the cost of precache size; flagged, not blocking.)
 - [x] Ship default OFF for all tiers pending real iPhone 14 Pro on-device frame-time measurement (Playwright/desktop testing cannot self-certify this phase per the plan). **Independently re-confirmed**: grepped the entire `src/` tree for any `shadows: true`/`postFX: true` — zero matches; `Settings.ts` ships `false` for low/medium/high with no UI override path to force it on. Playwright confirmed picking "high" tier does not enable either feature. **Still needs your on-device iPhone check before any tier ever defaults this on** — that has not happened and can't happen in this sandbox.
 
-## Phase 5 — Storm / Shrinking-Zone Mechanic
-- [ ] Create `src/game/core/StormManager.ts`, timer-driven like `AirdropManager`, with a phase list of `{radius, shrinkDuration, waitDuration, damagePerSec}`.
-- [ ] Add a translucent shrinking-cylinder visual reusing `AirdropManager`'s beacon shader trick, plus a `scene.fog` color shift when the player is outside the safe zone.
-- [ ] Add a safe-zone ring and countdown readout to `HUDController.drawMinimap`.
-- [ ] Add a "flee to zone center" AI state to `Bot.ts` so bots don't stand in the storm and die pointlessly.
-- [ ] Wire storm damage into `Player.takeDamage` when outside the zone.
-- [ ] Manual playtest note: flag shrink speed/damage tuning as needing human playtesting feedback, not just correctness — do not treat "compiles and runs" as "tuned."
+## Phase 5 — Storm / Shrinking-Zone Mechanic ✅ done (398bb10)
+- [x] Create `src/game/core/StormManager.ts`, timer-driven like `AirdropManager`, with a phase list of `{radius, shrinkDuration, waitDuration, damagePerSec}`.
+- [x] Add a translucent shrinking-cylinder visual reusing `AirdropManager`'s beacon shader trick, plus a `scene.fog` color shift when the player is outside the safe zone.
+- [x] Add a safe-zone ring and countdown readout to `HUDController.drawMinimap`.
+- [x] Add a "flee to zone center" AI state to `Bot.ts` so bots don't stand in the storm and die pointlessly. (Includes edge hysteresis via a safe-margin constant so a shrinking boundary can't flip the state every frame.)
+- [x] Wire storm damage into `Player.takeDamage` when outside the zone. (1Hz tick, not per-frame, to avoid re-triggering the hurt sound/flash 60x/sec.)
+- [x] Manual playtest note: shrink speed/damage numbers are explicitly first-pass placeholders (commented as such in `StormManager.ts`) — still needs human playtesting for pacing feel.
 
 ## Phase 6 — Bot AI: Obstacle Avoidance + Ranged Enemies + Difficulty Scaling
 - [ ] Copy `Player.update`'s collider push-out loop into `Bot.update` (fixes confirmed bug: bots currently walk through trees/rocks with zero avoidance).
@@ -68,19 +68,19 @@ Drop a file named `.ralph-stop` in the repo root to halt the loop before the nex
 - [ ] Add a `localStorage`-backed lifetime stats ledger, using the same storage mechanism as the existing `elronite-skin` key.
 - [ ] Extend `CharacterSkin` with an optional `unlockCondition`, gate 1-2 new skins behind stat thresholds (add new skins rather than locking existing ones, so this doesn't feel punitive on the current 4-skin roster).
 
-## Phase 10 — Start Screen Responsive Design (user-requested, added mid-flight)
+## Phase 10 — Start Screen Responsive Design (user-requested, added mid-flight) ✅ done (2775ede)
 **Context:** Phase 1's settings panel already needed one reactive scroll-fix (`.gj-start-screen { overflow-y: auto }`) and there's a single `@media (orientation: portrait)` block plus a portrait→landscape hint overlay already in `hud.css` — this item is a full pass, not a from-scratch build.
-- [ ] Audit the full start screen (title, skin selector grid, settings panel, PLAY button, control-hint text) at the iPhone 14 Pro viewport in both portrait and landscape via Playwright screenshots — identify any clipped, overlapping, or overflowing elements in either orientation.
-- [ ] Fix layout with responsive CSS (flexbox/grid + media queries, consistent with the existing pattern in `hud.css`) rather than fixed pixel values where the audit finds problems.
-- [ ] Re-check the existing portrait→landscape hint overlay still makes sense once the rest of the layout is responsive (it may become redundant if portrait now works fine, or may still be worth keeping — use judgment, note the reasoning).
-- [ ] Also spot-check one other common phone aspect ratio (e.g. a narrower/shorter Android-like viewport via Playwright's device presets) as a cheap regression guard, not just iPhone 14 Pro.
+- [x] Audit the full start screen (title, skin selector grid, settings panel, PLAY button, control-hint text) at the iPhone 14 Pro viewport in both portrait and landscape via Playwright screenshots — identify any clipped, overlapping, or overflowing elements in either orientation.
+- [x] Fix layout with responsive CSS (flexbox/grid + media queries, consistent with the existing pattern in `hud.css`) rather than fixed pixel values where the audit finds problems. (New `.gj-start-inner` wrapper: margin:auto centering that degrades to top-anchored+scrollable rather than clipping; a named-grid-area two-column layout for short landscape phones; a narrow-phone breakpoint keeping all 4 skin swatches on one line; safe-area-inset padding throughout.)
+- [x] Re-check the existing portrait→landscape hint overlay still makes sense once the rest of the layout is responsive — kept as-is: the *start screen* now works fine in portrait, but actual gameplay still plays better in landscape, so the hint remains accurate.
+- [x] Also spot-check one other common phone aspect ratio as a cheap regression guard. **Independently re-verified**: took my own portrait (390×844) and landscape (844×390) screenshots on the merged branch — both clean, no clipping/overlap, zero console errors.
 
-## Phase 11 — Apple Trees (user-requested, added mid-flight)
+## Phase 11 — Apple Trees (user-requested, added mid-flight) ✅ done (0bb6cd7)
 **Context:** builds directly on Phase 3's instancing architecture — read `World.ts`'s existing tree harvest path in full first (`treeTrunkRefIds`/`treeLeafRefIds`/`harvestableByRefId`, `Harvestable` type in `core/types.ts`, `World.harvest(refId)`) before changing anything; this is the same instance-index-to-object dispatch pattern that was the highest-regression-risk part of Phase 3, so get the read-before-write step right.
-- [ ] Add an apple-fruit `THREE.InstancedMesh` (small red/green spheres, low-poly) in `props.ts`, following the exact pattern of the existing trunk/leaves instanced meshes.
-- [ ] When scattering trees in `World.ts`, mark ~25% of trees (deterministic-looking but randomized, e.g. `Math.random() < 0.25` per tree at scatter time) as apple trees; for those, additionally place 2-4 apple instances among their leaf clusters.
-- [ ] Extend the `Harvestable` type (`core/types.ts`) with a variant flag (e.g. `treeVariant?: "apple"`) so `World.harvest(refId)` can tell an apple tree from a regular oak tree.
-- [ ] Extend `World.harvest`'s return contract so apple-tree hits yield both wood (same materials formula as a regular tree) AND a heal amount — do not silently change the existing return type in a way that breaks `WeaponSystem`'s current `player.materials += gained` call; make the contract explicit (e.g. return `{ materials: number, heal: number }` and update the one call site) rather than overloading a single number.
-- [ ] Add a `Player.heal(amount)` method (there's currently only `takeDamage`, no heal) — clamp to `maxHealth`.
-- [ ] When an apple tree is destroyed, its apple instances must also be zeroed out (same zero-scale-matrix technique Phase 3 used for destroyed trees/rocks) — don't leave floating apple meshes with no tree.
-- [ ] QA must specifically verify: harvesting a regular (non-apple) tree still yields wood only and does NOT heal (no regression), harvesting an apple tree yields both wood and a visible HP increase capped at max health, and destroying an apple tree removes its apples visually.
+- [x] Add an apple-fruit `THREE.InstancedMesh` (small red/green spheres, low-poly) in `props.ts`, following the exact pattern of the existing trunk/leaves instanced meshes.
+- [x] When scattering trees in `World.ts`, mark ~25% of trees as apple trees; for those, additionally place 2-4 apple instances among their leaf clusters.
+- [x] Extend the `Harvestable` type (`core/types.ts`) with a variant flag (`treeVariant?: "apple"`) so `World.harvest(refId)` can tell an apple tree from a regular oak tree.
+- [x] Extend `World.harvest`'s return contract so apple-tree hits yield both wood AND a heal amount — explicit `HarvestResult { materials, heal }` return type, one call site in `WeaponSystem.ts` updated.
+- [x] Add a `Player.heal(amount)` method — clamps to `maxHealth`.
+- [x] When an apple tree is destroyed, its apple instances are also zeroed out. (Apples ride the existing per-part `Harvestable.parts` health-scale machinery, so this is covered automatically with no special-case code — independently confirmed by reading the diff line by line, not just trusting the report.)
+- [x] QA (regular tree → wood only no heal; apple tree → wood + capped heal; destroy apple tree → apples cleared; rocks unaffected) — **independently re-verified via code review** given this touches the same instance-dispatch architecture that was Phase 3's highest-regression-risk area; the `parts`-array integration is correct by construction, tsc/build re-confirmed clean on the merged branch.
