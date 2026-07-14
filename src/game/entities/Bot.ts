@@ -14,6 +14,10 @@ const ATTACK_RANGE = 2.3;
 const ATTACK_COOLDOWN = 1.4;
 const ATTACK_DAMAGE = 8;
 const AGGRO_RANGE = 22;
+// How far INSIDE the safe zone a fleeing bot runs before it considers itself
+// safe and resumes wander/chase. Prevents flickering at the exact edge of a
+// still-shrinking circle.
+const ZONE_SAFE_MARGIN = 5;
 
 export class Bot {
   id: number;
@@ -32,6 +36,7 @@ export class Bot {
   wanderTimer = 0;
   attackCooldown = 0;
   hitFlashUntil = 0;
+  fleeingStorm = false;
 
   constructor(id: number, scene: THREE.Scene) {
     this.id = id;
@@ -78,6 +83,7 @@ export class Bot {
     const x = Math.cos(angle) * r;
     const z = Math.sin(angle) * r;
     this.group.position.set(x, world.getHeightAt(x, z), z);
+    this.fleeingStorm = false;
     this.pickWanderTarget();
   }
 
@@ -102,6 +108,8 @@ export class Bot {
     nowSec: number,
     world: World,
     playerPos: THREE.Vector3,
+    safeZoneCenter: THREE.Vector3,
+    safeZoneRadius: number,
     onAttack: (damage: number) => void
   ): void {
     if (!this.alive) {
@@ -121,9 +129,26 @@ export class Bot {
 
     this.attackCooldown -= dt;
 
+    // Third state on top of chase/wander: "flee to zone center". Being caught
+    // outside the storm's safe zone overrides everything else until the bot is
+    // comfortably back inside (hysteresis via ZONE_SAFE_MARGIN so a shrinking
+    // edge can't flip the state every frame).
+    const distFromZoneCenter = Math.hypot(pos.x - safeZoneCenter.x, pos.z - safeZoneCenter.z);
+    if (this.fleeingStorm) {
+      if (distFromZoneCenter < safeZoneRadius - ZONE_SAFE_MARGIN) this.fleeingStorm = false;
+    } else if (distFromZoneCenter > safeZoneRadius) {
+      this.fleeingStorm = true;
+    }
+
+    const maxBotSpeed = BOT_WANDER_SPEED * 1.7;
     let moveTarget: THREE.Vector3;
-    if (distToPlayer < AGGRO_RANGE) {
+    let speed: number;
+    if (this.fleeingStorm) {
+      moveTarget = safeZoneCenter;
+      speed = maxBotSpeed;
+    } else if (distToPlayer < AGGRO_RANGE) {
       moveTarget = playerPos;
+      speed = maxBotSpeed;
       if (distToPlayer < ATTACK_RANGE) {
         if (this.attackCooldown <= 0) {
           this.attackCooldown = ATTACK_COOLDOWN;
@@ -134,16 +159,15 @@ export class Bot {
       this.wanderTimer -= dt;
       if (this.wanderTimer <= 0) this.pickWanderTarget();
       moveTarget = this.wanderTarget;
+      speed = BOT_WANDER_SPEED;
     }
 
     const toTarget = new THREE.Vector3().subVectors(moveTarget, pos);
     toTarget.y = 0;
     const dist = toTarget.length();
-    const maxBotSpeed = BOT_WANDER_SPEED * 1.7;
     let speedT = 0;
     if (dist > 0.4) {
       toTarget.normalize();
-      const speed = distToPlayer < AGGRO_RANGE ? maxBotSpeed : BOT_WANDER_SPEED;
       pos.x += toTarget.x * speed * dt;
       pos.z += toTarget.z * speed * dt;
       this.group.rotation.y = Math.atan2(toTarget.x, toTarget.z);

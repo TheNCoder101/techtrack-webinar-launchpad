@@ -13,6 +13,12 @@ export interface HUDState {
   weaponName: string;
   score: number;
   kills: number;
+  stormLabel: string;
+  /** Seconds until the current storm phase ends, or null for the held final zone. */
+  stormSecondsLeft: number | null;
+  /** True while the player is outside the safe zone (taking storm damage). */
+  playerInStorm: boolean;
+  stormDamagePerSec: number;
 }
 
 // All in-game readouts as plain DOM, written to imperatively every frame.
@@ -32,6 +38,7 @@ export class HUDController {
   private minimapCtx: CanvasRenderingContext2D;
   private weaponNameEl: HTMLDivElement;
   private pickupToast: HTMLDivElement;
+  private stormStatus: HTMLDivElement;
 
   private hitMarkerTimeout: number | null = null;
   private damageFlashTimeout: number | null = null;
@@ -57,6 +64,7 @@ export class HUDController {
       <div class="gj-top-right">
         <div class="gj-score">Score <span class="gj-score-text">0</span></div>
       </div>
+      <div class="gj-storm-status"></div>
       <div class="gj-bottom-left">
         <canvas class="gj-minimap" width="140" height="140"></canvas>
       </div>
@@ -80,6 +88,7 @@ export class HUDController {
     this.minimapCtx = this.minimapCanvas.getContext("2d")!;
     this.weaponNameEl = this.root.querySelector(".gj-weapon-name")!;
     this.pickupToast = this.root.querySelector(".gj-pickup-toast")!;
+    this.stormStatus = this.root.querySelector(".gj-storm-status")!;
   }
 
   update(state: HUDState): void {
@@ -92,6 +101,20 @@ export class HUDController {
     this.scoreText.textContent = `${state.score} (${state.kills} kills)`;
 
     this.weaponNameEl.textContent = state.weaponName;
+
+    if (state.playerInStorm) {
+      this.stormStatus.textContent = `IN STORM −${state.stormDamagePerSec} HP/s`;
+      this.stormStatus.classList.add("gj-storm-danger");
+    } else {
+      const secs = state.stormSecondsLeft;
+      let timer = "";
+      if (secs !== null) {
+        const s = Math.max(0, Math.ceil(secs));
+        timer = ` ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+      }
+      this.stormStatus.textContent = `${state.stormLabel}${timer}`;
+      this.stormStatus.classList.remove("gj-storm-danger");
+    }
 
     const reloadEl = this.root.querySelector(".gj-reload-text") as HTMLDivElement;
     if (state.isMelee) {
@@ -144,7 +167,8 @@ export class HUDController {
   drawMinimap(
     player: Player,
     botManager: BotManager,
-    airdropPos?: { x: number; z: number } | null
+    airdropPos?: { x: number; z: number } | null,
+    safeZone?: { x: number; z: number; radius: number } | null
   ): void {
     const ctx = this.minimapCtx;
     const size = 140;
@@ -171,6 +195,22 @@ export class HUDController {
       const ry = dx * sin + dz * cos;
       return [cx + rx, cy + ry];
     };
+
+    // Safe-zone ring, clipped to the round minimap face. Rotation-invariant
+    // (it's a circle) so the player-relative rotation in toMap is free.
+    if (safeZone) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, size / 2 - 2, 0, Math.PI * 2);
+      ctx.clip();
+      const [zx, zy] = toMap(safeZone.x, safeZone.z);
+      ctx.beginPath();
+      ctx.arc(zx, zy, safeZone.radius * scale, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(167, 139, 250, 0.95)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+    }
 
     ctx.fillStyle = "#ef4444";
     for (const bot of botManager.bots) {

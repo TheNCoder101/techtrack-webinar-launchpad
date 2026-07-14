@@ -303,6 +303,34 @@
   border-radius: 8px;
 }
 
+.gj-storm-status {
+  position: absolute;
+  left: 50%;
+  top: max(14px, env(safe-area-inset-top));
+  transform: translateX(-50%);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #c4b5fd;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(167, 139, 250, 0.45);
+  padding: 4px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.gj-storm-danger {
+  color: #fecaca;
+  border-color: rgba(239, 68, 68, 0.7);
+  background: rgba(120, 20, 40, 0.5);
+  animation: gj-storm-pulse 1s ease-in-out infinite;
+}
+
+@keyframes gj-storm-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
 .gj-bottom-left {
   position: absolute;
   left: max(14px, env(safe-area-inset-left));
@@ -586,5 +614,11 @@
 @media (orientation: portrait) {
   .gj-rotate-hint.gj-rotate-visible {
     display: flex;
+  }
+
+  /* The rotate hint owns the top-center spot in portrait; drop the storm
+     readout below it so the two never overlap. */
+  .gj-storm-status {
+    top: calc(max(10px, env(safe-area-inset-top)) + 118px);
   }
 }

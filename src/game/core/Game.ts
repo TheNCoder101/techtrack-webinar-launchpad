@@ -10,6 +10,7 @@ import { WEAPON_DEFS } from "../weapons/weaponDefs";
 import { ParticleSystem } from "../weapons/ParticleSystem";
 import { BuildingManager } from "../building/BuildingManager";
 import { AudioManager } from "./AudioManager";
+import { StormManager } from "./StormManager";
 import { InputManager } from "./InputManager";
 import { HUDController } from "../ui/HUDController";
 import { WeaponBar } from "../ui/WeaponBar";
@@ -47,6 +48,7 @@ export class Game {
   private botManager: BotManager;
   private weapons: WeaponSystem;
   private airdrops: AirdropManager;
+  private storm: StormManager;
   private particles: ParticleSystem;
   private buildingManager: BuildingManager;
   private weaponBar: WeaponBar;
@@ -55,6 +57,9 @@ export class Game {
   private score = 0;
   private kills = 0;
   private respawnAt = 0;
+  // Storm damage ticks at 1 Hz while the player stays outside the safe zone
+  // (per-frame takeDamage would retrigger the hurt sound/flash 60x a second).
+  private stormTickIn = 1;
 
   private settings: GameSettings;
   private perfSampleDone = false;
@@ -154,6 +159,8 @@ export class Game {
     this.airdrops.onPickup = (weaponName, isNew) => {
       this.hud.showPickup(weaponName, isNew);
     };
+
+    this.storm = new StormManager(this.scene);
 
     this.weaponBar = new WeaponBar(uiContainer);
     this.weaponBar.onSelect = (index) => {
@@ -292,6 +299,7 @@ export class Game {
     window.removeEventListener("resize", this.onResize);
     document.removeEventListener("visibilitychange", this.onVisibility);
     this.weaponBar.dispose();
+    this.storm.dispose();
     this.postFX?.dispose();
     this.postFX = null;
     this.renderer.dispose();
@@ -318,9 +326,30 @@ export class Game {
       }
     }
 
+    // Storm: advance the shrink state machine, shift the fog while the player
+    // is caught outside, and tick zone damage (1 Hz, dt-driven countdown).
+    const playerOutsideZone = !this.player.dead && this.storm.isOutside(this.player.position);
+    this.storm.update(dt, nowSec, playerOutsideZone);
+    if (playerOutsideZone) {
+      this.stormTickIn -= dt;
+      if (this.stormTickIn <= 0) {
+        this.stormTickIn += 1;
+        this.player.takeDamage(this.storm.damagePerSec, nowSec);
+      }
+    } else {
+      this.stormTickIn = 1;
+    }
+
     this.player.updateCamera(this.camera, this.world, dt);
     this.player.updateWeaponPose(dt, this.input.fireHeld && !this.player.dead);
-    this.botManager.update(dt, nowSec, this.world, this.player.position);
+    this.botManager.update(
+      dt,
+      nowSec,
+      this.world,
+      this.player.position,
+      this.storm.center,
+      this.storm.radius
+    );
     this.world.update(nowSec);
     this.weapons.update(
       dt,
@@ -337,6 +366,7 @@ export class Game {
 
     const activeDef = this.weapons.activeDef;
     const activeSlot = this.weapons.activeSlot;
+    const stormStatus = this.storm.status(nowSec);
     this.hud.update({
       health: this.player.health,
       maxHealth: this.player.maxHealth,
@@ -348,8 +378,16 @@ export class Game {
       weaponName: activeDef?.name ?? "",
       score: this.score,
       kills: this.kills,
+      stormLabel: stormStatus.label,
+      stormSecondsLeft: stormStatus.secondsLeft,
+      playerInStorm: playerOutsideZone,
+      stormDamagePerSec: this.storm.damagePerSec,
     });
-    this.hud.drawMinimap(this.player, this.botManager, this.airdrops.activePosition);
+    this.hud.drawMinimap(this.player, this.botManager, this.airdrops.activePosition, {
+      x: this.storm.center.x,
+      z: this.storm.center.z,
+      radius: this.storm.radius,
+    });
     this.weaponBar.update(this.weapons.slots, this.weapons.activeSlotIndex);
 
     // Keeps the tight sun-shadow box centered on the player; no-op while

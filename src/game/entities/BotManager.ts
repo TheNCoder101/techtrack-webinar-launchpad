@@ -31,9 +31,18 @@ export class BotManager {
     return killed;
   }
 
-  update(dt: number, nowSec: number, world: World, playerPos: THREE.Vector3): void {
+  update(
+    dt: number,
+    nowSec: number,
+    world: World,
+    playerPos: THREE.Vector3,
+    safeZoneCenter: THREE.Vector3,
+    safeZoneRadius: number
+  ): void {
     for (const bot of this.bots) {
-      bot.update(dt, nowSec, world, playerPos, (dmg) => this.onPlayerDamaged?.(dmg));
+      bot.update(dt, nowSec, world, playerPos, safeZoneCenter, safeZoneRadius, (dmg) =>
+        this.onPlayerDamaged?.(dmg)
+      );
     }
   }
 }
