@@ -15,6 +15,7 @@ import {
   type QualityTier,
 } from "@/game/core/Settings";
 import { loadStats, saveStats, type LifetimeStats } from "@/game/core/Stats";
+import { NetManager, type BrokerOverride } from "@/game/net/NetManager";
 import "@/game/ui/hud.css";
 
 const SKIN_STORAGE_KEY = "elronite-skin";
@@ -36,6 +37,23 @@ function loadSavedSkinIndex(stats: LifetimeStats): number {
     // clearing the stats key) silently falls back to the default skin.
     isSkinUnlocked(PLAYER_SKINS[saved], stats);
   return valid ? saved : 0;
+}
+
+/** Dev/test-only signaling override, read from URL params (?net_host=…&
+ *  net_port=…): the Playwright co-op verification points two browser
+ *  contexts at a locally-run `npx peerjs` server this way. Absent (every
+ *  normal visit), NetManager gets no override and uses the public PeerJS
+ *  cloud broker. */
+function brokerOverrideFromUrl(): BrokerOverride | undefined {
+  const params = new URLSearchParams(window.location.search);
+  const host = params.get("net_host");
+  if (!host) return undefined;
+  return {
+    host,
+    port: Number(params.get("net_port") ?? 9000),
+    path: params.get("net_path") ?? "/",
+    secure: params.get("net_secure") === "1",
+  };
 }
 
 function formatDuration(totalSeconds: number): string {
@@ -60,6 +78,65 @@ export default function GamePage() {
   // Non-null while the "match summary" overlay for the life that just ended
   // is showing; cleared automatically when the auto-respawn fires.
   const [lifeSummary, setLifeSummary] = useState<LifeSummary | null>(null);
+
+  // --- Co-op lobby state. Solo play never touches any of this: netRef stays
+  // null unless the player explicitly presses Host/Join, and PLAY works
+  // exactly as before either way (the co-op UI is purely additive).
+  const netRef = useRef<NetManager | null>(null);
+  const [hostCode, setHostCode] = useState<string | null>(null);
+  const [joinConnected, setJoinConnected] = useState(false);
+  const [showJoinInput, setShowJoinInput] = useState(false);
+  const [joinCodeInput, setJoinCodeInput] = useState("");
+  const [coopBusy, setCoopBusy] = useState(false);
+  const [coopError, setCoopError] = useState<string | null>(null);
+  const [peerCount, setPeerCount] = useState(0);
+
+  /** Connection failure fallback: drop the NetManager and return to the
+   *  normal solo start screen with an inline error — never a hard crash. */
+  const resetCoop = useCallback((error: string | null) => {
+    netRef.current?.dispose();
+    netRef.current = null;
+    setHostCode(null);
+    setJoinConnected(false);
+    setCoopBusy(false);
+    setPeerCount(0);
+    setCoopError(error);
+  }, []);
+
+  const handleHostCoop = useCallback(async () => {
+    if (netRef.current || gameRef.current) return;
+    setCoopError(null);
+    setCoopBusy(true);
+    const net = new NetManager(brokerOverrideFromUrl());
+    netRef.current = net;
+    net.onPeerJoined = () => setPeerCount(net.peerCount);
+    net.onPeerLeft = () => setPeerCount(net.peerCount);
+    try {
+      const code = await net.host();
+      setHostCode(code);
+      setCoopBusy(false);
+    } catch {
+      resetCoop("Couldn't reach the co-op service — you can still play solo.");
+    }
+  }, [resetCoop]);
+
+  const handleJoinCoop = useCallback(async () => {
+    if (netRef.current || gameRef.current) return;
+    const code = joinCodeInput.trim();
+    if (!code) return;
+    setCoopError(null);
+    setCoopBusy(true);
+    const net = new NetManager(brokerOverrideFromUrl());
+    netRef.current = net;
+    net.onPeerLeft = () => setPeerCount(net.peerCount);
+    try {
+      await net.join(code);
+      setJoinConnected(true);
+      setCoopBusy(false);
+    } catch {
+      resetCoop("Couldn't join that game — check the code and try again.");
+    }
+  }, [joinCodeInput, resetCoop]);
 
   // All ledger mutations funnel through here so every change is persisted
   // immediately (same save-on-change pattern as the settings callbacks).
@@ -112,7 +189,21 @@ export default function GamePage() {
 
     const input = new InputManager(container);
     const hud = new HUDController(container);
-    const game = new Game(canvas, input, hud, container, PLAYER_SKINS[skinIndex], settings);
+    // netRef is null for solo play (the default) — Game then skips every
+    // co-op code path entirely.
+    const game = new Game(
+      canvas,
+      input,
+      hud,
+      container,
+      PLAYER_SKINS[skinIndex],
+      settings,
+      netRef.current ?? undefined
+    );
+    // Console/debug affordance (also used by the automated co-op
+    // verification harness) — a read handle only, nothing in the game
+    // reads it back.
+    (window as unknown as { __elronite?: Game }).__elronite = game;
 
     // Progression hooks: feed the persisted lifetime ledger and drive the
     // match-summary overlay. Purely observational — the in-game auto-respawn
@@ -164,6 +255,7 @@ export default function GamePage() {
       gameRef.current?.dispose();
       inputRef.current?.dispose();
       hudRef.current?.dispose();
+      netRef.current?.dispose();
     };
   }, []);
 
@@ -224,6 +316,86 @@ export default function GamePage() {
             <div className="gj-lifetime-stats">
               🏆 {stats.totalKills} kills · 💀 {stats.totalDeaths} eliminated · ⭐ best{" "}
               {stats.bestScore} · ⏱ {formatDuration(stats.totalPlaySeconds)} played
+            </div>
+
+            {/* Co-op lobby (additive — PLAY below works exactly as before
+                for solo). Host shows a join code + waiting state; Join takes
+                a code; failures fall back here with an inline error. */}
+            <div className="gj-coop-section">
+              <div className="gj-settings-title">Co-op · 2–4 players</div>
+
+              {!hostCode && !joinConnected && (
+                <div className="gj-coop-buttons">
+                  <button
+                    type="button"
+                    className="gj-coop-btn"
+                    disabled={coopBusy}
+                    onClick={handleHostCoop}
+                  >
+                    Host Co-op
+                  </button>
+                  <button
+                    type="button"
+                    className="gj-coop-btn"
+                    disabled={coopBusy}
+                    onClick={() => setShowJoinInput((v) => !v)}
+                  >
+                    Join Co-op
+                  </button>
+                </div>
+              )}
+
+              {showJoinInput && !joinConnected && !hostCode && (
+                <div className="gj-coop-join-row">
+                  <input
+                    className="gj-coop-code-input"
+                    type="text"
+                    inputMode="text"
+                    autoCapitalize="none"
+                    maxLength={4}
+                    placeholder="code"
+                    value={joinCodeInput}
+                    onChange={(e) => setJoinCodeInput(e.target.value)}
+                    aria-label="Join code"
+                  />
+                  <button
+                    type="button"
+                    className="gj-coop-btn"
+                    disabled={coopBusy || joinCodeInput.trim().length === 0}
+                    onClick={handleJoinCoop}
+                  >
+                    Join
+                  </button>
+                </div>
+              )}
+
+              {coopBusy && <div className="gj-coop-status">Connecting…</div>}
+
+              {hostCode && (
+                <div className="gj-coop-status">
+                  Join code: <b className="gj-coop-code">{hostCode}</b>
+                  {" — "}
+                  {peerCount === 0
+                    ? "waiting for players…"
+                    : `${peerCount} player${peerCount === 1 ? "" : "s"} connected — press PLAY`}
+                </div>
+              )}
+
+              {joinConnected && (
+                <div className="gj-coop-status">Connected to host — press PLAY</div>
+              )}
+
+              {(hostCode || joinConnected) && (
+                <button
+                  type="button"
+                  className="gj-coop-cancel"
+                  onClick={() => resetCoop(null)}
+                >
+                  Cancel co-op
+                </button>
+              )}
+
+              {coopError && <div className="gj-coop-error">{coopError}</div>}
             </div>
 
             <div className="gj-settings-section">

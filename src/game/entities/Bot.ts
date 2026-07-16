@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { BOT_MAX_HP, BOT_WANDER_SPEED, BOT_RESPAWN_TIME, WORLD_RADIUS } from "../core/constants";
 import type { Collider } from "../core/types";
+import type { BotNetState } from "../net/protocol";
 import type { BotDifficultySettings } from "../core/Settings";
 import { World } from "../world/World";
 import { createBlobShadow } from "../world/blobShadow";
@@ -74,6 +75,14 @@ export class Bot {
   hitFlashUntil = 0;
   fleeingStorm = false;
 
+  // Non-authoritative (joiner-side) puppet state: the latest host-broadcast
+  // transform, lerped toward in updateNonAuthoritative. Same lerp idiom as
+  // RemotePlayer — joiners keep real Bot meshes to see and raycast against,
+  // they just never run local AI/physics for them.
+  private netTarget = new THREE.Vector3();
+  private netYaw = 0;
+  private hasNetState = false;
+
   constructor(
     id: number,
     scene: THREE.Scene,
@@ -128,6 +137,87 @@ export class Bot {
     this.pickWanderTarget();
   }
 
+  /** Eases the white hit-flash back to the base skin once it expires; shared
+   *  by the authoritative update() and updateNonAuthoritative(). */
+  private restoreHitFlash(nowSec: number): void {
+    if (nowSec >= this.hitFlashUntil && this.humanoid.bodyMat.color.r > this.baseBodyColor.r) {
+      this.humanoid.bodyMat.color.copy(this.baseBodyColor);
+      this.humanoid.headMat.color.copy(this.baseHeadColor);
+    }
+  }
+
+  /** Non-authoritative: ingest one bot entry from a host `bot_state`
+   *  broadcast. Mirrors the alive/HP transitions takeDamage()/respawn()
+   *  produce locally (hide on death, show + re-skin on respawn, white flash
+   *  on an HP drop) and stores the transform target for the per-frame lerp. */
+  applyNetworkState(state: BotNetState, world: World): void {
+    const [x, , z] = state.pos;
+    if (state.alive && !this.alive) {
+      this.alive = true;
+      this.group.visible = true;
+      this.shadow.visible = true;
+      // The host also re-rolls a random skin on respawn; skins aren't in the
+      // protocol (purely cosmetic), so each peer rolls its own.
+      this.applySkin(randomEnemySkin());
+      this.group.position.set(x, world.getHeightAt(x, z), z);
+      this.group.rotation.y = state.yaw;
+    } else if (!state.alive && this.alive) {
+      this.alive = false;
+      this.group.visible = false;
+      this.shadow.visible = false;
+    }
+    if (state.alive && state.hp < this.hp) {
+      this.hitFlashUntil = performance.now() / 1000 + 0.12;
+      this.humanoid.bodyMat.color.set(0xffffff);
+      this.humanoid.headMat.color.set(0xffffff);
+    }
+    this.hp = state.hp;
+    this.netTarget.set(x, 0, z);
+    this.netYaw = state.yaw;
+    if (!this.hasNetState) {
+      this.hasNetState = true;
+      this.group.position.set(x, world.getHeightAt(x, z), z);
+      this.group.rotation.y = state.yaw;
+    }
+  }
+
+  /** Non-authoritative per-frame update: no AI, no attacks, no respawn timer
+   *  — just lerp toward the latest host transform (same smoothing curve as
+   *  RemotePlayer/Player.updateCamera) and drive the shared walk cycle from
+   *  the actual movement. Y always comes from the local heightfield, which
+   *  is deterministic and therefore identical to the host's. */
+  updateNonAuthoritative(dt: number, nowSec: number, world: World): void {
+    if (!this.alive) return;
+    this.restoreHitFlash(nowSec);
+    if (!this.hasNetState) return;
+
+    const pos = this.group.position;
+    if (Math.hypot(this.netTarget.x - pos.x, this.netTarget.z - pos.z) > 12) {
+      pos.x = this.netTarget.x;
+      pos.z = this.netTarget.z;
+    }
+
+    const prevX = pos.x;
+    const prevZ = pos.z;
+    const smoothing = 1 - Math.pow(0.0008, dt);
+    pos.x += (this.netTarget.x - pos.x) * smoothing;
+    pos.z += (this.netTarget.z - pos.z) * smoothing;
+    pos.y = world.getHeightAt(pos.x, pos.z);
+
+    let yawDelta = this.netYaw - this.group.rotation.y;
+    yawDelta = Math.atan2(Math.sin(yawDelta), Math.cos(yawDelta));
+    this.group.rotation.y += yawDelta * smoothing;
+
+    this.shadow.position.set(pos.x, pos.y + 0.03, pos.z);
+
+    const moved = Math.hypot(pos.x - prevX, pos.z - prevZ);
+    const maxBotSpeed = BOT_WANDER_SPEED * 1.7;
+    const speedT = THREE.MathUtils.clamp(dt > 0 ? moved / dt / maxBotSpeed : 0, 0, 1);
+    const strideHz = 1.6 + speedT * 1.6;
+    this.locomotionPhase += dt * strideHz * Math.PI * 2;
+    animateHumanoidLocomotion(this.humanoid, speedT, this.locomotionPhase, dt);
+  }
+
   takeDamage(amount: number): boolean {
     if (!this.alive) return false;
     this.hp -= amount;
@@ -159,10 +249,7 @@ export class Bot {
       return;
     }
 
-    if (nowSec >= this.hitFlashUntil && this.humanoid.bodyMat.color.r > this.baseBodyColor.r) {
-      this.humanoid.bodyMat.color.copy(this.baseBodyColor);
-      this.humanoid.headMat.color.copy(this.baseHeadColor);
-    }
+    this.restoreHitFlash(nowSec);
 
     const pos = this.group.position;
     const toPlayer = new THREE.Vector3().subVectors(playerPos, pos);

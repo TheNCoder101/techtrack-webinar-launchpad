@@ -3,6 +3,14 @@ import { WORLD_RADIUS } from "./constants";
 import { World } from "../world/World";
 import { Player } from "../entities/Player";
 import { BotManager } from "../entities/BotManager";
+import { RemotePlayer } from "../entities/RemotePlayer";
+import type { NetManager } from "../net/NetManager";
+import {
+  STATE_SEND_HZ,
+  BOT_STATE_SEND_HZ,
+  type NetMessage,
+  type PeerStateMessage,
+} from "../net/protocol";
 import type { CharacterSkin } from "../entities/skinDefs";
 import { WeaponSystem } from "../weapons/WeaponSystem";
 import { AirdropManager } from "../weapons/AirdropManager";
@@ -100,6 +108,27 @@ export class Game {
   // shot gets a short-lived tracer line, cleaned up here every frame.
   private botTracers: { line: THREE.Line; expiresAt: number }[] = [];
 
+  // --- Co-op state (all inert in solo play: `net` is only ever passed in
+  // when the player explicitly chose Host/Join on the start screen). Every
+  // peer owns its own player transform; the host is the sole bot authority.
+  private net?: NetManager;
+  private playerSkinId: string;
+  private remotePlayers = new Map<string, RemotePlayer>();
+  private remoteStates = new Map<string, PeerStateMessage>();
+  private lastPeerSeq = new Map<string, number>();
+  private stateSeq = 0;
+  private stateSendIn = 0;
+  private botStateSendIn = 0;
+  private nextHitId = 0;
+  // Set only while applying a joiner's forwarded bot_hit, so the shared
+  // onKill path can credit the kill to that peer instead of the host.
+  private remoteHitPeer: string | null = null;
+  // Receive-side dedupe for the 3x-redundant stateful events (see
+  // NetManager's stagger): key -> receive time, pruned as they age out.
+  private seenBotHits = new Map<string, number>();
+  private seenKillFeed = new Map<string, number>();
+  private netTmpVec = new THREE.Vector3();
+
   private settings: GameSettings;
   private perfSampleDone = false;
   private perfSampleFrames = 0;
@@ -134,10 +163,16 @@ export class Game {
     private hud: HUDController,
     uiContainer: HTMLElement,
     playerSkin: CharacterSkin,
-    settings: GameSettings
+    settings: GameSettings,
+    net?: NetManager
   ) {
     this.settings = { ...settings };
     this.audio.setSfxVolume(this.settings.sfxVolume);
+    // Optional co-op session — mirrors how Settings/skin are passed in. Solo
+    // play never constructs a NetManager, so this stays undefined and every
+    // net code path below is skipped.
+    this.net = net;
+    this.playerSkinId = playerSkin.id;
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(
@@ -182,19 +217,55 @@ export class Game {
     // count and per-bot aggression knobs (see BOT_DIFFICULTY in Settings.ts).
     // Resolved once here — a mid-session perf auto-downgrade does not
     // retroactively despawn bots.
+    // Co-op authority split: the host (and solo play) runs the real bot AI;
+    // joiners get a non-authoritative manager that only puppets the host's
+    // bot_state broadcasts.
     this.botManager = new BotManager(
       this.scene,
       this.world,
-      BOT_DIFFICULTY[this.settings.qualityTier]
+      BOT_DIFFICULTY[this.settings.qualityTier],
+      !net || net.isHost
     );
     this.botManager.onPlayerDamaged = (amount) => {
       this.player.takeDamage(amount, performance.now() / 1000);
     };
-    this.botManager.onKill = () => {
+    this.botManager.onKill = (bot) => {
+      if (this.remoteHitPeer && this.net) {
+        // A joiner's forwarded bot_hit landed the killing blow — credit that
+        // peer via kill_feed instead of the host's own score.
+        this.net.broadcast(
+          { t: "kill_feed", peerId: this.remoteHitPeer, botId: bot.id },
+          { redundant: true }
+        );
+        return;
+      }
       this.score += 10;
       this.kills += 1;
       this.onKill?.();
+      if (this.net?.isHost) {
+        this.net.broadcast(
+          { t: "kill_feed", peerId: this.net.myId ?? "", botId: bot.id },
+          { redundant: true }
+        );
+      }
     };
+    if (net && !net.isHost) {
+      // Joiner: local raycast hits on bots never apply locally — they're
+      // forwarded to the host, and the resulting bot_state broadcast is the
+      // source of truth back.
+      this.botManager.onRemoteHit = (botId, damage) => {
+        if (!net.hostId) return;
+        net.sendTo(
+          net.hostId,
+          { t: "bot_hit", botId, damage, hitId: ++this.nextHitId },
+          { redundant: true }
+        );
+      };
+    }
+    if (net) {
+      net.onMessage = (peerId, msg) => this.handleNetMessage(peerId, msg);
+      net.onPeerLeft = (peerId) => this.removeRemotePlayer(peerId);
+    }
     this.botManager.onRangedFire = (from, to) => {
       this.spawnBotTracer(from, to);
       this.particles.burst(from, new THREE.Color(0xff5a3d), 4, 2, 0.6, 1, 0.18);
@@ -372,9 +443,153 @@ export class Game {
       (t.line.material as THREE.Material).dispose();
     }
     this.botTracers = [];
+    // Puppets are Game-owned; the NetManager itself is owned by the React
+    // layer that created it (GamePage disposes it on unmount).
+    for (const peerId of [...this.remotePlayers.keys()]) {
+      this.removeRemotePlayer(peerId);
+    }
     this.postFX?.dispose();
     this.postFX = null;
     this.renderer.dispose();
+  }
+
+  /** Dispatch for every game-level co-op message (see net/protocol.ts). */
+  private handleNetMessage(peerId: string, msg: NetMessage): void {
+    const net = this.net;
+    if (!net) return;
+    switch (msg.t) {
+      case "state": {
+        // Unreliable channel: drop anything older than what we've applied.
+        const lastSeq = this.lastPeerSeq.get(peerId) ?? -1;
+        if (msg.seq <= lastSeq) return;
+        this.lastPeerSeq.set(peerId, msg.seq);
+        this.remoteStates.set(peerId, msg);
+        let puppet = this.remotePlayers.get(peerId);
+        if (!puppet) {
+          // First sight of this peer — spawn its puppet at the reported spot.
+          puppet = new RemotePlayer(
+            this.scene,
+            msg.skinId,
+            this.netTmpVec.set(msg.pos[0], msg.pos[1], msg.pos[2])
+          );
+          this.remotePlayers.set(peerId, puppet);
+        } else {
+          puppet.setSkin(msg.skinId);
+        }
+        puppet.setDead(msg.dead);
+        return;
+      }
+      case "bot_state":
+        if (!net.isHost) this.botManager.applyBotState(msg.bots, this.world);
+        return;
+      case "bot_hit": {
+        // Host only: apply a joiner's local raycast hit exactly like a local
+        // weapon hit — the next bot_state broadcast carries the result back.
+        if (!net.isHost) return;
+        const nowSec = performance.now() / 1000;
+        const key = `${peerId}:${msg.hitId}`;
+        if (this.seenBotHits.has(key)) return; // 3x-redundant send dedupe
+        this.seenBotHits.set(key, nowSec);
+        this.pruneSeen(this.seenBotHits, nowSec);
+        if (!this.botManager.isAlive(msg.botId)) return;
+        this.remoteHitPeer = peerId;
+        this.botManager.damage(msg.botId, msg.damage);
+        this.remoteHitPeer = null;
+        return;
+      }
+      case "kill_feed": {
+        // Score/HUD sync: only kills credited to *this* peer matter locally.
+        if (msg.peerId !== net.myId) return;
+        const nowSec = performance.now() / 1000;
+        const key = `kf:${msg.botId}`;
+        const last = this.seenKillFeed.get(key) ?? -Infinity;
+        // Redundant copies arrive within ~200ms; a legitimate re-kill of the
+        // same bot is at least BOT_RESPAWN_TIME (6s) away, so a 2s window
+        // dedupes the former without ever eating the latter.
+        if (nowSec - last < 2) return;
+        this.seenKillFeed.set(key, nowSec);
+        this.score += 10;
+        this.kills += 1;
+        this.onKill?.();
+        this.audio.botKill();
+        this.hud.pulseHit(true);
+        return;
+      }
+    }
+  }
+
+  /** Bounded growth for the receive-side dedupe maps: entries only matter
+   *  for the ~200ms redundancy window, so anything older than 5s can go. */
+  private pruneSeen(map: Map<string, number>, nowSec: number): void {
+    if (map.size <= 256) return;
+    for (const [key, t] of map) {
+      if (nowSec - t > 5) map.delete(key);
+    }
+  }
+
+  /** Per-frame co-op work (called from the loop only when a NetManager
+   *  exists): timed own-state broadcast, host-only bot_state broadcast, and
+   *  the puppet lerp toward each peer's latest received transform. */
+  private updateNet(dt: number): void {
+    const net = this.net;
+    if (!net) return;
+
+    this.stateSendIn -= dt;
+    if (this.stateSendIn <= 0) {
+      this.stateSendIn += 1 / STATE_SEND_HZ;
+      const p = this.player;
+      net.broadcast({
+        t: "state",
+        seq: ++this.stateSeq,
+        pos: [p.position.x, p.position.y, p.position.z],
+        yaw: p.yaw,
+        pitch: p.pitch,
+        hp: p.health,
+        skinId: this.playerSkinId,
+        weaponSlot: this.weapons.activeSlotIndex,
+        firing: this.input.fireHeld && !p.dead,
+        dead: p.dead,
+      });
+    }
+
+    if (net.isHost) {
+      this.botStateSendIn -= dt;
+      if (this.botStateSendIn <= 0) {
+        this.botStateSendIn += 1 / BOT_STATE_SEND_HZ;
+        net.broadcast({
+          t: "bot_state",
+          bots: this.botManager.bots.map((b) => ({
+            id: b.id,
+            pos: [b.group.position.x, b.group.position.y, b.group.position.z] as [
+              number,
+              number,
+              number,
+            ],
+            yaw: b.group.rotation.y,
+            hp: b.hp,
+            alive: b.alive,
+          })),
+        });
+      }
+    }
+
+    for (const [peerId, st] of this.remoteStates) {
+      const puppet = this.remotePlayers.get(peerId);
+      if (!puppet) continue;
+      puppet.applyNetworkState(
+        this.netTmpVec.set(st.pos[0], st.pos[1], st.pos[2]),
+        st.yaw,
+        st.pitch,
+        dt
+      );
+    }
+  }
+
+  private removeRemotePlayer(peerId: string): void {
+    this.remotePlayers.get(peerId)?.dispose(this.scene);
+    this.remotePlayers.delete(peerId);
+    this.remoteStates.delete(peerId);
+    this.lastPeerSeq.delete(peerId);
   }
 
   /** Brief red line from a ranged bot to the player, purely cosmetic feedback
@@ -442,6 +657,10 @@ export class Game {
       this.storm.center,
       this.storm.radius
     );
+    // Co-op: broadcast own state (and, as host, the authoritative bot
+    // snapshot) and lerp every remote-player puppet toward its latest
+    // received transform. No-op in solo play.
+    if (this.net) this.updateNet(dt);
     this.world.update(nowSec);
     this.weapons.update(
       dt,

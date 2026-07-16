@@ -721,6 +721,102 @@
   opacity: 0.85;
 }
 
+/* Co-op lobby panel — mirrors .gj-settings-section / .gj-quality-btn so it
+   reads as part of the same start-screen system. */
+.gj-coop-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  max-width: 320px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 12px 16px;
+}
+
+.gj-coop-buttons {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.gj-coop-btn {
+  flex: 1;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+
+.gj-coop-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.gj-coop-join-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.gj-coop-code-input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: lowercase;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.35);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  outline: none;
+}
+
+.gj-coop-code-input:focus {
+  border-color: #facc15;
+}
+
+.gj-coop-status {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.85;
+  text-align: center;
+}
+
+.gj-coop-code {
+  font-size: 15px;
+  letter-spacing: 0.18em;
+  color: #facc15;
+}
+
+.gj-coop-cancel {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.gj-coop-error {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ff8f8f;
+  text-align: center;
+}
+
 .gj-play-btn {
   padding: 14px 52px;
   font-size: 20px;
@@ -761,9 +857,10 @@
       "title settings"
       "subtitle settings"
       "skins play"
+      "coop coop"
       "stats stats"
       "help help";
-    grid-template-rows: auto auto auto auto auto;
+    grid-template-rows: auto auto auto auto auto auto;
     align-items: center;
     justify-items: center;
     column-gap: 24px;
@@ -793,6 +890,12 @@
     grid-area: settings;
     padding: 10px 14px;
     gap: 8px;
+  }
+  .gj-coop-section {
+    grid-area: coop;
+    padding: 8px 14px;
+    gap: 7px;
+    max-width: 420px;
   }
   .gj-play-btn {
     grid-area: play;
