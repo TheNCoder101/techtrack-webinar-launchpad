@@ -63,11 +63,15 @@ export class AirdropManager {
     return this.crate ? this.crate.group.position : null;
   }
 
-  private spawnCrate(): void {
+  private spawnCrate(safeZoneCenter: THREE.Vector3, safeZoneRadius: number): void {
     const angle = Math.random() * Math.PI * 2;
-    const r = Math.random() * WORLD_RADIUS * 0.75;
-    const x = Math.cos(angle) * r;
-    const z = Math.sin(angle) * r;
+    // Stay inside the current safe zone (with a margin so a crate never lands
+    // right on the fence) — capped by the original world-scale spread too, so
+    // early game (zone still ~full size) keeps its old, wider distribution.
+    const maxR = Math.min(WORLD_RADIUS * 0.75, safeZoneRadius * 0.85);
+    const r = Math.random() * maxR;
+    const x = safeZoneCenter.x + Math.cos(angle) * r;
+    const z = safeZoneCenter.z + Math.sin(angle) * r;
     const groundY = this.world.getHeightAt(x, z);
 
     const group = new THREE.Group();
@@ -101,10 +105,12 @@ export class AirdropManager {
     player: Player,
     weaponSystem: WeaponSystem,
     particles: ParticleSystem,
-    audio: AudioManager
+    audio: AudioManager,
+    safeZoneCenter: THREE.Vector3,
+    safeZoneRadius: number
   ): void {
     if (!this.crate) {
-      if (nowSec >= this.nextSpawnAt) this.spawnCrate();
+      if (nowSec >= this.nextSpawnAt) this.spawnCrate(safeZoneCenter, safeZoneRadius);
       return;
     }
 

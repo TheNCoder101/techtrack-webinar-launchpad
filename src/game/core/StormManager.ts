@@ -91,8 +91,13 @@ export class StormManager {
   }
 
   get damagePerSec(): number {
-    // During a shrink the incoming (smaller) stage's damage already applies —
-    // matches the usual BR escalation and keeps the getter branch-free.
+    // During a shrink, the incoming (smaller, harsher) stage's damage
+    // already applies — matches the usual BR escalation curve, where the
+    // zone starts punishing you the moment it starts closing, not only once
+    // it finishes.
+    if (this.phase === "shrinking" && this.stageIndex < STORM_STAGES.length - 1) {
+      return STORM_STAGES[this.stageIndex + 1].damagePerSec;
+    }
     return STORM_STAGES[this.stageIndex].damagePerSec;
   }
 

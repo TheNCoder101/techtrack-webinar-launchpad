@@ -151,7 +151,8 @@ export class Bot {
     playerPos: THREE.Vector3,
     safeZoneCenter: THREE.Vector3,
     safeZoneRadius: number,
-    onAttack: (damage: number) => void
+    onAttack: (damage: number) => void,
+    onRangedFire?: (from: THREE.Vector3, to: THREE.Vector3) => void
   ): void {
     if (!this.alive) {
       if (nowSec >= this.respawnAt) this.respawn(world);
@@ -204,6 +205,12 @@ export class Bot {
         ) {
           this.attackCooldown = this.difficulty.rangedFireCooldown;
           onAttack(this.difficulty.rangedDamage);
+          // Ranged bots previously had no visual/audio tell at all — a shot
+          // landed as an unexplained HP drop with nothing on screen to
+          // explain it (easy to misread as "storm damage" if it happens to
+          // land while the player is standing in the safe zone). This gives
+          // the player something to actually see.
+          onRangedFire?.(pos.clone(), playerPos.clone());
         }
       } else if (distToPlayer < ATTACK_RANGE) {
         if (this.attackCooldown <= 0) {

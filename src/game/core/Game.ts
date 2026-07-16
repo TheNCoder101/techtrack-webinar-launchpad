@@ -93,6 +93,13 @@ export class Game {
   // (per-frame takeDamage would retrigger the hurt sound/flash 60x a second).
   private stormTickIn = 1;
 
+  // Ranged bots previously fired with zero visual/audio tell (see Bot.ts) —
+  // a shot just silently subtracted HP, which reads as unexplained damage,
+  // especially when it happens to land while the player is inside the storm
+  // safe zone and assumes any damage there must be the zone itself. Each
+  // shot gets a short-lived tracer line, cleaned up here every frame.
+  private botTracers: { line: THREE.Line; expiresAt: number }[] = [];
+
   private settings: GameSettings;
   private perfSampleDone = false;
   private perfSampleFrames = 0;
@@ -187,6 +194,12 @@ export class Game {
       this.score += 10;
       this.kills += 1;
       this.onKill?.();
+    };
+    this.botManager.onRangedFire = (from, to) => {
+      this.spawnBotTracer(from, to);
+      this.particles.burst(from, new THREE.Color(0xff5a3d), 4, 2, 0.6, 1, 0.18);
+      this.particles.burst(to, new THREE.Color(0xff3355), 5, 3, 1, 3, 0.25);
+      this.audio.shoot();
     };
 
     this.particles = new ParticleSystem(this.scene, QUALITY_TIERS[this.settings.qualityTier].particlePoolSize);
@@ -353,9 +366,28 @@ export class Game {
     this.weaponBar.dispose();
     this.buildPieceBar.dispose();
     this.storm.dispose();
+    for (const t of this.botTracers) {
+      this.scene.remove(t.line);
+      t.line.geometry.dispose();
+      (t.line.material as THREE.Material).dispose();
+    }
+    this.botTracers = [];
     this.postFX?.dispose();
     this.postFX = null;
     this.renderer.dispose();
+  }
+
+  /** Brief red line from a ranged bot to the player, purely cosmetic feedback
+   *  for a shot that already landed (see the botTracers field comment). */
+  private spawnBotTracer(from: THREE.Vector3, to: THREE.Vector3): void {
+    const geo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(from.x, from.y + 1.3, from.z),
+      new THREE.Vector3(to.x, to.y + 1.1, to.z),
+    ]);
+    const mat = new THREE.LineBasicMaterial({ color: 0xff3b3b, transparent: true, opacity: 0.8 });
+    const line = new THREE.Line(geo, mat);
+    this.scene.add(line);
+    this.botTracers.push({ line, expiresAt: performance.now() / 1000 + 0.1 });
   }
 
   private loop = (): void => {
@@ -421,8 +453,27 @@ export class Game {
       this.audio,
       this.player
     );
-    this.airdrops.update(dt, nowSec, this.player, this.weapons, this.particles, this.audio);
+    this.airdrops.update(
+      dt,
+      nowSec,
+      this.player,
+      this.weapons,
+      this.particles,
+      this.audio,
+      this.storm.center,
+      this.storm.radius
+    );
     this.particles.update(dt);
+
+    if (this.botTracers.length) {
+      this.botTracers = this.botTracers.filter((t) => {
+        if (nowSec < t.expiresAt) return true;
+        this.scene.remove(t.line);
+        t.line.geometry.dispose();
+        (t.line.material as THREE.Material).dispose();
+        return false;
+      });
+    }
 
     const activeDef = this.weapons.activeDef;
     const activeSlot = this.weapons.activeSlot;

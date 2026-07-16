@@ -8,6 +8,9 @@ export class BotManager {
   raycastTargets: THREE.Object3D[] = [];
   onPlayerDamaged?: (amount: number) => void;
   onKill?: (bot: Bot) => void;
+  /** Fired every time a ranged bot actually takes a shot at the player —
+   *  purely cosmetic (tracer/impact feedback), does not affect damage. */
+  onRangedFire?: (from: THREE.Vector3, to: THREE.Vector3) => void;
 
   /** `difficulty` comes from BOT_DIFFICULTY[settings.qualityTier] in Game's
    *  constructor — the quality tier doubles as the difficulty axis. */
@@ -45,8 +48,15 @@ export class BotManager {
     safeZoneRadius: number
   ): void {
     for (const bot of this.bots) {
-      bot.update(dt, nowSec, world, playerPos, safeZoneCenter, safeZoneRadius, (dmg) =>
-        this.onPlayerDamaged?.(dmg)
+      bot.update(
+        dt,
+        nowSec,
+        world,
+        playerPos,
+        safeZoneCenter,
+        safeZoneRadius,
+        (dmg) => this.onPlayerDamaged?.(dmg),
+        (from, to) => this.onRangedFire?.(from, to)
       );
     }
   }
