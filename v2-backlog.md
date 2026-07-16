@@ -91,3 +91,78 @@ Drop a file named `.ralph-stop` in the repo root to halt the loop before the nex
 - [x] Add a `Player.heal(amount)` method — clamps to `maxHealth`.
 - [x] When an apple tree is destroyed, its apple instances are also zeroed out. (Apples ride the existing per-part `Harvestable.parts` health-scale machinery, so this is covered automatically with no special-case code — independently confirmed by reading the diff line by line, not just trusting the report.)
 - [x] QA (regular tree → wood only no heal; apple tree → wood + capped heal; destroy apple tree → apples cleared; rocks unaffected) — **independently re-verified via code review** given this touches the same instance-dispatch architecture that was Phase 3's highest-regression-risk area; the `parts`-array integration is correct by construction, tsc/build re-confirmed clean on the merged branch.
+
+## Phase 9 — Multiplayer: 2-4 Player Co-op vs. Bots (product-approved, scoped post-launch)
+**Product decision made explicitly by the user**: build co-op (humans + existing bot roster), not competitive PvP —
+client-authoritative hit registration is fine casually, not fair for scored PvP; a real server would be needed for
+that and is out of scope. Signaling method **explicitly chosen: hosted relay** — the public PeerJS broker
+(`cloud.peerjs.com`, via the `peerjs` npm client library, already added as a runtime dependency) handles only the
+SDP/ICE handshake; all game state after that point is direct P2P over an unreliable `RTCDataChannel`. Solo play is
+completely unaffected and stays fully offline — `NetManager` is never constructed unless the player explicitly
+chooses Host/Join co-op from the start screen.
+
+**Known sandbox limitation, flagged honestly**: this dev environment's egress policy blocks `cloud.peerjs.com`
+outright (403 on CONNECT — same as it blocks `github.io`), so the *real* production broker cannot be reached or
+verified from here. Verification substitutes a locally-run `peerjs-server` (via `npx peerjs`, never added as a
+committed dependency) as a signaling stand-in for two Playwright browser contexts on the same machine — this
+exercises the real `RTCPeerConnection`/`RTCDataChannel` negotiation and message-passing code paths for real, just
+against a local broker instead of the public one. **What this cannot substitute for**: real cross-device NAT
+traversal, mobile Safari's WebRTC quirks, and real-world latency/jitter. Real two-phone testing by the user remains
+required before this ships as reliable, same spirit as Phase 4's on-device shadow/postFX gate.
+
+- [ ] **`src/game/net/NetManager.ts`** — wraps a `peerjs` `Peer`. `host(): Promise<string>` creates a `Peer` with
+  a short custom ID (`elronite-` + 4 random base36 chars, collision-acceptable for casual use) and returns the
+  join code; `join(code): Promise<void>` connects to that peer ID. Opens one `DataConnection` per remote peer with
+  `{ reliable: false, serialization: "json" }` — real-time transform sync doesn't need delivery guarantees, and
+  infrequent stateful events (kill/respawn) get cheap idempotent redundancy (send 3x on a 100ms stagger) rather
+  than a second reliable channel, keeping this to one connection type. Expose `onPeerJoined`/`onPeerLeft`/
+  `onMessage(peerId, msg)` callbacks (same optional-callback idiom as `BotManager`) and a `broadcast(msg)`/
+  `sendTo(peerId, msg)` API. `isHost: boolean` is fixed by which of `host()`/`join()` was called — the host
+  is the sole `BotManager` authority (see below), simplest possible authority model for 2-4 casual players.
+- [ ] **Message protocol** (small, versioned via a `t` discriminant field, JSON-serialized): `{t:"state", seq,
+  pos, yaw, pitch, hp, skinId, weaponSlot, firing, dead}` from every peer ~15-20Hz; `{t:"bot_state", bots:
+  [{id, pos, yaw, hp, alive}]}` from host only, ~10Hz; `{t:"bot_hit", botId, damage, hitId}` from any joiner
+  when their local raycast lands on a bot (host applies it via the existing `BotManager.damage(refId, amount)`
+  and the resulting `bot_state` broadcast is the source of truth back); `{t:"kill_feed", peerId, botId}` for
+  score/HUD sync. Reuse this exact shape — do not invent a second protocol for a later item.
+- [ ] **`src/game/entities/RemotePlayer.ts`** — a visual-only puppet: builds the shared humanoid rig via
+  `buildHumanoid`/`applyHumanoidSkin` from `humanoid.ts` (identical to how `Bot.ts` and `Player.ts` already do
+  it), exposes `applyNetworkState(pos, yaw, pitch, dt)` which lerps toward the latest received transform using
+  the same smoothing technique as `Player.updateCamera`'s `camera.position.lerp` — no local physics, no
+  collision, purely a puppet driven by incoming `state` messages. Drive `animateHumanoidLocomotion` off the
+  lerped position delta each frame (same derivation `Player.update` already does from `velocity`) so remote
+  players still show a walk cycle instead of gliding.
+- [ ] **`BotManager` authoritative/non-authoritative split** — add `authoritative: boolean` (constructor param,
+  default `true` for solo/host). When `false`, `update()` skips each `Bot`'s AI/physics entirely and instead
+  applies the latest received `bot_state` transform for that `id` (added via a small `applyNetworkState` on
+  `Bot`, same lerp idiom as `RemotePlayer`) — joiners still need real `Bot` meshes to see and raycast against,
+  they just don't run local AI for them. `damage()` on a non-authoritative manager does NOT apply locally;
+  instead it sends `{t:"bot_hit"}` to the host and waits for the resulting `bot_state` broadcast to reflect it
+  (keeps exactly one source of truth for bot HP, avoids desync).
+- [ ] **`Game.ts` wiring**: optional `netManager?: NetManager` passed in only when co-op was chosen (mirrors how
+  `Settings`/`skin` are already passed into the constructor). Host: after the existing `botManager.update(...)`
+  call, broadcast `bot_state`; broadcast own `state`; on receiving a peer's `state`, create/update a
+  `RemotePlayer` puppet keyed by peer ID (add on first sight, remove on `onPeerLeft`); on receiving `bot_hit`,
+  call `botManager.damage(...)` exactly like a local weapon hit already does. Joiner: broadcast own `state`;
+  apply received `bot_state` to its non-authoritative `BotManager`; render `RemotePlayer` puppets for other
+  peers. Existing storm/airdrop/building systems are unchanged and run identically for every peer — no new
+  authority split needed there since they're either purely visual or (storm) already derived from a shared
+  deterministic formula (same `WORLD_RADIUS`/`STORM_STAGES` constants, so every peer's clock agrees closely
+  enough for a casual match without needing host-authoritative sync — acceptable given the existing 1Hz damage
+  tick already tolerates some slop).
+- [ ] **Start-screen UI** (`GamePage.tsx`, mirrors the existing `gj-play-btn` pattern): "Host Co-op" button
+  shows the generated join code plus a "waiting for players..." state; "Join Co-op" shows a text input for the
+  code. Both transition into the existing PLAY flow once connected (or immediately for solo — this UI is
+  additive, the solo path is untouched). Connection failure (bad code, broker unreachable) shows an inline error
+  and falls back to the normal solo start screen, never a hard crash.
+- [ ] **Verification**: two Playwright browser contexts on this machine, pointed at a locally-run `npx peerjs`
+  signaling server (not the public broker — see the sandbox-limitation note above) — confirm both peers' `state`
+  messages produce a visible, correctly-lerped `RemotePlayer` puppet on the other side; confirm a joiner-detected
+  bot hit reduces the bot's HP identically on both peers via the `bot_state` round-trip; confirm solo play (no
+  `NetManager` constructed at all) is completely unaffected — `tsc`/build clean, zero console errors in all three
+  scenarios.
+- [ ] **Ship gate, explicit**: co-op ships as a start-screen option but the PR/report must state plainly that
+  real two-device testing (real NAT traversal, real mobile Safari WebRTC, real public-broker reachability) has
+  NOT happened and cannot happen in this sandbox — this is a harder, less self-certifiable gate than even Phase
+  4's, since Phase 4 only needed *performance* numbers from real hardware, this needs the *connection itself* to
+  be proven on real devices before it can be called reliable.
