@@ -9,6 +9,10 @@ decision before any backlog item is written for it.
 Convention: `- [ ]` open, `- [x]` done, `- [ ] (blocked: reason)` needs human input.
 Drop a file named `.ralph-stop` in the repo root to halt the loop before the next item.
 
+## Post-launch fix (977a7e9) — user-reported bugs after full V2 playtesting
+- [x] **Airdrops dropping outside the storm zone.** Confirmed root cause: `AirdropManager` had zero awareness of `StormManager` (an oversight from Phase 5's original scoping — never wired together). Crates now spawn within 85% of the live safe-zone radius/center. Verified via a deterministic test: 5/5 forced spawns landed inside a radius-20 test zone.
+- [x] **"HP loss while inside the zone."** Audited the storm damage-gating code line by line (`isOutside`, the shrink state machine, the 1Hz damage tick) — it is correct; a Playwright test confirmed zero damage over 1.5s genuinely inside the zone and exactly one correct tick outside it. No defect found there. Root cause is almost certainly ranged bots (Phase 6) dealing damage with **zero visual/audio feedback** — a silent HP drop that's easy to misattribute to "the zone" when it happens to land while standing in the safe circle. Fixed by adding a tracer line + particle bursts + a shoot sound to every ranged bot shot, so damage is now always visibly attributable. Also fixed a `StormManager.damagePerSec` inconsistency found during the audit (comment claimed the incoming stage's damage applies during a shrink transition; code always returned the outgoing stage's).
+
 ## Phase 1 — Settings & Perf Foundation ✅ done (f1541bc)
 - [x] Create `src/game/core/Settings.ts`: data-driven quality tiers (low/medium/high) with pixelRatio cap, particle pool size, terrain segment count, prop draw distance, shadows on/off, postFX on/off — mirroring the `Record<Id, Def>` pattern in `weaponDefs.ts`. (particle/terrain/prop fields are modeled but not yet consumed anywhere — that's Phase 3's job.)
 - [x] Wire `Settings` into `Game`'s constructor (replace hardcoded `renderer.setPixelRatio`/`shadowMap.enabled` etc. with tier-driven values).
