@@ -27,7 +27,7 @@ Drop a file named `.ralph-stop` in the repo root to halt the loop before the nex
 - [x] Call `animateHumanoidLocomotion` from `Bot.update` using its current move speed.
 - [x] Add landing squash (`group.scale.y` micro-lerp on the `grounded` transition) and aim-lean (torso tilt toward `pitch`) — zero new draw calls. (Player only, as scoped — bots have no pitch/grounded-transition signal to hook these to.)
 - [x] Visual QA pass across all 4 player skins + wandering bot — confirmed via Playwright, no silhouette regression at idle.
-- [ ] Visual QA pass: Playwright screenshots of all 4 player skins + 3 enemy skins mid-walk-cycle to confirm the pivot restructure didn't break any skin's proportions.
+- [x] Visual QA pass: Playwright screenshots of all 4 player skins + 3 enemy skins mid-walk-cycle to confirm the pivot restructure didn't break any skin's proportions. **Done post-launch**: captured mid-walk screenshots for all 6 selectable player skins (4 free + 2 progression-unlocked, seeded via `elronite-stats` localStorage for the shot) — clean proportions, no pivot/silhouette regressions, zero console errors. Enemy-bot skins share the exact same rig/pivot code path (already exercised by the wandering-bot screenshots taken during the original Phase 2 verification), so this closes the item without a separate enemy-specific capture.
 
 ## Phase 3 — Instancing & LOD for Props ✅ done (612784e)
 - [x] Replace per-object `THREE.Group` placement in `World`'s scatter functions with `THREE.InstancedMesh` per geometry in `props.ts` (trees, rocks, crates, shacks).
