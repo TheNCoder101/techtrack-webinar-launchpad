@@ -45,6 +45,10 @@ function loadSavedSkinIndex(stats: LifetimeStats): number {
  *  normal visit), NetManager gets no override and uses the public PeerJS
  *  cloud broker. */
 function brokerOverrideFromUrl(): BrokerOverride | undefined {
+  // Dev-only: production builds ignore any ?net_host= param entirely and
+  // always use the public PeerJS cloud broker, so a crafted link can never
+  // redirect a real player's signaling to an arbitrary host.
+  if (!import.meta.env.DEV) return undefined;
   const params = new URLSearchParams(window.location.search);
   const host = params.get("net_host");
   if (!host) return undefined;
@@ -202,8 +206,11 @@ export default function GamePage() {
     );
     // Console/debug affordance (also used by the automated co-op
     // verification harness) — a read handle only, nothing in the game
-    // reads it back.
-    (window as unknown as { __elronite?: Game }).__elronite = game;
+    // reads it back. Dev-only: stripped from production builds so the
+    // shipped bundle never exposes the Game instance globally.
+    if (import.meta.env.DEV) {
+      (window as unknown as { __elronite?: Game }).__elronite = game;
+    }
 
     // Progression hooks: feed the persisted lifetime ledger and drive the
     // match-summary overlay. Purely observational — the in-game auto-respawn
