@@ -317,12 +317,12 @@
   50% { opacity: 1; box-shadow: 0 0 14px rgba(125, 211, 252, 0.55); }
 }
 
-/* In-game EXIT button: top-center, above the HUD but out of the thumb zones. */
+/* In-game EXIT button: tucked under the top-right score pill so it clears the
+   centered storm/survive timer and the top-left health cluster. */
 .gj-exit-btn {
   position: absolute;
-  left: 50%;
-  top: max(10px, env(safe-area-inset-top));
-  transform: translateX(-50%);
+  right: max(16px, env(safe-area-inset-right));
+  top: calc(max(14px, env(safe-area-inset-top)) + 42px);
   z-index: 45;
   padding: 7px 14px;
   font-size: 12px;
