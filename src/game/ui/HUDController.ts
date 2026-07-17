@@ -19,6 +19,9 @@ export interface HUDState {
   /** True while the player is outside the safe zone (taking storm damage). */
   playerInStorm: boolean;
   stormDamagePerSec: number;
+  /** Seconds left on the final-zone survival countdown, or null when not yet
+   *  in the final held zone (the victory timer — see Game.finalCountdown). */
+  surviveSecondsLeft: number | null;
 }
 
 // All in-game readouts as plain DOM, written to imperatively every frame.
@@ -34,6 +37,7 @@ export class HUDController {
   private hitMarker: HTMLDivElement;
   private damageFlash: HTMLDivElement;
   private eliminatedBanner: HTMLDivElement;
+  private surviveTimer: HTMLDivElement;
   private minimapCanvas: HTMLCanvasElement;
   private minimapCtx: CanvasRenderingContext2D;
   private weaponNameEl: HTMLDivElement;
@@ -52,7 +56,8 @@ export class HUDController {
     this.root.innerHTML = `
       <div class="gj-crosshair"></div>
       <div class="gj-damage-flash"></div>
-      <div class="gj-eliminated">ELIMINATED — respawning…</div>
+      <div class="gj-eliminated"></div>
+      <div class="gj-survive-timer"></div>
       <div class="gj-hit-marker">✕</div>
       <div class="gj-top-left">
         <div class="gj-health-row">
@@ -84,6 +89,7 @@ export class HUDController {
     this.hitMarker = this.root.querySelector(".gj-hit-marker")!;
     this.damageFlash = this.root.querySelector(".gj-damage-flash")!;
     this.eliminatedBanner = this.root.querySelector(".gj-eliminated")!;
+    this.surviveTimer = this.root.querySelector(".gj-survive-timer")!;
     this.minimapCanvas = this.root.querySelector(".gj-minimap")!;
     this.minimapCtx = this.minimapCanvas.getContext("2d")!;
     this.weaponNameEl = this.root.querySelector(".gj-weapon-name")!;
@@ -114,6 +120,16 @@ export class HUDController {
       }
       this.stormStatus.textContent = `${state.stormLabel}${timer}`;
       this.stormStatus.classList.remove("gj-storm-danger");
+    }
+
+    // Final-zone victory countdown: only visible once the storm is holding its
+    // smallest zone. "Survive" framing makes the win condition explicit.
+    if (state.surviveSecondsLeft !== null) {
+      const s = Math.max(0, Math.ceil(state.surviveSecondsLeft));
+      this.surviveTimer.textContent = `SURVIVE ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+      this.surviveTimer.style.display = "block";
+    } else {
+      this.surviveTimer.style.display = "none";
     }
 
     const reloadEl = this.root.querySelector(".gj-reload-text") as HTMLDivElement;
@@ -160,8 +176,12 @@ export class HUDController {
     }, 260);
   }
 
-  showEliminated(show: boolean): void {
-    this.eliminatedBanner.style.display = show ? "flex" : "none";
+  /** Clears in-game HUD timers at match end. The full win/loss result and its
+   *  buttons are the React end-screen overlay (gj-match-end), so the HUD keeps
+   *  no banner of its own — avoiding a duplicate title showing through the
+   *  overlay scrim. */
+  showMatchEnd(_outcome: "victory" | "defeat"): void {
+    this.surviveTimer.style.display = "none";
   }
 
   drawMinimap(

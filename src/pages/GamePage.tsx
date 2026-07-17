@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Game, type LifeSummary } from "@/game/core/Game";
+import { Game, type LifeSummary, type MatchOutcome } from "@/game/core/Game";
 import { InputManager } from "@/game/core/InputManager";
 import { HUDController } from "@/game/ui/HUDController";
 import {
@@ -79,9 +79,12 @@ export default function GamePage() {
   const [stats, setStats] = useState<LifetimeStats>(loadStats);
   const [skinIndex, setSkinIndex] = useState(() => loadSavedSkinIndex(loadStats()));
   const [settings, setSettings] = useState<GameSettings>(loadSettings);
-  // Non-null while the "match summary" overlay for the life that just ended
-  // is showing; cleared automatically when the auto-respawn fires.
-  const [lifeSummary, setLifeSummary] = useState<LifeSummary | null>(null);
+  // Non-null once the match has ended (win or loss): drives the end screen
+  // with its final stats and Main Menu / Play Again buttons. There is no
+  // respawn — cleared only by returning to the menu or restarting.
+  const [matchEnd, setMatchEnd] = useState<{ outcome: MatchOutcome; summary: LifeSummary } | null>(
+    null
+  );
 
   // --- Co-op lobby state. Solo play never touches any of this: netRef stays
   // null unless the player explicitly presses Host/Join, and PLAY works
@@ -213,20 +216,19 @@ export default function GamePage() {
     }
 
     // Progression hooks: feed the persisted lifetime ledger and drive the
-    // match-summary overlay. Purely observational — the in-game auto-respawn
-    // countdown is untouched.
+    // end screen. A death counts as an elimination; both outcomes update the
+    // best-score record.
     game.onKill = () => {
       updateStats((s) => ({ ...s, totalKills: s.totalKills + 1 }));
     };
-    game.onDeath = (summary) => {
+    game.onMatchEnd = (outcome, summary) => {
       updateStats((s) => ({
         ...s,
-        totalDeaths: s.totalDeaths + 1,
+        totalDeaths: s.totalDeaths + (outcome === "defeat" ? 1 : 0),
         bestScore: Math.max(s.bestScore, summary.score),
       }));
-      setLifeSummary(summary);
+      setMatchEnd({ outcome, summary });
     };
-    game.onRespawn = () => setLifeSummary(null);
 
     inputRef.current = input;
     hudRef.current = hud;
@@ -265,6 +267,52 @@ export default function GamePage() {
       netRef.current?.dispose();
     };
   }, []);
+
+  /** Tears down the live game/input/HUD/net and nulls their refs so a fresh
+   *  match can be started. Deliberately touches no React state or fullscreen
+   *  — callers decide whether to return to the menu or immediately restart.
+   *  Safe to call more than once (the unmount effect's optional chaining then
+   *  simply no-ops on the nulled refs). */
+  const teardownGame = useCallback(() => {
+    gameRef.current?.dispose();
+    inputRef.current?.dispose();
+    hudRef.current?.dispose();
+    netRef.current?.dispose();
+    gameRef.current = null;
+    inputRef.current = null;
+    hudRef.current = null;
+    netRef.current = null;
+    if (import.meta.env.DEV) {
+      (window as unknown as { __elronite?: Game }).__elronite = undefined;
+    }
+  }, []);
+
+  /** Leaves the current match and returns to the start screen (main menu). */
+  const handleExitToMenu = useCallback(() => {
+    teardownGame();
+    setMatchEnd(null);
+    setStarted(false);
+    // Reset any co-op lobby UI back to its solo default.
+    setHostCode(null);
+    setJoinConnected(false);
+    setShowJoinInput(false);
+    setJoinCodeInput("");
+    setCoopBusy(false);
+    setCoopError(null);
+    setPeerCount(0);
+    const doc = document as Document & { exitFullscreen?: () => Promise<void> };
+    if (doc.fullscreenElement) doc.exitFullscreen?.().catch(() => {});
+  }, [teardownGame]);
+
+  /** End screen "Play Again": tears the finished match down and immediately
+   *  starts a fresh solo one, staying in fullscreen (this runs inside the
+   *  button-click gesture). Co-op is not auto-rejoined — players re-host from
+   *  the menu. */
+  const handleRestart = useCallback(() => {
+    teardownGame();
+    setMatchEnd(null);
+    handlePlay();
+  }, [teardownGame, handlePlay]);
 
   return (
     <div className="gj-game-root" ref={containerRef}>
@@ -465,36 +513,62 @@ export default function GamePage() {
         </div>
       )}
 
-      {/* Match-end summary: shown at the moment of elimination (this game's
-          natural round boundary — there is no timer/last-man-standing end),
-          alongside the HUD's ELIMINATED banner. pointer-events:none, so it
-          can never block input, and Game.onRespawn clears it automatically
-          when the untouched RESPAWN_DELAY countdown completes. */}
-      {started && lifeSummary && (
-        <div className="gj-life-summary">
-          <div className="gj-life-summary-title">MATCH SUMMARY</div>
-          <div className="gj-life-summary-row">
-            <span>Kills this life</span>
-            <span>{lifeSummary.kills}</span>
-          </div>
-          <div className="gj-life-summary-row">
-            <span>Score</span>
-            <span>{lifeSummary.score}</span>
-          </div>
-          <div className="gj-life-summary-row">
-            <span>Survived</span>
-            <span>{formatDuration(lifeSummary.survivalSeconds)}</span>
-          </div>
-          <div className="gj-life-summary-lifetime">
-            Lifetime: {stats.totalKills} kills · {stats.totalDeaths} eliminated · best{" "}
-            {stats.bestScore}
+      {/* In-game EXIT button: always available while playing, returns to the
+          main menu. Hidden once the end screen (which has its own Main Menu
+          button) is up. */}
+      {started && !matchEnd && (
+        <button type="button" className="gj-exit-btn" onClick={handleExitToMenu}>
+          ✕ EXIT
+        </button>
+      )}
+
+      {/* End screen: shown once the match ends — a death ("defeat") or
+          surviving the final-zone countdown ("victory"). Interactive (Main
+          Menu / Play Again); there is no auto-respawn. */}
+      {started && matchEnd && (
+        <div className="gj-match-end">
+          <div
+            className={`gj-match-end-card gj-match-end-${matchEnd.outcome}`}
+          >
+            <div className="gj-match-end-title">
+              {matchEnd.outcome === "victory" ? "🏆 VICTORY" : "☠ ELIMINATED"}
+            </div>
+            <div className="gj-match-end-sub">
+              {matchEnd.outcome === "victory"
+                ? "You survived to the final zone."
+                : "You were taken out."}
+            </div>
+            <div className="gj-match-end-row">
+              <span>Kills</span>
+              <span>{matchEnd.summary.kills}</span>
+            </div>
+            <div className="gj-match-end-row">
+              <span>Score</span>
+              <span>{matchEnd.summary.score}</span>
+            </div>
+            <div className="gj-match-end-row">
+              <span>Survived</span>
+              <span>{formatDuration(matchEnd.summary.survivalSeconds)}</span>
+            </div>
+            <div className="gj-match-end-lifetime">
+              Lifetime: {stats.totalKills} kills · {stats.totalDeaths} eliminated · best{" "}
+              {stats.bestScore}
+            </div>
+            <div className="gj-match-end-buttons">
+              <button type="button" className="gj-match-end-play" onClick={handleRestart}>
+                ▶ PLAY AGAIN
+              </button>
+              <button type="button" className="gj-match-end-menu" onClick={handleExitToMenu}>
+                ☰ MAIN MENU
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* In-game only: the start screen now lays out fine in portrait, but the
           dual-thumb touch controls still play best in landscape. */}
-      {started && (
+      {started && !matchEnd && (
         <div className="gj-rotate-hint gj-rotate-visible">
           <div>🔄</div>
           <div>Rotate your device to landscape for the best experience</div>

@@ -35,17 +35,23 @@ import {
 // ever loaded via the dynamic import() in initPostFX below.
 import type { PostFXPipeline } from "./postfx";
 
-const RESPAWN_DELAY = 3;
+// Seconds the player must survive inside the final (smallest) storm zone to
+// win the match. First-pass number — tune with playtesting like the storm
+// stage timings themselves.
+const FINAL_ZONE_SURVIVAL_SECONDS = 45;
 
-/** Snapshot of the life that just ended, handed to Game.onDeath. A death is
- *  this game's natural "match end" boundary (there is no timer/elimination
- *  end condition), so the React layer uses this for the match summary. */
+/** How a match ended, driving the React end screen. */
+export type MatchOutcome = "victory" | "defeat";
+
+/** Snapshot of the match that just ended, handed to Game.onMatchEnd. There is
+ *  no respawn — a death ends the match ("defeat") and surviving the final-zone
+ *  countdown ends it too ("victory"); the React layer shows the end screen. */
 export interface LifeSummary {
-  /** Kills scored during the life that just ended. */
+  /** Kills scored during the match. */
   kills: number;
-  /** Score earned during the life that just ended. */
+  /** Score earned during the match. */
   score: number;
-  /** Seconds survived from (re)spawn to death. */
+  /** Seconds survived from spawn to the match's end. */
   survivalSeconds: number;
 }
 
@@ -79,24 +85,25 @@ export class Game {
 
   private score = 0;
   private kills = 0;
-  private respawnAt = 0;
-  // Per-life baselines for the match-end summary: score/kills accumulate for
-  // the whole session, so "this life" is the delta from these snapshots.
+  // Match-end state: once true the round is over (win OR loss), the loop stops
+  // simulating the local player, and onMatchEnd has fired exactly once.
+  private matchEnded = false;
+  // Counts down only while alive and standing in the final held zone; hitting
+  // zero is the victory condition.
+  private finalCountdown = FINAL_ZONE_SURVIVAL_SECONDS;
+  // Per-match baselines for the summary: score/kills accumulate across the
+  // whole session, so "this match" is the delta from these spawn snapshots.
   private lifeStartAt = performance.now() / 1000;
   private lifeStartKills = 0;
   private lifeStartScore = 0;
 
   // Upward hooks for the React layer (same optional-callback idiom as
-  // Player.onDamaged / BotManager.onKill). None of these alter gameplay —
-  // the auto-respawn countdown runs exactly as before whether or not they
-  // are assigned.
+  // Player.onDamaged / BotManager.onKill).
   /** Fired on every bot kill (feeds the lifetime stats ledger). */
   onKill?: () => void;
-  /** Fired at the moment of death, alongside showEliminated(true) and before
-   *  the respawn countdown starts. */
-  onDeath?: (summary: LifeSummary) => void;
-  /** Fired when the automatic respawn actually happens. */
-  onRespawn?: () => void;
+  /** Fired exactly once when the match ends — on death ("defeat") or on
+   *  surviving the final-zone countdown ("victory"). There is no respawn. */
+  onMatchEnd?: (outcome: MatchOutcome, summary: LifeSummary) => void;
   // Storm damage ticks at 1 Hz while the player stays outside the safe zone
   // (per-frame takeDamage would retrigger the hurt sound/flash 60x a second).
   private stormTickIn = 1;
@@ -203,14 +210,7 @@ export class Game {
       this.audio.playerHurt();
     };
     this.player.onDeath = () => {
-      const nowSec = performance.now() / 1000;
-      this.respawnAt = nowSec + RESPAWN_DELAY;
-      this.hud.showEliminated(true);
-      this.onDeath?.({
-        kills: this.kills - this.lifeStartKills,
-        score: this.score - this.lifeStartScore,
-        survivalSeconds: nowSec - this.lifeStartAt,
-      });
+      this.endMatch("defeat");
     };
 
     // The quality tier doubles as the difficulty axis: it sets the bot
@@ -605,6 +605,21 @@ export class Game {
     this.botTracers.push({ line, expiresAt: performance.now() / 1000 + 0.1 });
   }
 
+  /** Ends the match exactly once (idempotent). Freezes the local player,
+   *  shows the HUD banner, and notifies the React layer with the final
+   *  summary. No respawn — the player chooses Main Menu / Play Again. */
+  private endMatch(outcome: MatchOutcome): void {
+    if (this.matchEnded) return;
+    this.matchEnded = true;
+    const nowSec = performance.now() / 1000;
+    this.hud.showMatchEnd(outcome);
+    this.onMatchEnd?.(outcome, {
+      kills: this.kills - this.lifeStartKills,
+      score: this.score - this.lifeStartScore,
+      survivalSeconds: nowSec - this.lifeStartAt,
+    });
+  }
+
   private loop = (): void => {
     if (!this.running) return;
     this.rafId = requestAnimationFrame(this.loop);
@@ -614,28 +629,22 @@ export class Game {
 
     this.samplePerf(dt);
 
-    if (this.player.dead) {
-      if (nowSec >= this.respawnAt) {
-        this.player.respawn(nowSec, this.world);
-        this.hud.showEliminated(false);
-        this.lifeStartAt = nowSec;
-        this.lifeStartKills = this.kills;
-        this.lifeStartScore = this.score;
-        this.onRespawn?.();
-      }
-    } else {
+    // Match over (win or loss): the local player is frozen — no input, no
+    // respawn — but the loop keeps running so the world still renders behind
+    // the React end screen and co-op keeps broadcasting this peer's state.
+    if (!this.matchEnded) {
       this.player.update(dt, this.input, this.world);
       if (this.input.consumeBuild()) {
         this.buildingManager.tryBuild(this.player, this.audio);
       }
     }
     // Ghost preview tracks the snapped placement while BUILD is held; hidden
-    // otherwise (and always while dead).
-    this.buildingManager.updatePreview(this.player, this.input.buildHeld && !this.player.dead);
+    // otherwise (and always once the match has ended).
+    this.buildingManager.updatePreview(this.player, this.input.buildHeld && !this.matchEnded);
 
     // Storm: advance the shrink state machine, shift the fog while the player
     // is caught outside, and tick zone damage (1 Hz, dt-driven countdown).
-    const playerOutsideZone = !this.player.dead && this.storm.isOutside(this.player.position);
+    const playerOutsideZone = !this.matchEnded && this.storm.isOutside(this.player.position);
     this.storm.update(dt, nowSec, playerOutsideZone);
     if (playerOutsideZone) {
       this.stormTickIn -= dt;
@@ -645,6 +654,17 @@ export class Game {
       }
     } else {
       this.stormTickIn = 1;
+    }
+
+    // Victory condition: survive the countdown once the storm is holding its
+    // final zone. Only runs while alive and in-match; death (endMatch above)
+    // beats the clock to it for a defeat.
+    if (!this.matchEnded && this.storm.isFinalZone) {
+      this.finalCountdown -= dt;
+      if (this.finalCountdown <= 0) {
+        this.finalCountdown = 0;
+        this.endMatch("victory");
+      }
     }
 
     this.player.updateCamera(this.camera, this.world, dt);
@@ -712,6 +732,8 @@ export class Game {
       stormSecondsLeft: stormStatus.secondsLeft,
       playerInStorm: playerOutsideZone,
       stormDamagePerSec: this.storm.damagePerSec,
+      surviveSecondsLeft:
+        this.storm.isFinalZone && !this.matchEnded ? this.finalCountdown : null,
     });
     this.hud.drawMinimap(this.player, this.botManager, this.airdrops.activePosition, {
       x: this.storm.center.x,

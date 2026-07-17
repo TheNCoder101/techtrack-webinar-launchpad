@@ -90,6 +90,13 @@ export class StormManager {
     return this.currentRadius;
   }
 
+  /** True once the storm has finished its last shrink and is holding the
+   *  final (smallest) zone — the trigger for the match's survival countdown
+   *  (see Game's final-zone timer). */
+  get isFinalZone(): boolean {
+    return this.phase === "waiting" && this.stageIndex >= STORM_STAGES.length - 1;
+  }
+
   get damagePerSec(): number {
     // During a shrink, the incoming (smaller, harsher) stage's damage
     // already applies — matches the usual BR escalation curve, where the

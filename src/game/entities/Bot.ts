@@ -19,6 +19,12 @@ const ATTACK_DAMAGE = 8;
 // Push-out radius for bot-vs-collider collision, mirroring PLAYER_RADIUS
 // (bots share the player's humanoid rig, so the same footprint fits).
 const BOT_RADIUS = 0.5;
+// A touch of extra berth beyond the bare body radius so a bot's mesh keeps
+// clear of a prop's visual bulk (tree canopy, shack corner) instead of
+// grazing it — the player never notices grazing their own first-person body,
+// but a bot brushing a tree reads as clipping. Applied to both the host AI
+// path and the co-op joiner puppet path so they resolve identically.
+const BOT_PROP_CLEARANCE = 0.4;
 // Forward-lookahead steering: how far ahead of the bot the probe point sits,
 // and how much padding beyond the hard push-out circle triggers a swerve.
 const LOOKAHEAD_DIST = 2.6;
@@ -202,6 +208,9 @@ export class Bot {
     const smoothing = 1 - Math.pow(0.0008, dt);
     pos.x += (this.netTarget.x - pos.x) * smoothing;
     pos.z += (this.netTarget.z - pos.z) * smoothing;
+    // Same push-out the host applies: keeps joiner-side puppets from sliding
+    // through props on the straight-line lerp between 10 Hz host snapshots.
+    this.pushOutOfColliders(world);
     pos.y = world.getHeightAt(pos.x, pos.z);
 
     let yawDelta = this.netYaw - this.group.rotation.y;
@@ -329,20 +338,7 @@ export class Bot {
       speedT = speed / maxBotSpeed;
     }
 
-    // Same flat-cylinder push-out loop as Player.update: hard guarantee that
-    // bots never pass through trees, rocks, crates — or placed walls, whose
-    // colliders live in the very same world.colliders array.
-    for (const c of world.colliders) {
-      const dx = pos.x - c.position.x;
-      const dz = pos.z - c.position.z;
-      const d = Math.hypot(dx, dz);
-      const minDist = c.radius + BOT_RADIUS;
-      if (d > 0.0001 && d < minDist) {
-        const push = (minDist - d) / d;
-        pos.x += dx * push;
-        pos.z += dz * push;
-      }
-    }
+    this.pushOutOfColliders(world);
 
     pos.y = world.getHeightAt(pos.x, pos.z);
     this.shadow.position.set(pos.x, pos.y + 0.03, pos.z);
@@ -350,6 +346,28 @@ export class Bot {
     const strideHz = 1.6 + speedT * 1.6;
     this.locomotionPhase += dt * strideHz * Math.PI * 2;
     animateHumanoidLocomotion(this.humanoid, speedT, this.locomotionPhase, dt);
+  }
+
+  /** Flat-cylinder push-out against every world collider (trees, rocks,
+   *  crates, shacks — and placed walls, which live in the same array): the
+   *  hard guarantee that a bot never ends a frame overlapping an obstacle.
+   *  Shared by the host AI path (update) and the co-op joiner puppet path
+   *  (updateNonAuthoritative) so both resolve obstacles identically —
+   *  previously the joiner path skipped this entirely, so remote bots visibly
+   *  slid through props as the lerp cut corners between host snapshots. */
+  private pushOutOfColliders(world: World): void {
+    const pos = this.group.position;
+    for (const c of world.colliders) {
+      const dx = pos.x - c.position.x;
+      const dz = pos.z - c.position.z;
+      const d = Math.hypot(dx, dz);
+      const minDist = c.radius + BOT_RADIUS + BOT_PROP_CLEARANCE;
+      if (d > 0.0001 && d < minDist) {
+        const push = (minDist - d) / d;
+        pos.x += dx * push;
+        pos.z += dz * push;
+      }
+    }
   }
 
   /** Forward-lookahead steering: probes the point LOOKAHEAD_DIST ahead along
