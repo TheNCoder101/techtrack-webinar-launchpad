@@ -63,8 +63,32 @@ why this runs at all on a phone browser) — spend the visual budget on
 
 ---
 
-## Track A — Rendering & Lighting Foundation
+## Track A — Rendering & Lighting Foundation ✅ done (871e04c)
 **Goal:** the single highest-impact, lowest-cost track. No new geometry, no new draw calls on most items.
+
+**Shipped:** A1 (ACES tone mapping, exposure 1.12), A2 (sky sun disk/glow +
+warm horizon + drifting cloud band, no textures), A3 (fresnel rim light on
+character materials via `onBeforeCompile`, verified compatible with the
+hit-flash white-color-set mechanic and all 6 player + 3 enemy skins), A4
+(baked vertical AO gradient on prop vertex colors), A5 (terrain slope/height
+color banding via `onBeforeCompile`, per-pixel not per-vertex), A6 (new
+lightweight always-on-capable grade pass — vignette + subtle chromatic
+aberration — in `gradepass.ts`, code-split to its own ~1.4kB chunk, gated by
+a new `QualitySettings.gradePass` field: off on "low", on for "medium"/"high",
+mutually exclusive with the existing (still off-by-default) bloom/postFX
+composer), A7 (softer blob-shadow falloff). Independently re-verified beyond
+the implementing agent's own report: reviewed every `onBeforeCompile` patch
+and shader injection point directly, confirmed `customProgramCacheKey`
+correctly isolates rim/terrain-patched programs from stock Lambert materials,
+confirmed the gradePass/postFX mutual-exclusion and async-load race guards in
+`Game.ts`, ran an independent `tsc`/build (clean, gradepass chunk confirmed
+present and separate from the main bundle), and ran an independent
+Playwright hit-flash regression test via the dev debug hook — bot body color
+correctly flashes `#8a5a2f → #ffffff` on a real `BotManager.damage()` call
+with the rim shader compiled in. Zero console errors across every check.
+**Real-device frame-time verification is still outstanding** — same standing
+caveat as Phase 4's shadows/postFX gate; the "medium"/"high" gradePass
+default should get a real-iPhone check before being treated as final.
 
 - **A1. Filmic tone mapping + exposure.** `renderer.toneMapping =
   THREE.ACESFilmicToneMapping`, tuned `toneMappingExposure` (~1.0-1.15),
