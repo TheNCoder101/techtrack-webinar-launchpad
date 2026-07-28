@@ -11,23 +11,56 @@ import * as THREE from "three";
 // against the base color — white * color === color, so this reproduces the
 // original per-object MeshLambertMaterial variance exactly.
 
-const trunkGeo = new THREE.CylinderGeometry(0.22, 0.32, 3, 6);
-const leafGeo = new THREE.ConeGeometry(1.5, 2.4, 7);
-const appleGeo = new THREE.SphereGeometry(0.22, 6, 5);
-const rockGeo = new THREE.IcosahedronGeometry(1, 0);
-const crateGeo = new THREE.BoxGeometry(1.1, 1.1, 1.1);
-const roofGeo = new THREE.ConeGeometry(3.6, 2.2, 4);
-const wallGeo = new THREE.BoxGeometry(4.4, 3, 3.6);
+// V3 Track A4: a static top-lit/bottom-dark shade gradient baked into each
+// prop geometry's *vertex* colors at module load — fake ambient occlusion
+// that grounds every prop at zero runtime cost (the renderer multiplies
+// vertexColor * materialColor * instanceColor, so the existing per-instance
+// setColorAt tints are preserved exactly). One-time authoring change; no new
+// draw calls, no per-frame work.
+function bakeVerticalShade(
+  geo: THREE.BufferGeometry,
+  bottom: number,
+  top: number
+): THREE.BufferGeometry {
+  geo.computeBoundingBox();
+  const bb = geo.boundingBox!;
+  const pos = geo.attributes.position;
+  const span = Math.max(bb.max.y - bb.min.y, 1e-5);
+  const colors = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) {
+    const t = (pos.getY(i) - bb.min.y) / span;
+    // Ease-out curve: the darkening concentrates near the ground contact,
+    // reading as occlusion rather than a flat linear ramp.
+    const s = bottom + (top - bottom) * Math.sqrt(t);
+    colors[i * 3] = s;
+    colors[i * 3 + 1] = s;
+    colors[i * 3 + 2] = s;
+  }
+  geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  return geo;
+}
 
-const trunkMat = new THREE.MeshLambertMaterial({ color: 0x6b4a2f });
-const leafMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+const trunkGeo = bakeVerticalShade(new THREE.CylinderGeometry(0.22, 0.32, 3, 6), 0.6, 1);
+const leafGeo = bakeVerticalShade(new THREE.ConeGeometry(1.5, 2.4, 7), 0.66, 1.02);
+const appleGeo = bakeVerticalShade(new THREE.SphereGeometry(0.22, 6, 5), 0.85, 1);
+// Rocks are instance-rotated on all three axes, so their object-space
+// gradient lands at a random angle per rock — that turns this bake into
+// per-face form variation rather than strict ground AO, which still breaks
+// up the flat single-tone look. Kept gentle for that reason.
+const rockGeo = bakeVerticalShade(new THREE.IcosahedronGeometry(1, 0), 0.8, 1);
+const crateGeo = bakeVerticalShade(new THREE.BoxGeometry(1.1, 1.1, 1.1), 0.72, 1);
+const roofGeo = bakeVerticalShade(new THREE.ConeGeometry(3.6, 2.2, 4), 0.75, 1);
+const wallGeo = bakeVerticalShade(new THREE.BoxGeometry(4.4, 3, 3.6), 0.72, 1);
+
+const trunkMat = new THREE.MeshLambertMaterial({ color: 0x6b4a2f, vertexColors: true });
+const leafMat = new THREE.MeshLambertMaterial({ color: 0xffffff, vertexColors: true });
 // White base + per-instance setColorAt, same trick as leaves/rocks — lets a
 // single material serve both red and green apples.
-const appleMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
-const rockMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
-const crateMat = new THREE.MeshLambertMaterial({ color: 0xa9793f });
-const roofMat = new THREE.MeshLambertMaterial({ color: 0x8a3b2b });
-const shackWallMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+const appleMat = new THREE.MeshLambertMaterial({ color: 0xffffff, vertexColors: true });
+const rockMat = new THREE.MeshLambertMaterial({ color: 0xffffff, vertexColors: true });
+const crateMat = new THREE.MeshLambertMaterial({ color: 0xa9793f, vertexColors: true });
+const roofMat = new THREE.MeshLambertMaterial({ color: 0x8a3b2b, vertexColors: true });
+const shackWallMat = new THREE.MeshLambertMaterial({ color: 0xffffff, vertexColors: true });
 
 /** Local (pre-instance-anchor) transform for one instanced part. */
 export interface PartTransform {

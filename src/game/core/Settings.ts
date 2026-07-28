@@ -30,6 +30,16 @@ export interface QualitySettings {
    *  lazily import()-ed), but intentionally `false` for EVERY tier pending
    *  the same on-device verification as `shadows` above. */
   postFX: boolean;
+  /** Whether the lightweight grade pass (vignette + subtle chromatic
+   *  aberration; see core/gradepass.ts, lazily import()-ed) is enabled.
+   *  Distinct from — and far cheaper than — the bloom/SMAA `postFX` pipeline
+   *  above: one offscreen scene target + two fullscreen shader draws. Off on
+   *  "low" because that tier's whole identity is the zero-overhead direct
+   *  render path (it's where the auto perf-downgrade lands struggling
+   *  devices); on for "medium"/"high" where the cost is a rounding error
+   *  next to their higher pixelRatioCap. When `postFX` is ever enabled for a
+   *  tier, that composer takes precedence and this pass is skipped. */
+  gradePass: boolean;
 }
 
 export const QUALITY_TIERS: Record<QualityTier, QualitySettings> = {
@@ -41,6 +51,7 @@ export const QUALITY_TIERS: Record<QualityTier, QualitySettings> = {
     shadows: false,
     shadowMapSize: 1024,
     postFX: false,
+    gradePass: false,
   },
   medium: {
     pixelRatioCap: 1.5,
@@ -50,6 +61,7 @@ export const QUALITY_TIERS: Record<QualityTier, QualitySettings> = {
     shadows: false,
     shadowMapSize: 1024,
     postFX: false,
+    gradePass: true,
   },
   high: {
     pixelRatioCap: 2,
@@ -62,6 +74,7 @@ export const QUALITY_TIERS: Record<QualityTier, QualitySettings> = {
     shadows: false,
     shadowMapSize: 2048,
     postFX: false,
+    gradePass: true,
   },
 };
 

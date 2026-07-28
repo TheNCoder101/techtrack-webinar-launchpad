@@ -3,6 +3,7 @@ import { WORLD_RADIUS, TREE_COUNT, ROCK_COUNT, CRATE_COUNT, SHACK_COUNT, HARVEST
 import type { Collider, Harvestable, HarvestablePart, HarvestResult, HitUserData } from "../core/types";
 import { QUALITY_TIERS, type QualitySettings } from "../core/Settings";
 import { terrainHeight } from "./terrain";
+import { fbm2D } from "./noise";
 import {
   createTreeInstancedMeshes,
   createAppleInstancedMesh,
@@ -26,16 +27,136 @@ void main() {
 }
 `;
 
+// V3 Track A2: same single full-screen sky mesh, richer shading — a warm
+// horizon-to-zenith gradient, a soft sun disk + glow toward SUN_DIR, and a
+// slow-drifting procedural cloud band (3-octave value-noise fbm; no
+// textures, keeping the project's zero-bitmap constraint). Ends with the
+// standard tonemapping/colorspace chunks so the sky runs through the same
+// ACES curve as the rest of the scene (A1) on both the direct render path
+// and any composer path (where those chunks compile to no-ops and
+// OutputPass tonemaps instead).
 const SKY_FRAG = `
 uniform vec3 topColor;
+uniform vec3 horizonColor;
 uniform vec3 bottomColor;
+uniform vec3 sunDirection;
+uniform vec3 sunColor;
+uniform float time;
 varying vec3 vWorldPos;
+
+float skyHash(vec2 p) {
+  p = fract(p * vec2(123.34, 456.21));
+  p += dot(p, p + 45.32);
+  return fract(p.x * p.y);
+}
+float skyNoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  float a = skyHash(i);
+  float b = skyHash(i + vec2(1.0, 0.0));
+  float c = skyHash(i + vec2(0.0, 1.0));
+  float d = skyHash(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+float skyFbm(vec2 p) {
+  return 0.5 * skyNoise(p) + 0.25 * skyNoise(p * 2.03) + 0.125 * skyNoise(p * 4.09);
+}
+
 void main() {
-  float h = normalize(vWorldPos).y;
-  float t = clamp(h * 0.6 + 0.4, 0.0, 1.0);
-  gl_FragColor = vec4(mix(bottomColor, topColor, t), 1.0);
+  vec3 dir = normalize(vWorldPos);
+  float h = dir.y;
+
+  // Warm band hugging the horizon, lifting into the blue zenith.
+  vec3 col = mix(bottomColor, horizonColor, smoothstep(-0.15, 0.03, h));
+  col = mix(col, topColor, smoothstep(0.03, 0.55, h));
+
+  // Sun: tight disk + two nested glow falloffs toward SUN_DIR.
+  float sunAmt = max(dot(dir, sunDirection), 0.0);
+  col += sunColor * pow(sunAmt, 400.0) * 2.4;
+  col += sunColor * pow(sunAmt, 26.0) * 0.32;
+  col += sunColor * pow(sunAmt, 5.0) * 0.10;
+
+  // Subtle cloud band: fbm sampled on a horizon-stable projection, faded
+  // out near the horizon and the zenith so it reads as a mid-sky layer.
+  vec2 cloudUv = dir.xz / (abs(dir.y) + 0.22);
+  float cl = skyFbm(cloudUv * 1.4 + vec2(time * 0.004, time * 0.0015));
+  float band = smoothstep(0.48, 0.75, cl)
+    * smoothstep(0.02, 0.14, h)
+    * (1.0 - smoothstep(0.42, 0.75, h));
+  col = mix(col, vec3(1.0, 0.99, 0.97), band * 0.4);
+
+  gl_FragColor = vec4(col, 1.0);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
 }
 `;
+
+// --- Terrain slope/height banding (V3 Track A5) ----------------------------
+// The terrain material stays MeshLambertMaterial({vertexColors:true}), but a
+// small onBeforeCompile patch moves the grass/dirt/rock/snow banding from
+// per-vertex colors into the fragment shader: bands blend per-pixel from the
+// interpolated world height + normal (data the mesh already carries), so a
+// shoreline or dirt-on-slope edge is no longer quantized to the ~3m vertex
+// grid. Vertex colors now carry only a low-frequency noise brightness tint
+// (see buildTerrain), which multiplies against the bands. Costs a handful of
+// ALU ops per terrain fragment; no textures, no new draw calls.
+const TERRAIN_VERT_PATCH = /* glsl */ `
+  vTerrainPos = (modelMatrix * vec4(transformed, 1.0)).xyz;
+  vTerrainNormal = normalize(mat3(modelMatrix) * objectNormal);
+  #include <worldpos_vertex>`;
+
+const TERRAIN_FRAG_PATCH = /* glsl */ `
+  #include <color_fragment>
+  {
+    float th = vTerrainPos.y;
+    float slope = 1.0 - clamp(normalize(vTerrainNormal).y, 0.0, 1.0);
+    vec3 band = mix(uSandColor, uGrassColor, smoothstep(0.05, 0.7, th));
+    band = mix(band, uGrassHighColor, smoothstep(1.6, 4.4, th));
+    float dirtAmt = smoothstep(0.24, 0.5, slope)
+      * smoothstep(0.25, 0.8, th)
+      * (1.0 - smoothstep(5.0, 7.0, th));
+    band = mix(band, uDirtColor, dirtAmt * 0.85);
+    band = mix(band, uRockColor, smoothstep(5.5, 8.0, th));
+    band = mix(band, uSnowColor, smoothstep(8.5, 11.5, th));
+    diffuseColor.rgb *= band;
+  }`;
+
+function applyTerrainBanding(mat: THREE.MeshLambertMaterial): void {
+  mat.onBeforeCompile = (shader) => {
+    // THREE.Color uniforms upload in the linear working space, matching how
+    // the old vertex-color bands were authored.
+    shader.uniforms.uSandColor = { value: new THREE.Color(0xd9c58a) };
+    shader.uniforms.uGrassColor = { value: new THREE.Color(0x4f8036) };
+    shader.uniforms.uGrassHighColor = { value: new THREE.Color(0x3a6128) };
+    shader.uniforms.uDirtColor = { value: new THREE.Color(0x7a5a38) };
+    shader.uniforms.uRockColor = { value: new THREE.Color(0x8a8578) };
+    shader.uniforms.uSnowColor = { value: new THREE.Color(0xf2f2ec) };
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        "void main() {",
+        "varying vec3 vTerrainPos;\nvarying vec3 vTerrainNormal;\nvoid main() {"
+      )
+      .replace("#include <worldpos_vertex>", TERRAIN_VERT_PATCH);
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "void main() {",
+        [
+          "varying vec3 vTerrainPos;",
+          "varying vec3 vTerrainNormal;",
+          "uniform vec3 uSandColor;",
+          "uniform vec3 uGrassColor;",
+          "uniform vec3 uGrassHighColor;",
+          "uniform vec3 uDirtColor;",
+          "uniform vec3 uRockColor;",
+          "uniform vec3 uSnowColor;",
+          "void main() {",
+        ].join("\n")
+      )
+      .replace("#include <color_fragment>", TERRAIN_FRAG_PATCH);
+  };
+  mat.customProgramCacheKey = () => "lambert-terrain-bands";
+}
 
 // --- Sun shadow frustum ----------------------------------------------------
 // Direction from any point toward the sun; must match buildLights' original
@@ -104,6 +225,9 @@ export class World {
   raycastTargetsDirty = true;
   terrainMesh!: THREE.Mesh;
   sunLight!: THREE.DirectionalLight;
+  /** Sky dome material — kept so update() can drive the cloud-drift time
+   *  uniform (the only per-frame cost of the A2 sky: one float write). */
+  private skyMat!: THREE.ShaderMaterial;
 
   private treeTrunkMesh!: THREE.InstancedMesh;
   private treeLeafMesh!: THREE.InstancedMesh;
@@ -189,7 +313,11 @@ export class World {
     const mat = new THREE.ShaderMaterial({
       uniforms: {
         topColor: { value: new THREE.Color(0x2f7bd6) },
-        bottomColor: { value: new THREE.Color(0xbfe4ff) },
+        horizonColor: { value: new THREE.Color(0xf5dcb8) },
+        bottomColor: { value: new THREE.Color(0xc3e2f7) },
+        sunDirection: { value: SUN_DIR.clone() },
+        sunColor: { value: new THREE.Color(0xfff2d0) },
+        time: { value: 0 },
       },
       vertexShader: SKY_VERT,
       fragmentShader: SKY_FRAG,
@@ -200,6 +328,7 @@ export class World {
     const sky = new THREE.Mesh(geo, mat);
     sky.renderOrder = -10;
     this.scene.add(sky);
+    this.skyMat = mat;
 
     this.scene.fog = new THREE.Fog(0xbfe4ff, WORLD_RADIUS * 0.55, WORLD_RADIUS * 1.35);
   }
@@ -228,37 +357,26 @@ export class World {
 
     const pos = geo.attributes.position;
     const colors = new Float32Array(pos.count * 3);
-    const sand = new THREE.Color(0xd9c58a);
-    const grass = new THREE.Color(0x4c7a34);
-    const grassHigh = new THREE.Color(0x3a6128);
-    const rockColor = new THREE.Color(0x8a8578);
-    const snow = new THREE.Color(0xf2f2ec);
 
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i);
       const z = pos.getZ(i);
-      const y = terrainHeight(x, z);
-      pos.setY(i, y);
+      pos.setY(i, terrainHeight(x, z));
 
-      const c = new THREE.Color();
-      if (y < 0.15) {
-        c.copy(sand);
-      } else if (y < 3) {
-        c.copy(grass).lerp(grassHigh, THREE.MathUtils.clamp((y - 0.15) / 2.85, 0, 1));
-      } else if (y < 7) {
-        c.copy(grassHigh).lerp(rockColor, THREE.MathUtils.clamp((y - 3) / 4, 0, 1));
-      } else {
-        c.copy(rockColor).lerp(snow, THREE.MathUtils.clamp((y - 7) / 5, 0, 1));
-      }
-      colors[i * 3] = c.r;
-      colors[i * 3 + 1] = c.g;
-      colors[i * 3 + 2] = c.b;
+      // A5: vertex colors are now just a low-frequency brightness tint
+      // (±8%) breaking up flat fills — the actual grass/dirt/rock banding
+      // is computed per-fragment in applyTerrainBanding's shader patch.
+      const tint = 0.92 + fbm2D(x * 0.16 + 40, z * 0.16 + 40, 2) * 0.16;
+      colors[i * 3] = tint;
+      colors[i * 3 + 1] = tint;
+      colors[i * 3 + 2] = tint;
     }
 
     geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
     geo.computeVertexNormals();
 
     const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
+    applyTerrainBanding(mat);
     const mesh = new THREE.Mesh(geo, mat);
     // Inert while renderer.shadowMap.enabled is false (the shipped default
     // for every tier); when a tier enables shadows, the ground catches them.
@@ -615,6 +733,8 @@ export class World {
   }
 
   update(nowSec: number): void {
+    // Slow cloud drift for the A2 sky shader.
+    this.skyMat.uniforms.time.value = nowSec;
     for (const h of this.harvestables) {
       if (!h.alive && nowSec >= h.respawnAt) {
         h.alive = true;

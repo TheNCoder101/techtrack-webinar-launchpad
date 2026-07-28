@@ -34,6 +34,9 @@ import {
 // postprocessing module tree into the main chunk — the runtime code is only
 // ever loaded via the dynamic import() in initPostFX below.
 import type { PostFXPipeline } from "./postfx";
+// Same type-only trick for the lightweight grade pass (V3 Track A6) — the
+// runtime module is only loaded via the dynamic import() in initGradeFX.
+import type { GradeFXPipeline } from "./gradepass";
 
 // Seconds the player must survive inside the final (smallest) storm zone to
 // win the match. First-pass number — tune with playtesting like the storm
@@ -146,6 +149,11 @@ export class Game {
   // loop renders directly and pays zero composer overhead.
   private postFX: PostFXPipeline | null = null;
   private postFXLoading = false;
+  // Lazily-created lightweight grade pass (vignette + subtle chromatic
+  // aberration, Track A6); null on tiers with gradePass off ("low"), where
+  // the loop keeps the zero-overhead direct render path.
+  private gradeFX: GradeFXPipeline | null = null;
+  private gradeFXLoading = false;
   private disposed = false;
 
   private onResize = (): void => {
@@ -154,6 +162,7 @@ export class Game {
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(clientWidth, clientHeight, false);
     this.postFX?.setSize(clientWidth, clientHeight);
+    this.gradeFX?.setSize(clientWidth, clientHeight);
   };
 
   private onVisibility = (): void => {
@@ -195,6 +204,18 @@ export class Game {
       powerPreference: "high-performance",
     });
     this.renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+    // Filmic tone mapping (V3 Track A1): ACES compresses highlights and adds
+    // the midtone contrast that reads as "shipped game" instead of raw
+    // Lambert output. Effectively free — it rides the material shader's
+    // existing tonemapping chunk on the direct render path, and OutputPass
+    // applies the identical curve on any composer path (grade/postFX).
+    // Exposure slightly above 1 compensates for ACES darkening the midtones
+    // of the existing scene lighting, which was tuned without tone mapping.
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.12;
+    // Explicitly pin the output color space (this is three's default, but
+    // the tone-mapped look depends on it, so state it rather than assume).
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     // Soft-edged maps are the only type worth paying for on the tight
     // player-following frustum; setting the type is free while shadow mapping
     // itself stays disabled (the shipped default for every tier).
@@ -356,6 +377,39 @@ export class Game {
       this.postFX.dispose();
       this.postFX = null;
     }
+
+    // Track A6 grade pass — skipped whenever the (heavier) postFX composer is
+    // active for the tier, since two composers would double-render the scene.
+    const wantGrade = quality.gradePass && !quality.postFX;
+    if (wantGrade && !this.gradeFX && !this.gradeFXLoading) {
+      void this.initGradeFX();
+    } else if (!wantGrade && this.gradeFX) {
+      this.gradeFX.dispose();
+      this.gradeFX = null;
+    }
+  }
+
+  /** Dynamically loads the grade-pass chunk (same lazy pattern as
+   *  initPostFX — keeps the composer/pass tree out of the main bundle for
+   *  the "low" tier, which never enables it). */
+  private async initGradeFX(): Promise<void> {
+    this.gradeFXLoading = true;
+    try {
+      const { createGradeFXPipeline } = await import("./gradepass");
+      const quality = QUALITY_TIERS[this.settings.qualityTier];
+      // Re-check after the async gap: disposed, tier downgraded, or postFX
+      // (which supersedes the grade pass) switched on while loading.
+      if (this.disposed || !quality.gradePass || quality.postFX || this.gradeFX) {
+        return;
+      }
+      this.gradeFX = createGradeFXPipeline(this.renderer, this.scene, this.camera);
+      this.gradeFX.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
+    } catch (err) {
+      // Chunk failed to load — the direct render path stays valid.
+      console.warn("GradeFX pipeline unavailable, staying on direct rendering", err);
+    } finally {
+      this.gradeFXLoading = false;
+    }
   }
 
   /** Dynamically loads the postprocessing chunk and builds the composer
@@ -450,6 +504,8 @@ export class Game {
     }
     this.postFX?.dispose();
     this.postFX = null;
+    this.gradeFX?.dispose();
+    this.gradeFX = null;
     this.renderer.dispose();
   }
 
@@ -748,8 +804,12 @@ export class Game {
 
     if (this.postFX) {
       this.postFX.render();
+    } else if (this.gradeFX) {
+      // Track A6 grade pass — the default path on "medium"/"high".
+      this.gradeFX.render();
     } else {
-      // Direct render — the only path exercised by the shipped defaults.
+      // Direct render — "low" tier (and any tier while a composer chunk is
+      // still in flight or failed to load).
       this.renderer.render(this.scene, this.camera);
     }
   };

@@ -23,6 +23,42 @@ const helmetGeo = new THREE.SphereGeometry(0.32, 10, 8, 0, Math.PI * 2, 0, Math.
 const armGeo = new THREE.CylinderGeometry(0.08, 0.075, ARM_LENGTH, 6);
 const legGeo = new THREE.CylinderGeometry(0.11, 0.1, LEG_LENGTH, 6);
 
+// --- Fresnel rim light (V3 Track A3) ---------------------------------------
+// Character materials get a cheap view-dependent rim term patched into the
+// stock Lambert shader via onBeforeCompile, so silhouettes pop against the
+// terrain instead of reading as flat cutouts. Deliberately NOT a material
+// type change: everything stays MeshLambertMaterial, so the shadow pipeline,
+// the hit-flash white color.set() mechanic (Bot.takeDamage — a uniform
+// update, never a recompile), and the per-skin color system are untouched.
+// The rim is purely additive on outgoingLight, computed from the view-space
+// normal and vViewPosition the Lambert shader already has — a few ALU ops on
+// the small fraction of screen pixels characters cover.
+const RIM_COLOR = new THREE.Color(0x9fc4ff); // cool sky tint
+const RIM_STRENGTH = 0.4;
+const RIM_POWER = 3.0;
+
+const RIM_FRAGMENT_PATCH = /* glsl */ `
+  float rimNdV = clamp(dot(normalize(vViewPosition), normalize(normal)), 0.0, 1.0);
+  outgoingLight += uRimColor * (pow(1.0 - rimNdV, ${RIM_POWER.toFixed(1)}) * uRimStrength);
+  #include <opaque_fragment>`;
+
+function applyCharacterRim(mat: THREE.MeshLambertMaterial): void {
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.uRimColor = { value: RIM_COLOR };
+    shader.uniforms.uRimStrength = { value: RIM_STRENGTH };
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "void main() {",
+        "uniform vec3 uRimColor;\nuniform float uRimStrength;\nvoid main() {"
+      )
+      .replace("#include <opaque_fragment>", RIM_FRAGMENT_PATCH);
+  };
+  // All rim-patched Lambert materials share one program (they differ only in
+  // uniforms); the key also keeps them from ever aliasing the stock Lambert
+  // program used by props/terrain.
+  mat.customProgramCacheKey = () => "lambert-char-rim";
+}
+
 const TORSO_Y = 1.3;
 const TORSO_HALF_HEIGHT = 0.31;
 const SHOULDER_Y = TORSO_Y + TORSO_HALF_HEIGHT;
@@ -58,6 +94,11 @@ export function buildHumanoid(skin: CharacterSkin): HumanoidBuild {
   const bodyMat = new THREE.MeshLambertMaterial({ color: skin.bodyColor });
   const headMat = new THREE.MeshLambertMaterial({ color: skin.headColor });
   const helmetMat = new THREE.MeshLambertMaterial({ color: skin.helmetColor ?? 0x222222 });
+  // Rim-light every character surface (player, bots, and remote-player
+  // puppets all build through here). See applyCharacterRim above.
+  applyCharacterRim(bodyMat);
+  applyCharacterRim(headMat);
+  applyCharacterRim(helmetMat);
 
   const torso = new THREE.Mesh(torsoGeo, bodyMat);
   torso.position.y = TORSO_Y;
