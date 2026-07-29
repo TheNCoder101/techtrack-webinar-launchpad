@@ -1,7 +1,13 @@
 import { WORLD_RADIUS } from "../core/constants";
 import { Player } from "../entities/Player";
 import { BotManager } from "../entities/BotManager";
+import { WEAPON_RARITIES, type WeaponRarity } from "../weapons/weaponDefs";
 import { iconSvg } from "./icons";
+
+/** Who a kill-feed entry credits — the local player or a co-op teammate.
+ *  Both local kills and networked `kill_feed` messages render through the
+ *  same pushKillFeed path (V3 Track D2). */
+export type KillFeedCredit = "you" | "ally";
 
 export interface HUDState {
   health: number;
@@ -12,6 +18,8 @@ export interface HUDState {
   reloading: boolean;
   isMelee: boolean;
   weaponName: string;
+  /** Rarity of the equipped weapon (D1) — tints the weapon-name/ammo readout. */
+  weaponRarity: WeaponRarity | null;
   score: number;
   kills: number;
   stormLabel: string;
@@ -29,6 +37,28 @@ export interface HUDState {
 const MINIMAP_THREAT_RADIUS = 26;
 /** Cap on simultaneously-visible floating damage numbers. */
 const MAX_DAMAGE_NUMBERS = 14;
+/** Cap on simultaneously-visible damage-direction arcs (D2). */
+const MAX_DAMAGE_DIRECTIONS = 5;
+/** Cap on visible kill-feed entries (D2); oldest drops off first. */
+const MAX_KILL_FEED_ENTRIES = 4;
+
+/** CSS class per rarity, shared by the weapon readout and pickup toast. */
+const RARITY_CLASSES: Record<WeaponRarity, string> = {
+  common: "gj-rarity-common",
+  rare: "gj-rarity-rare",
+  epic: "gj-rarity-epic",
+};
+
+// Damage-direction arc (D2): a curved stroke hugging a ~58px ring around the
+// crosshair, authored once here and rotated per hit via a CSS custom
+// property. Deliberately NOT an icons.ts glyph: the icon set is a 24-grid /
+// 2px-stroke language for inline glyphs, while this is a screen-anchored HUD
+// mark at a fixed ring radius (same reasoning as the CSS-drawn crosshair).
+// Arc spans ±38° around "up"; endpoints are center(80,80) + r58 rotated.
+const DAMAGE_DIR_SVG =
+  `<svg viewBox="0 0 160 160" width="160" height="160" fill="none" ` +
+  `stroke="currentColor" stroke-width="6" stroke-linecap="round" aria-hidden="true">` +
+  `<path d="M44.3 34.3 A 58 58 0 0 1 115.7 34.3"/></svg>`;
 
 // All in-game readouts as plain DOM, written to imperatively every frame.
 // Deliberately avoids React state so HUD updates never trigger a re-render
@@ -51,6 +81,8 @@ export class HUDController {
   private pickupToast: HTMLDivElement;
   private stormStatus: HTMLDivElement;
   private dmgLayer: HTMLDivElement;
+  private dmgDirLayer: HTMLDivElement;
+  private killFeed: HTMLDivElement;
   /** The WebGL canvas — screen shake targets it so DOM touch controls never
    *  move under a finger. */
   private shakeTarget: HTMLElement | null;
@@ -66,6 +98,8 @@ export class HUDController {
   private targetScore = 0;
   private lastRenderedScore = -1;
   private lastRenderedKills = -1;
+  // D1: only rewrite the weapon readout's rarity class when it changes.
+  private lastRenderedRarity: WeaponRarity | null = null;
 
   constructor(container: HTMLElement) {
     this.root = document.createElement("div");
@@ -79,6 +113,8 @@ export class HUDController {
       <div class="gj-survive-timer"></div>
       <div class="gj-hit-marker">${iconSvg("hitmarker")}</div>
       <div class="gj-dmg-layer"></div>
+      <div class="gj-dmg-dir-layer"></div>
+      <div class="gj-killfeed"></div>
       <div class="gj-top-left">
         <div class="gj-health-row">
           <div class="gj-health-bar"><div class="gj-health-fill"></div></div>
@@ -118,6 +154,8 @@ export class HUDController {
     this.pickupToast = this.root.querySelector(".gj-pickup-toast")!;
     this.stormStatus = this.root.querySelector(".gj-storm-status")!;
     this.dmgLayer = this.root.querySelector(".gj-dmg-layer")!;
+    this.dmgDirLayer = this.root.querySelector(".gj-dmg-dir-layer")!;
+    this.killFeed = this.root.querySelector(".gj-killfeed")!;
     this.shakeTarget = container.querySelector(".gj-canvas");
   }
 
@@ -155,6 +193,13 @@ export class HUDController {
     }
 
     this.weaponNameEl.textContent = state.weaponName;
+    // D1: tint the weapon name by rarity (the DOM half of the one rarity
+    // color system the held-gun accent trim uses in-world).
+    if (state.weaponRarity !== this.lastRenderedRarity) {
+      this.lastRenderedRarity = state.weaponRarity;
+      for (const cls of Object.values(RARITY_CLASSES)) this.weaponNameEl.classList.remove(cls);
+      if (state.weaponRarity) this.weaponNameEl.classList.add(RARITY_CLASSES[state.weaponRarity]);
+    }
 
     if (state.playerInStorm) {
       this.stormStatus.textContent = `IN STORM −${state.stormDamagePerSec} HP/s`;
@@ -195,13 +240,62 @@ export class HUDController {
     }
   }
 
-  showPickup(weaponName: string, isNew: boolean): void {
-    this.pickupToast.textContent = isNew ? `New weapon: ${weaponName}!` : `${weaponName} restocked`;
+  showPickup(weaponName: string, isNew: boolean, rarity: WeaponRarity): void {
+    // D1: the toast leads with the rarity tier and tints to match.
+    const label = WEAPON_RARITIES[rarity].label;
+    this.pickupToast.textContent = isNew
+      ? `${label} · New weapon: ${weaponName}!`
+      : `${label} · ${weaponName} restocked`;
+    for (const cls of Object.values(RARITY_CLASSES)) this.pickupToast.classList.remove(cls);
+    this.pickupToast.classList.add(RARITY_CLASSES[rarity]);
     this.pickupToast.classList.add("gj-pickup-toast-active");
     if (this.pickupToastTimeout) window.clearTimeout(this.pickupToastTimeout);
     this.pickupToastTimeout = window.setTimeout(() => {
       this.pickupToast.classList.remove("gj-pickup-toast-active");
     }, 2200);
+  }
+
+  /** D2: directional damage indicator — an arc segment on a ring around the
+   *  crosshair, rotated to point toward the attacker and fading out. `angle`
+   *  is the screen-relative bearing in radians: 0 = attacker dead ahead,
+   *  +π/2 = to the player's right, ±π = behind (Game computes it from the
+   *  attacker's world position and the player's yaw). Never called for
+   *  non-positional damage like the storm tick — that stays directionless
+   *  by design. Pure DOM/CSS, same lifecycle idiom as showDamageNumber. */
+  showDamageDirection(angle: number): void {
+    if (this.dmgDirLayer.childElementCount >= MAX_DAMAGE_DIRECTIONS) {
+      this.dmgDirLayer.firstElementChild?.remove();
+    }
+    const el = document.createElement("div");
+    el.className = "gj-dmg-dir";
+    el.style.setProperty("--gj-dir", `${((angle * 180) / Math.PI).toFixed(1)}deg`);
+    el.innerHTML = DAMAGE_DIR_SVG;
+    el.addEventListener("animationend", () => el.remove());
+    this.dmgDirLayer.appendChild(el);
+  }
+
+  /** D2: kill feed — a small stack of recent eliminations under the score
+   *  cluster. One shared path for local kills and co-op `kill_feed` messages
+   *  (Game routes both here). CSS owns the entry lifecycle (slide in, hold,
+   *  fade); JS just removes the node when the animation ends. */
+  pushKillFeed(credit: KillFeedCredit, botId: number): void {
+    while (this.killFeed.childElementCount >= MAX_KILL_FEED_ENTRIES) {
+      this.killFeed.firstElementChild?.remove();
+    }
+    const el = document.createElement("div");
+    el.className = credit === "you" ? "gj-kf-entry gj-kf-you" : "gj-kf-entry gj-kf-ally";
+    const who = document.createElement("span");
+    who.className = "gj-kf-who";
+    who.textContent = credit === "you" ? "YOU" : "ALLY";
+    const verb = document.createElement("span");
+    verb.className = "gj-kf-verb";
+    verb.textContent = "ELIMINATED";
+    const target = document.createElement("span");
+    target.className = "gj-kf-target";
+    target.innerHTML = `${iconSvg("skull")}<span>BOT ${String(botId + 1).padStart(2, "0")}</span>`;
+    el.append(who, verb, target);
+    el.addEventListener("animationend", () => el.remove());
+    this.killFeed.appendChild(el);
   }
 
   pulseHit(killed: boolean): void {

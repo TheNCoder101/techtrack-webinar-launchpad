@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import type { CharacterSkin } from "./skinDefs";
 import { buildHumanoid, type HumanoidBuild } from "./humanoid";
-import { WEAPON_DEFS, type WeaponId } from "../weapons/weaponDefs";
+import { WEAPON_DEFS, WEAPON_RARITIES, type WeaponId } from "../weapons/weaponDefs";
 
 const packGeo = new THREE.BoxGeometry(0.46, 0.5, 0.24);
 const pickHandleGeo = new THREE.CylinderGeometry(0.045, 0.045, 0.75, 6);
@@ -104,18 +104,24 @@ const GUN_SPECS: Record<GunWeaponId, GunSpec> = {
 };
 
 const gunBodyMat = new THREE.MeshLambertMaterial({ color: 0x2a2a2e });
-// One accent material per weapon, tinted + slightly emissive in the weapon's
-// existing WeaponDef.color so the trim stays readable even in shade. Shared
-// module-level (guns never tint per-instance, unlike character skins).
+// One accent material per weapon, tinted + slightly emissive. Since V3 Track
+// D1 the accent color is the weapon's RARITY color (WEAPON_RARITIES), not
+// its per-weapon WeaponDef.color — the trim is the in-world half of the one
+// rarity color system the HUD weapon bar / ammo readout / pickup toast share,
+// so a glance at any held gun reads its tier. Shared module-level (guns never
+// tint per-instance, unlike character skins).
 const gunAccentMats: Record<GunWeaponId, THREE.MeshLambertMaterial> = Object.fromEntries(
-  GUN_WEAPON_IDS.map((id) => [
-    id,
-    new THREE.MeshLambertMaterial({
-      color: WEAPON_DEFS[id].color,
-      emissive: WEAPON_DEFS[id].color,
-      emissiveIntensity: 0.3,
-    }),
-  ])
+  GUN_WEAPON_IDS.map((id) => {
+    const rarityColor = WEAPON_RARITIES[WEAPON_DEFS[id].rarity].color;
+    return [
+      id,
+      new THREE.MeshLambertMaterial({
+        color: rarityColor,
+        emissive: rarityColor,
+        emissiveIntensity: 0.3,
+      }),
+    ];
+  })
 ) as Record<GunWeaponId, THREE.MeshLambertMaterial>;
 
 function buildGunVariant(id: GunWeaponId): THREE.Group {

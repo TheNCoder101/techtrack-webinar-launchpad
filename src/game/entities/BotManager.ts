@@ -7,7 +7,12 @@ import { Bot, type BotKind } from "./Bot";
 export class BotManager {
   bots: Bot[] = [];
   raycastTargets: THREE.Object3D[] = [];
-  onPlayerDamaged?: (amount: number) => void;
+  /** Fired when a bot attack lands on the player. `sourcePos` is the
+   *  attacking bot's world position at the moment of the hit — it drives the
+   *  HUD damage-direction indicator (V3 Track D2). Optional by design:
+   *  non-positional damage (the storm tick) never flows through this
+   *  callback, so callers must not assume a source exists elsewhere. */
+  onPlayerDamaged?: (amount: number, sourcePos?: THREE.Vector3) => void;
   onKill?: (bot: Bot) => void;
   /** Fired every time a ranged bot actually takes a shot at the player —
    *  purely cosmetic (tracer/impact feedback), does not affect damage. */
@@ -112,7 +117,7 @@ export class BotManager {
         playerPos,
         safeZoneCenter,
         safeZoneRadius,
-        (dmg) => this.onPlayerDamaged?.(dmg),
+        (dmg, sourcePos) => this.onPlayerDamaged?.(dmg, sourcePos),
         (from, to) => this.onRangedFire?.(from, to)
       );
     }

@@ -250,7 +250,7 @@ export class Bot {
     playerPos: THREE.Vector3,
     safeZoneCenter: THREE.Vector3,
     safeZoneRadius: number,
-    onAttack: (damage: number) => void,
+    onAttack: (damage: number, sourcePos: THREE.Vector3) => void,
     onRangedFire?: (from: THREE.Vector3, to: THREE.Vector3) => void
   ): void {
     if (!this.alive) {
@@ -300,18 +300,38 @@ export class Bot {
           !losBlocked(pos, playerPos, world.colliders)
         ) {
           this.attackCooldown = this.difficulty.rangedFireCooldown;
-          onAttack(this.difficulty.rangedDamage);
+          // D3: tier-scaled miss chance — ranged bots used to land 100% of
+          // shots whenever in range with LOS (flagged as unfair in Phase 6).
+          // A miss deals no damage but still fires the full cosmetic tell
+          // below, with the tracer endpoint pushed off to one side so the
+          // shot visibly whiffs past instead of drawing a zero-damage laser
+          // straight into the player's chest.
+          const missed = Math.random() < this.difficulty.rangedMissChance;
+          const aimPoint = playerPos.clone();
+          if (missed) {
+            const side = Math.random() < 0.5 ? 1 : -1;
+            const missDist = 0.9 + Math.random() * 1.1;
+            // Perpendicular of the bot->player direction in the XZ plane.
+            const inv = distToPlayer > 0.0001 ? missDist / distToPlayer : 0;
+            aimPoint.x += -toPlayer.z * inv * side;
+            aimPoint.z += toPlayer.x * inv * side;
+            aimPoint.y += (Math.random() - 0.3) * 0.6;
+          } else {
+            // sourcePos feeds the HUD damage-direction indicator (D2);
+            // cloned because the consumer may outlive this frame's pos.
+            onAttack(this.difficulty.rangedDamage, pos.clone());
+          }
           // Ranged bots previously had no visual/audio tell at all — a shot
           // landed as an unexplained HP drop with nothing on screen to
           // explain it (easy to misread as "storm damage" if it happens to
           // land while the player is standing in the safe zone). This gives
-          // the player something to actually see.
-          onRangedFire?.(pos.clone(), playerPos.clone());
+          // the player something to actually see — for hits and misses alike.
+          onRangedFire?.(pos.clone(), aimPoint);
         }
       } else if (distToPlayer < ATTACK_RANGE) {
         if (this.attackCooldown <= 0) {
           this.attackCooldown = ATTACK_COOLDOWN;
-          onAttack(ATTACK_DAMAGE);
+          onAttack(ATTACK_DAMAGE, pos.clone());
         }
       }
     } else {

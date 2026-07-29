@@ -12,7 +12,7 @@ import { Player } from "../entities/Player";
 import { WeaponSystem } from "./WeaponSystem";
 import { ParticleSystem } from "./ParticleSystem";
 import { AudioManager } from "../core/AudioManager";
-import { AIRDROP_WEAPON_POOL, WEAPON_DEFS } from "./weaponDefs";
+import { AIRDROP_WEAPON_POOL, WEAPON_DEFS, type WeaponId } from "./weaponDefs";
 
 const crateGeo = new THREE.BoxGeometry(1.3, 1.3, 1.3);
 const crateMat = new THREE.MeshLambertMaterial({ color: 0xd4a24c });
@@ -53,7 +53,9 @@ export class AirdropManager {
   private crate: Crate | null = null;
   private nextSpawnAt: number;
 
-  onPickup?: (weaponName: string, isNew: boolean) => void;
+  /** Passes the concrete weapon id (D1: the toast shows rarity, which the
+   *  listener resolves from WEAPON_DEFS) plus whether the slot was new. */
+  onPickup?: (weaponId: WeaponId, isNew: boolean) => void;
 
   constructor(private scene: THREE.Scene, private world: World) {
     this.nextSpawnAt = performance.now() / 1000 + randomRange(8, 16);
@@ -138,7 +140,7 @@ export class AirdropManager {
       const result = weaponSystem.pickupWeapon(weaponId);
       particles.burst(crate.group.position, new THREE.Color(WEAPON_DEFS[weaponId].color), 16, 4.5, 1, 4, 0.5);
       audio.pickupWeapon();
-      this.onPickup?.(result.weaponName, result.isNew);
+      this.onPickup?.(weaponId, result.isNew);
       this.removeCrate();
       this.nextSpawnAt = nowSec + randomRange(AIRDROP_MIN_INTERVAL, AIRDROP_MAX_INTERVAL);
     }

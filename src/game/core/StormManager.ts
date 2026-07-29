@@ -14,6 +14,15 @@ export interface StormStage {
 
 // NOTE: pacing/damage numbers are first-pass placeholders — correctness over
 // feel. Human playtesting owns the final tuning (see V2 backlog).
+//
+// Full match arc, for whoever tunes this next (V3 Track D3 deliberately left
+// every value below untouched — pacing is a game-feel call to make from real
+// play, not blind):
+//   wait 25s → shrink 20s → wait 28s → shrink 16s → wait 24s → shrink 13s
+//   → wait 20s → shrink 11s = 157s until the final zone is holding,
+//   + FINAL_ZONE_SURVIVAL_SECONDS (45s, Game.ts) of final-zone survival
+//   = ~3m22s for a full victory run — a defensible mobile match length.
+// Any edit to one stage shifts that whole arc; re-do this math when tuning.
 export const STORM_STAGES: StormStage[] = [
   { radius: WORLD_RADIUS * 0.97, shrinkDuration: 0, waitDuration: 25, damagePerSec: 2 },
   { radius: WORLD_RADIUS * 0.66, shrinkDuration: 20, waitDuration: 28, damagePerSec: 4 },

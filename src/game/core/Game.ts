@@ -13,6 +13,7 @@ import {
 } from "../net/protocol";
 import type { CharacterSkin } from "../entities/skinDefs";
 import { WeaponSystem } from "../weapons/WeaponSystem";
+import { WEAPON_DEFS } from "../weapons/weaponDefs";
 import { AirdropManager } from "../weapons/AirdropManager";
 import { ParticleSystem } from "../weapons/ParticleSystem";
 import { BuildingManager } from "../building/BuildingManager";
@@ -249,13 +250,24 @@ export class Game {
       BOT_DIFFICULTY[this.settings.qualityTier],
       !net || net.isHost
     );
-    this.botManager.onPlayerDamaged = (amount) => {
+    this.botManager.onPlayerDamaged = (amount, sourcePos) => {
+      const healthBefore = this.player.health;
       this.player.takeDamage(amount, performance.now() / 1000);
+      // D2: directional hit indicator, only for damage that actually landed
+      // (takeDamage no-ops while dead/invulnerable). Storm ticks call
+      // player.takeDamage directly from the loop — never through this
+      // callback — so environmental damage stays directionless by design.
+      if (sourcePos && this.player.health < healthBefore) {
+        this.hud.showDamageDirection(this.bearingTo(sourcePos));
+      }
     };
     this.botManager.onKill = (bot) => {
       if (this.remoteHitPeer && this.net) {
         // A joiner's forwarded bot_hit landed the killing blow — credit that
-        // peer via kill_feed instead of the host's own score.
+        // peer via kill_feed instead of the host's own score. The host's own
+        // broadcast is never echoed back to it, so its ally feed entry is
+        // added here (joiners get theirs from the kill_feed handler).
+        this.hud.pushKillFeed("ally", bot.id);
         this.net.broadcast(
           { t: "kill_feed", peerId: this.remoteHitPeer, botId: bot.id },
           { redundant: true }
@@ -265,6 +277,7 @@ export class Game {
       this.score += 10;
       this.kills += 1;
       this.onKill?.();
+      this.hud.pushKillFeed("you", bot.id);
       if (this.net?.isHost) {
         this.net.broadcast(
           { t: "kill_feed", peerId: this.net.myId ?? "", botId: bot.id },
@@ -320,8 +333,10 @@ export class Game {
     this.buildingManager = new BuildingManager(this.scene, this.world);
 
     this.airdrops = new AirdropManager(this.scene, this.world);
-    this.airdrops.onPickup = (weaponName, isNew) => {
-      this.hud.showPickup(weaponName, isNew);
+    this.airdrops.onPickup = (weaponId, isNew) => {
+      // D1: the toast surfaces the weapon's rarity tier alongside its name.
+      const def = WEAPON_DEFS[weaponId];
+      this.hud.showPickup(def.name, isNew, def.rarity);
     };
 
     this.storm = new StormManager(this.scene);
@@ -566,21 +581,29 @@ export class Game {
         return;
       }
       case "kill_feed": {
-        // Score/HUD sync: only kills credited to *this* peer matter locally.
-        if (msg.peerId !== net.myId) return;
         const nowSec = performance.now() / 1000;
-        const key = `kf:${msg.botId}`;
+        // Keyed per credited peer: two different peers legitimately killing
+        // the same respawned bot in quick succession must not dedupe.
+        const key = `kf:${msg.peerId}:${msg.botId}`;
         const last = this.seenKillFeed.get(key) ?? -Infinity;
         // Redundant copies arrive within ~200ms; a legitimate re-kill of the
         // same bot is at least BOT_RESPAWN_TIME (6s) away, so a 2s window
         // dedupes the former without ever eating the latter.
         if (nowSec - last < 2) return;
         this.seenKillFeed.set(key, nowSec);
-        this.score += 10;
-        this.kills += 1;
-        this.onKill?.();
-        this.audio.botKill();
-        this.hud.pulseHit(true);
+        if (msg.peerId === net.myId) {
+          // Kill credited to this peer: score it and feed it as "you".
+          this.score += 10;
+          this.kills += 1;
+          this.onKill?.();
+          this.audio.botKill();
+          this.hud.pulseHit(true);
+          this.hud.pushKillFeed("you", msg.botId);
+        } else {
+          // A teammate's kill: feed-only (D2) — no local score/audio. Same
+          // shared pushKillFeed path the local-kill branches use.
+          this.hud.pushKillFeed("ally", msg.botId);
+        }
         return;
       }
     }
@@ -658,6 +681,21 @@ export class Game {
     this.remotePlayers.delete(peerId);
     this.remoteStates.delete(peerId);
     this.lastPeerSeq.delete(peerId);
+  }
+
+  /** D2: screen-relative bearing from the player to a world position, in
+   *  radians — 0 = dead ahead, +π/2 = to the player's right, ±π = behind.
+   *  Same frame the minimap's toMap rotation uses: the player's yaw defines
+   *  "up". Drives the HUD damage-direction arc's CSS rotation directly. */
+  private bearingTo(sourcePos: THREE.Vector3): number {
+    const dx = sourcePos.x - this.player.position.x;
+    const dz = sourcePos.z - this.player.position.z;
+    const yaw = this.player.yaw;
+    // Player-space basis (see Player.update): forward = (-sin yaw, -cos yaw),
+    // right = (cos yaw, -sin yaw) in the XZ plane.
+    const fwd = -Math.sin(yaw) * dx - Math.cos(yaw) * dz;
+    const right = Math.cos(yaw) * dx - Math.sin(yaw) * dz;
+    return Math.atan2(right, fwd);
   }
 
   /** Brief red line from a ranged bot to the player, purely cosmetic feedback
@@ -794,6 +832,7 @@ export class Game {
       reloading: activeSlot.reloading,
       isMelee: activeDef?.isMelee ?? false,
       weaponName: activeDef?.name ?? "",
+      weaponRarity: activeDef?.rarity ?? null,
       score: this.score,
       kills: this.kills,
       stormLabel: stormStatus.label,

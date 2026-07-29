@@ -104,12 +104,19 @@ export interface BotDifficultySettings {
   rangedFireCooldown: number;
   /** Damage per successful ranged-bot hit. */
   rangedDamage: number;
+  /** Probability (0-1) that a ranged-bot shot misses (V3 Track D3). Ranged
+   *  bots previously hit with 100% accuracy whenever in range with
+   *  line-of-sight — flagged as unfair back in Phase 6, especially with 3
+   *  ranged bots converging on "high". A miss still fires the full
+   *  tracer/audio tell (the player sees the shot go past), it just deals no
+   *  damage. Lower on higher tiers: better devices = meaner island. */
+  rangedMissChance: number;
 }
 
 export const BOT_DIFFICULTY: Record<QualityTier, BotDifficultySettings> = {
-  low: { botCount: 5, aggroRange: 18, rangedFireCooldown: 2.4, rangedDamage: 4 },
-  medium: { botCount: 7, aggroRange: 22, rangedFireCooldown: 1.8, rangedDamage: 5 },
-  high: { botCount: 10, aggroRange: 28, rangedFireCooldown: 1.2, rangedDamage: 6 },
+  low: { botCount: 5, aggroRange: 18, rangedFireCooldown: 2.4, rangedDamage: 4, rangedMissChance: 0.45 },
+  medium: { botCount: 7, aggroRange: 22, rangedFireCooldown: 1.8, rangedDamage: 5, rangedMissChance: 0.3 },
+  high: { botCount: 10, aggroRange: 28, rangedFireCooldown: 1.2, rangedDamage: 6, rangedMissChance: 0.15 },
 };
 
 export interface GameSettings {

@@ -5,6 +5,30 @@ import type { IconId } from "../ui/icons";
 
 export type WeaponId = "pickaxe" | "blaster" | "smg" | "shotgun" | "sniper" | "heavy";
 
+// --- Weapon rarity tiers (V3 Track D1) --------------------------------------
+// One rarity axis drives every rarity visual: the held-gun accent trim
+// (playerMesh.gunAccentMats), the weapon-bar slot border, the HUD
+// weapon-name/ammo readout tint and the airdrop pickup toast. The CSS side
+// reads the same colors via the --gj-rarity-* tokens in hud.css — keep the
+// two in sync if a color ever changes.
+export type WeaponRarity = "common" | "rare" | "epic";
+
+export interface WeaponRarityDef {
+  id: WeaponRarity;
+  /** Uppercase display label ("RARE") for HUD/toast text. */
+  label: string;
+  /** Three.js material/particle color for this rarity. */
+  color: number;
+  /** Same color as a CSS value (mirrors the --gj-rarity-* tokens). */
+  cssColor: string;
+}
+
+export const WEAPON_RARITIES: Record<WeaponRarity, WeaponRarityDef> = {
+  common: { id: "common", label: "COMMON", color: 0x9fb2bf, cssColor: "#9fb2bf" },
+  rare: { id: "rare", label: "RARE", color: 0x6fd7ff, cssColor: "#6fd7ff" },
+  epic: { id: "epic", label: "EPIC", color: 0xb39bfc, cssColor: "#b39bfc" },
+};
+
 export interface WeaponDef {
   id: WeaponId;
   name: string;
@@ -28,9 +52,27 @@ export interface WeaponDef {
   reserveRegenPerSec: number;
   /** Only the pickaxe can harvest trees/rocks. */
   canHarvest: boolean;
+  /** Per-weapon identity color (tracer/pickup particles). The held-gun
+   *  accent trim is NOT this color anymore — since D1 it comes from the
+   *  weapon's rarity (see WEAPON_RARITIES above). */
   color: number;
+  /** D1 rarity tier. Starters (pickaxe/blaster) are common; airdrop-only
+   *  weapons are rare/epic by power (see the assignment notes below). */
+  rarity: WeaponRarity;
 }
 
+// Rarity assignments, grounded in stats + acquisition:
+// - pickaxe/blaster: COMMON — the always-owned starters every match begins
+//   with (slots 0/1); no scarcity, modest numbers (12/hit melee; 22 dmg with
+//   free ammo regen).
+// - smg/shotgun: RARE — airdrop-only sidegrades. The SMG trades damage (10)
+//   for the roster's highest fire rate (14/s, ~140 DPS up close); the
+//   shotgun is a 6-pellet 90-per-blast burst gated to 22 units of range.
+//   Strong situationally, not round-defining.
+// - sniper/heavy: EPIC — the two round-defining airdrop pulls. The sniper
+//   one-taps most bots (70 dmg, 160 range, near-zero spread); the heavy is
+//   the only splash weapon (45 dmg + 4.5-unit AoE) with the scarcest ammo
+//   economy (4/16).
 export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
   pickaxe: {
     id: "pickaxe",
@@ -49,6 +91,7 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
     reserveRegenPerSec: 0,
     canHarvest: true,
     color: 0xdddddd,
+    rarity: "common",
   },
   blaster: {
     id: "blaster",
@@ -67,6 +110,7 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
     reserveRegenPerSec: 2,
     canHarvest: false,
     color: 0xfff4c2,
+    rarity: "common",
   },
   smg: {
     id: "smg",
@@ -85,6 +129,7 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
     reserveRegenPerSec: 0,
     canHarvest: false,
     color: 0x7ee0ff,
+    rarity: "rare",
   },
   shotgun: {
     id: "shotgun",
@@ -103,6 +148,7 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
     reserveRegenPerSec: 0,
     canHarvest: false,
     color: 0xff9d3d,
+    rarity: "rare",
   },
   sniper: {
     id: "sniper",
@@ -121,6 +167,7 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
     reserveRegenPerSec: 0,
     canHarvest: false,
     color: 0xc084fc,
+    rarity: "epic",
   },
   heavy: {
     id: "heavy",
@@ -139,6 +186,7 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
     reserveRegenPerSec: 0,
     canHarvest: false,
     color: 0xff5555,
+    rarity: "epic",
   },
 };
 

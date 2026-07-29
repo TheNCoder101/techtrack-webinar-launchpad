@@ -298,8 +298,53 @@ tier-gating needed.
 
 ---
 
-## Track D — Gameplay Sophistication (lighter touch, ties into visuals)
+## Track D — Gameplay Sophistication (lighter touch, ties into visuals) ✅ done
 **Goal:** the explicitly-requested "sophisticated gameplay" side, scoped to items that reinforce the visual work rather than open a second large initiative.
+
+**Shipped:** D1 (rarity axis on `WeaponDef` — common: pickaxe/blaster
+starters; rare: smg/shotgun airdrop sidegrades; epic: sniper/heavy
+round-definers — one `WEAPON_RARITIES` table drives the B2 held-gun accent
+trim (`gunAccentMats` now rarity-colored, not a second parallel color
+system), the weapon-bar slot border/icon tint, the HUD weapon-name readout
+and a rarity-labelled pickup toast, mirrored in CSS as `--gj-rarity-*`
+tokens), D2 (attacker position threaded `Bot.onAttack(damage, sourcePos)` →
+`BotManager.onPlayerDamaged(amount, sourcePos?)` → a crosshair-ring arc
+rotated by the screen-relative bearing from the player's yaw; storm ticks
+bypass the callback and stay directionless by design; plus a kill feed —
+local kills and co-op `kill_feed` messages render through one shared
+`HUDController.pushKillFeed` path, gold YOU / cyan ALLY credits), D3 (ONLY
+the ranged-bot miss chance: `rangedMissChance` on `BOT_DIFFICULTY` —
+0.45/0.3/0.15 for low/medium/high — a miss still fires the tracer/audio tell
+with the endpoint pushed sideways so it visibly whiffs; `STORM_STAGES` and
+`FINAL_ZONE_SURVIVAL_SECONDS` left byte-identical, with the full ~3m22s
+match-arc math now documented beside the table for a future tuner), D4
+(per-match time-of-day roll — dawn/noon/golden/dusk presets driving sun
+direction, A2 sky uniforms (+ a new cloud-tint uniform), sun/hemi/ambient
+lights and fog together; "noon" is the pre-D4 baseline bit-identical; dimmer
+presets carry higher hemi/ambient floors so the island stays readable; a
+DEV-only `?tod=` URL override exists for deterministic screenshots and is
+compiled out of production).
+
+**Verification (Playwright, iPhone 14 Pro viewport, dev-mode build via
+`vite preview`):** 24/24 checks, zero console errors. Bearing math asserted
+numerically at 4 bearings (behind ±180°, left −90°, front-right +45°, and a
+yaw-rotated dead-ahead 0°) with screenshots of two visibly different arc
+rotations; storm-path damage confirmed to spawn no arc. Miss chance verified
+statistically — 5 000 forced shots per tier through the real `Bot.update`
+path: observed miss 0.449/0.303/0.148 vs configured 0.45/0.30/0.15. Kill
+feed exercised through real `BotManager.damage` kills (score also
+incremented) plus an ally entry; bounding-box checks show every feed entry
+clear of the storm pill, survive timer and EXIT in both orientations (feed
+drops below the relocated storm pill in portrait). Rarity: slot classes 2/2/2
+across the filled bar, sniper readout + held accent = epic violet, SMG = rare
+cyan, toast "EPIC · New weapon: Heavy!". All four `?tod=` rolls asserted +
+screenshotted, and 8 unforced loads rolled ≥3 distinct presets. Regressions
+re-checked: bot hit-flash (#a8493c → #ffffff → restore), solo `net`
+undefined, EXIT overlap zero. **Not verified:** co-op ally-feed entries over
+a real 2-peer PeerJS session (the `kill_feed` handler rework is code-reviewed
++ solo-path-tested only), real-device feel of the new arc/feed timings, and
+the standing real-iPhone frame-time caveat (D adds no new draw calls — the
+sky/light changes are value-only — so no new perf surface is expected).
 
 - **D1. Weapon rarity tiers.** Extend `weaponDefs.ts` with a rarity field
   (common/rare/epic) driving the Track B2 accent trim and a matching HUD

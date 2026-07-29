@@ -33,7 +33,8 @@ void main() {
 `;
 
 // V3 Track A2: same single full-screen sky mesh, richer shading — a warm
-// horizon-to-zenith gradient, a soft sun disk + glow toward SUN_DIR, and a
+// horizon-to-zenith gradient, a soft sun disk + glow toward the match's sun
+// direction (per-match time-of-day roll since D4), and a
 // slow-drifting procedural cloud band (3-octave value-noise fbm; no
 // textures, keeping the project's zero-bitmap constraint). Ends with the
 // standard tonemapping/colorspace chunks so the sky runs through the same
@@ -46,6 +47,7 @@ uniform vec3 horizonColor;
 uniform vec3 bottomColor;
 uniform vec3 sunDirection;
 uniform vec3 sunColor;
+uniform vec3 cloudColor;
 uniform float time;
 varying vec3 vWorldPos;
 
@@ -76,7 +78,7 @@ void main() {
   vec3 col = mix(bottomColor, horizonColor, smoothstep(-0.15, 0.03, h));
   col = mix(col, topColor, smoothstep(0.03, 0.55, h));
 
-  // Sun: tight disk + two nested glow falloffs toward SUN_DIR.
+  // Sun: tight disk + two nested glow falloffs toward sunDirection.
   float sunAmt = max(dot(dir, sunDirection), 0.0);
   col += sunColor * pow(sunAmt, 400.0) * 2.4;
   col += sunColor * pow(sunAmt, 26.0) * 0.32;
@@ -89,7 +91,7 @@ void main() {
   float band = smoothstep(0.48, 0.75, cl)
     * smoothstep(0.02, 0.14, h)
     * (1.0 - smoothstep(0.42, 0.75, h));
-  col = mix(col, vec3(1.0, 0.99, 0.97), band * 0.4);
+  col = mix(col, cloudColor, band * 0.4);
 
   gl_FragColor = vec4(col, 1.0);
   #include <tonemapping_fragment>
@@ -163,13 +165,132 @@ function applyTerrainBanding(mat: THREE.MeshLambertMaterial): void {
   mat.customProgramCacheKey = () => "lambert-terrain-bands";
 }
 
+// --- Time-of-day variance (V3 Track D4) ------------------------------------
+// One preset is rolled per match (World construction) and drives every
+// coupled lighting input together — sun direction, sky gradient, sun
+// disk/glow, cloud tint, directional/hemisphere/ambient light, and fog — so
+// each roll reads as one coherent lighting state, not mismatched knobs.
+// Riding entirely on Track A's machinery: the same A2 sky uniforms, the same
+// three lights buildLights always created, the same fog. Zero new runtime
+// cost — every value is set once at build.
+//
+// Readability guardrails (this is atmosphere, NOT a night mode): sun
+// elevation never drops below ~14°, and the dimmer the sun preset, the more
+// the hemisphere/ambient floors rise, so bots/props stay clearly readable in
+// every roll. "noon" is bit-identical to the pre-D4 shipped lighting.
+// All values pass through A1's ACES tone mapping unchanged.
+export type TimeOfDayId = "dawn" | "noon" | "golden" | "dusk";
+
+export interface TimeOfDayPreset {
+  id: TimeOfDayId;
+  /** Direction from the origin toward the sun (normalized at use). Also the
+   *  shadow-frustum axis when a tier ever enables real shadows. */
+  sunDir: [number, number, number];
+  // A2 sky shader uniforms.
+  skyTop: number;
+  skyHorizon: number;
+  skyBottom: number;
+  sunColor: number;
+  cloudColor: number;
+  // buildLights inputs.
+  sunLightColor: number;
+  sunIntensity: number;
+  hemiSky: number;
+  hemiGround: number;
+  hemiIntensity: number;
+  ambientIntensity: number;
+  fogColor: number;
+}
+
+export const TIME_OF_DAY_PRESETS: Record<TimeOfDayId, TimeOfDayPreset> = {
+  // Low sun rising in the +x east: peach horizon, cool lavender haze.
+  dawn: {
+    id: "dawn",
+    sunDir: [170, 62, 30],
+    skyTop: 0x3a72c4,
+    skyHorizon: 0xffcfa3,
+    skyBottom: 0xd8d6ee,
+    sunColor: 0xffdcae,
+    cloudColor: 0xffeede,
+    sunLightColor: 0xffdcb4,
+    sunIntensity: 1.05,
+    hemiSky: 0xcfdcf2,
+    hemiGround: 0x46443a,
+    hemiIntensity: 0.9,
+    ambientIntensity: 0.26,
+    fogColor: 0xd3d3ea,
+  },
+  // The pre-D4 baseline, exactly as Track A shipped it.
+  noon: {
+    id: "noon",
+    sunDir: [120, 180, 80],
+    skyTop: 0x2f7bd6,
+    skyHorizon: 0xf5dcb8,
+    skyBottom: 0xc3e2f7,
+    sunColor: 0xfff2d0,
+    cloudColor: 0xfffcf7,
+    sunLightColor: 0xfff2d6,
+    sunIntensity: 1.15,
+    hemiSky: 0xbfe4ff,
+    hemiGround: 0x3a4a2a,
+    hemiIntensity: 0.9,
+    ambientIntensity: 0.25,
+    fogColor: 0xbfe4ff,
+  },
+  // Late-afternoon golden hour: warm amber light from the west.
+  golden: {
+    id: "golden",
+    sunDir: [-140, 76, 95],
+    skyTop: 0x2e63b0,
+    skyHorizon: 0xffa64f,
+    skyBottom: 0xf2cf9a,
+    sunColor: 0xffcf8f,
+    cloudColor: 0xffe7c9,
+    sunLightColor: 0xffd6a4,
+    sunIntensity: 1.2,
+    hemiSky: 0xeacfa0,
+    hemiGround: 0x453b28,
+    hemiIntensity: 0.88,
+    ambientIntensity: 0.25,
+    fogColor: 0xeccb9a,
+  },
+  // Sun just above the horizon: ember horizon under a violet-blue sky. The
+  // dimmest roll, so it carries the highest hemi/ambient floor.
+  dusk: {
+    id: "dusk",
+    sunDir: [-110, 46, -150],
+    skyTop: 0x2c4a80,
+    skyHorizon: 0xff9e70,
+    skyBottom: 0xa98cc4,
+    sunColor: 0xffb27a,
+    cloudColor: 0xf3c9b0,
+    sunLightColor: 0xffb98c,
+    sunIntensity: 1.0,
+    hemiSky: 0x93a6d6,
+    hemiGround: 0x3e3a52,
+    hemiIntensity: 1.0,
+    ambientIntensity: 0.32,
+    fogColor: 0xa596c8,
+  },
+};
+
+const TIME_OF_DAY_IDS = Object.keys(TIME_OF_DAY_PRESETS) as TimeOfDayId[];
+
+/** Dev/test-only override (?tod=dawn|noon|golden|dusk) so Playwright can
+ *  screenshot specific rolls deterministically — same DEV-gated URL-param
+ *  idiom as GamePage's co-op broker override. Production builds compile the
+ *  whole check away and always roll randomly. */
+function rollTimeOfDay(): TimeOfDayPreset {
+  if (import.meta.env.DEV) {
+    const forced = new URLSearchParams(window.location.search).get("tod");
+    if (forced && forced in TIME_OF_DAY_PRESETS) {
+      return TIME_OF_DAY_PRESETS[forced as TimeOfDayId];
+    }
+  }
+  return TIME_OF_DAY_PRESETS[TIME_OF_DAY_IDS[Math.floor(Math.random() * TIME_OF_DAY_IDS.length)]];
+}
+
 // --- Sun shadow frustum ----------------------------------------------------
-// Direction from any point toward the sun; must match buildLights' original
-// sun position (120, 180, 80) relative to its (0,0,0) target so that moving
-// the light along this axis (to follow the player) never changes the actual
-// lighting direction — a DirectionalLight only cares about position-minus-
-// target, which stays constant.
-const SUN_DIR = new THREE.Vector3(120, 180, 80).normalize();
 // How far up-sun the shadow-casting light sits from the player.
 const SHADOW_LIGHT_DISTANCE = 90;
 // Half-extent of the orthographic shadow box (~30 units across). A tight
@@ -230,6 +351,14 @@ export class World {
   raycastTargetsDirty = true;
   terrainMesh!: THREE.Mesh;
   sunLight!: THREE.DirectionalLight;
+  /** The per-match time-of-day roll (D4) — public for HUD/debug reads. */
+  readonly timeOfDay: TimeOfDayPreset;
+  /** Direction toward this match's sun; replaces the old SUN_DIR constant.
+   *  buildLights positions the sun along this axis relative to its (0,0,0)
+   *  target, so updateShadowFrustum sliding the light along the same axis
+   *  never changes the actual lighting direction — a DirectionalLight only
+   *  cares about position-minus-target, which stays constant. */
+  private sunDir: THREE.Vector3;
   /** Sky dome material — kept so update() can drive the cloud-drift time
    *  uniform (the only per-frame cost of the A2 sky: one float write). */
   private skyMat!: THREE.ShaderMaterial;
@@ -263,6 +392,8 @@ export class World {
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
+    this.timeOfDay = rollTimeOfDay();
+    this.sunDir = new THREE.Vector3(...this.timeOfDay.sunDir).normalize();
   }
 
   build(quality: QualitySettings): void {
@@ -312,23 +443,27 @@ export class World {
 
   /** Re-centers the sun's shadow box on the player every frame. Moving the
    *  light and its target by the same offset keeps the lighting direction
-   *  (SUN_DIR) bit-identical, so this is invisible except to the shadow
+   *  (this.sunDir) bit-identical, so this is invisible except to the shadow
    *  camera. No-op unless shadows are enabled for the current tier. */
   updateShadowFrustum(playerPos: THREE.Vector3): void {
     if (!this.sunLight.castShadow) return;
-    this.sunLight.position.copy(playerPos).addScaledVector(SUN_DIR, SHADOW_LIGHT_DISTANCE);
+    this.sunLight.position.copy(playerPos).addScaledVector(this.sunDir, SHADOW_LIGHT_DISTANCE);
     this.sunLight.target.position.copy(playerPos);
   }
 
   private buildSky(): void {
+    // D4: every sky input comes from the per-match time-of-day preset; the
+    // shader itself is unchanged from Track A2.
+    const tod = this.timeOfDay;
     const geo = new THREE.SphereGeometry(WORLD_RADIUS * 6, 16, 12);
     const mat = new THREE.ShaderMaterial({
       uniforms: {
-        topColor: { value: new THREE.Color(0x2f7bd6) },
-        horizonColor: { value: new THREE.Color(0xf5dcb8) },
-        bottomColor: { value: new THREE.Color(0xc3e2f7) },
-        sunDirection: { value: SUN_DIR.clone() },
-        sunColor: { value: new THREE.Color(0xfff2d0) },
+        topColor: { value: new THREE.Color(tod.skyTop) },
+        horizonColor: { value: new THREE.Color(tod.skyHorizon) },
+        bottomColor: { value: new THREE.Color(tod.skyBottom) },
+        sunDirection: { value: this.sunDir.clone() },
+        sunColor: { value: new THREE.Color(tod.sunColor) },
+        cloudColor: { value: new THREE.Color(tod.cloudColor) },
         time: { value: 0 },
       },
       vertexShader: SKY_VERT,
@@ -342,15 +477,21 @@ export class World {
     this.scene.add(sky);
     this.skyMat = mat;
 
-    this.scene.fog = new THREE.Fog(0xbfe4ff, WORLD_RADIUS * 0.55, WORLD_RADIUS * 1.35);
+    // StormManager snapshots this as its "base" fog on first sight, so the
+    // storm's fog shift correctly returns to whatever this roll set.
+    this.scene.fog = new THREE.Fog(tod.fogColor, WORLD_RADIUS * 0.55, WORLD_RADIUS * 1.35);
   }
 
   private buildLights(): void {
-    const hemi = new THREE.HemisphereLight(0xbfe4ff, 0x3a4a2a, 0.9);
+    const tod = this.timeOfDay;
+    const hemi = new THREE.HemisphereLight(tod.hemiSky, tod.hemiGround, tod.hemiIntensity);
     this.scene.add(hemi);
 
-    const sun = new THREE.DirectionalLight(0xfff2d6, 1.15);
-    sun.position.set(120, 180, 80);
+    const sun = new THREE.DirectionalLight(tod.sunLightColor, tod.sunIntensity);
+    // Along the match's sun axis; magnitude is irrelevant to a
+    // DirectionalLight (only position-minus-target matters), 220 keeps the
+    // same order of magnitude as the old (120,180,80) placement.
+    sun.position.copy(this.sunDir).multiplyScalar(220);
     sun.castShadow = false;
     this.scene.add(sun);
     // The target must be in the scene graph for its matrixWorld to update when
@@ -358,7 +499,7 @@ export class World {
     this.scene.add(sun.target);
     this.sunLight = sun;
 
-    const fill = new THREE.AmbientLight(0xffffff, 0.25);
+    const fill = new THREE.AmbientLight(0xffffff, tod.ambientIntensity);
     this.scene.add(fill);
   }
 

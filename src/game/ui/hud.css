@@ -42,6 +42,14 @@
   --gj-red: #ff5560;
   --gj-violet: #b39bfc;
 
+  /* ---- color: weapon rarity (V3 Track D1) ----
+     One rarity axis shared with the 3D side: these values mirror
+     WEAPON_RARITIES in weapons/weaponDefs.ts (which also feeds the held-gun
+     accent trim). Keep both in sync if a color ever changes. */
+  --gj-rarity-common: #9fb2bf;
+  --gj-rarity-rare: var(--gj-cyan);
+  --gj-rarity-epic: var(--gj-violet);
+
   /* ---- type ---- */
   --gj-font-display: "Rajdhani", "Avenir Next Condensed", "Arial Narrow",
     system-ui, sans-serif;
@@ -371,6 +379,24 @@
   border-color: rgba(255, 255, 255, 0.18);
 }
 
+/* D1: rarity treatment on filled slots — border + icon take the tier color
+   (the DOM twin of the held-gun accent trim). The active slot's gold ring
+   below still wins via source order, so selection stays unmistakable. */
+.gj-weapon-slot-common {
+  border-color: rgba(159, 178, 191, 0.55);
+  color: var(--gj-rarity-common);
+}
+.gj-weapon-slot-rare {
+  border-color: rgba(111, 215, 255, 0.65);
+  color: var(--gj-rarity-rare);
+  box-shadow: var(--gj-inner-edge), 0 0 10px rgba(111, 215, 255, 0.28);
+}
+.gj-weapon-slot-epic {
+  border-color: rgba(179, 155, 252, 0.72);
+  color: var(--gj-rarity-epic);
+  box-shadow: var(--gj-inner-edge), 0 0 12px rgba(179, 155, 252, 0.38);
+}
+
 .gj-weapon-slot-active {
   border-color: var(--gj-gold);
   color: var(--gj-gold);
@@ -498,6 +524,98 @@
   12% { opacity: 1; transform: translate(var(--gj-dx, 24px), calc(var(--gj-dy, -14px) - 6px)) scale(1.12); }
   30% { transform: translate(var(--gj-dx, 24px), calc(var(--gj-dy, -14px) - 14px)) scale(1); }
   100% { opacity: 0; transform: translate(var(--gj-dx, 24px), calc(var(--gj-dy, -14px) - 40px)) scale(0.92); }
+}
+
+/* Damage-direction indicator (D2): an arc segment on a ring around the
+   crosshair, rotated toward the attacker via --gj-dir (0deg = ahead, 90deg =
+   to the player's right) and fading out. Spawned per hit by HUDController;
+   the animation owns the lifecycle, JS removes the node on animationend. */
+.gj-dmg-dir-layer {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+}
+
+.gj-dmg-dir {
+  position: absolute;
+  left: -80px;
+  top: -80px;
+  width: 160px;
+  height: 160px;
+  color: var(--gj-red);
+  filter: drop-shadow(0 0 6px rgba(255, 85, 96, 0.55));
+  transform: rotate(var(--gj-dir, 0deg));
+  animation: gj-dmg-dir-fade 0.9s ease-out forwards;
+  will-change: opacity;
+}
+
+@keyframes gj-dmg-dir-fade {
+  0% { opacity: 0.95; transform: rotate(var(--gj-dir, 0deg)) scale(1.07); }
+  18% { opacity: 1; transform: rotate(var(--gj-dir, 0deg)) scale(1); }
+  60% { opacity: 0.85; }
+  100% { opacity: 0; transform: rotate(var(--gj-dir, 0deg)) scale(0.99); }
+}
+
+/* Kill feed (D2): compact stack of recent eliminations, tucked under the
+   top-right score/exit cluster. One shared path renders local kills and
+   co-op kill_feed messages (see HUDController.pushKillFeed). */
+.gj-killfeed {
+  position: absolute;
+  right: max(16px, env(safe-area-inset-right));
+  top: calc(max(14px, env(safe-area-inset-top)) + 86px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--gj-sp-1);
+  z-index: 16;
+}
+
+.gj-kf-entry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  font-family: var(--gj-font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: var(--gj-track-mid);
+  color: var(--gj-text-dim);
+  background: var(--gj-chip-bg);
+  border: 1px solid var(--gj-line);
+  border-radius: var(--gj-r-pill);
+  box-shadow: var(--gj-inner-edge);
+  white-space: nowrap;
+  animation: gj-kf-life 4s ease forwards;
+}
+
+.gj-kf-who {
+  font-weight: 700;
+}
+.gj-kf-you .gj-kf-who { color: var(--gj-gold); }
+.gj-kf-ally .gj-kf-who { color: var(--gj-cyan); }
+
+.gj-kf-verb {
+  font-size: 9px;
+  color: var(--gj-text-faint);
+}
+
+.gj-kf-target {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--gj-red);
+}
+.gj-kf-target .gj-ic {
+  font-size: 12px;
+}
+
+@keyframes gj-kf-life {
+  0% { opacity: 0; transform: translateX(14px); }
+  6% { opacity: 1; transform: translateX(0); }
+  86% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(6px); }
 }
 
 /* Screen shake (C5): applied to the canvas only — DOM controls stay put so
@@ -953,6 +1071,11 @@
   margin-bottom: 2px;
 }
 
+/* D1: the weapon-name readout takes the equipped weapon's rarity color. */
+.gj-weapon-name.gj-rarity-common { color: var(--gj-rarity-common); }
+.gj-weapon-name.gj-rarity-rare { color: var(--gj-rarity-rare); }
+.gj-weapon-name.gj-rarity-epic { color: var(--gj-rarity-epic); }
+
 .gj-pickup-toast {
   position: absolute;
   left: 50%;
@@ -982,6 +1105,20 @@
 @keyframes gj-toast-in {
   from { transform: translate(-50%, -50%) scale(0.8); }
   to { transform: translate(-50%, -50%) scale(1); }
+}
+
+/* D1: the pickup toast tints to the dropped weapon's rarity tier. */
+.gj-pickup-toast.gj-rarity-common {
+  color: var(--gj-rarity-common);
+  border-color: rgba(159, 178, 191, 0.45);
+}
+.gj-pickup-toast.gj-rarity-rare {
+  color: var(--gj-rarity-rare);
+  border-color: rgba(111, 215, 255, 0.5);
+}
+.gj-pickup-toast.gj-rarity-epic {
+  color: var(--gj-rarity-epic);
+  border-color: rgba(179, 155, 252, 0.55);
 }
 
 /* ---------- Start / orientation overlays (React-rendered) ---------- */
@@ -1706,6 +1843,12 @@
   .gj-storm-status {
     top: calc(max(10px, env(safe-area-inset-top)) + 118px);
   }
+
+  /* Portrait is narrow enough that the right-aligned kill feed would cross
+     the centered storm pill (relocated above) — start the stack below it. */
+  .gj-killfeed {
+    top: calc(max(10px, env(safe-area-inset-top)) + 152px);
+  }
 }
 
 /* ---------- Accessibility ---------- */
@@ -1730,4 +1873,26 @@ button:focus-visible,
   .gj-match-intro {
     animation-duration: 0.6s;
   }
+  /* D2 nodes are removed on animationend, so these must keep *an* animation
+     under reduced motion — swap to opacity-only fades (no rotation change,
+     no slide) rather than none. */
+  .gj-dmg-dir {
+    animation: gj-dmg-dir-fade-reduced 0.9s ease-out forwards;
+  }
+  .gj-kf-entry {
+    animation: gj-kf-life-reduced 4s ease forwards;
+  }
+}
+
+@keyframes gj-dmg-dir-fade-reduced {
+  0% { opacity: 1; }
+  60% { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+
+@keyframes gj-kf-life-reduced {
+  0% { opacity: 0; }
+  6% { opacity: 1; }
+  86% { opacity: 1; }
+  100% { opacity: 0; }
 }
