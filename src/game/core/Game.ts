@@ -225,8 +225,11 @@ export class Game {
     this.world.build(QUALITY_TIERS[this.settings.qualityTier]);
 
     this.player = new Player(this.scene, playerSkin, this.settings.lookSensitivity);
-    this.player.onDamaged = () => {
+    this.player.onDamaged = (amount) => {
       this.hud.pulseDamage();
+      // C5 juice: heavy incoming hits rattle the camera canvas; light chip
+      // damage (storm ticks etc.) stays steady so the effect keeps meaning.
+      if (amount >= 12) this.hud.shake(true);
       this.audio.playerHurt();
     };
     this.player.onDeath = () => {
@@ -296,8 +299,15 @@ export class Game {
     this.particles = new ParticleSystem(this.scene, QUALITY_TIERS[this.settings.qualityTier].particlePoolSize);
 
     this.weapons = new WeaponSystem(this.scene);
-    this.weapons.onHitBot = () => this.hud.pulseHit(false);
-    this.weapons.onKillBot = () => this.hud.pulseHit(true);
+    this.weapons.onHitBot = (damage, killed) => {
+      this.hud.pulseHit(killed);
+      this.hud.showDamageNumber(damage, killed);
+    };
+    this.weapons.onKillBot = () => {
+      // pulseHit(true) is already handled via onHitBot's killed flag; the
+      // kill adds a light celebratory canvas shake on top.
+      this.hud.shake(false);
+    };
     this.weapons.onSwitch = (index) => {
       // switchTo never activates an empty slot, so id is always set here;
       // the guard is just defensive. B2: the visual now needs the concrete

@@ -1,5 +1,6 @@
 import type { WeaponSlot } from "../weapons/WeaponSystem";
 import { WEAPON_DEFS, WEAPON_SLOT_COUNT } from "../weapons/weaponDefs";
+import { iconSvg, type IconId } from "./icons";
 
 // Six-slot weapon selector: tap a slot to switch. Owns its own DOM +
 // pointer events (like InputManager's buttons) so taps never fall through
@@ -31,13 +32,25 @@ export class WeaponBar {
     }
   }
 
+  // Per-slot render cache: innerHTML only rewrites when the slot's content
+  // actually changes (this runs every frame from the game loop).
+  private rendered: (IconId | "empty")[] = [];
+
   update(slots: WeaponSlot[], activeIndex: number): void {
     slots.forEach((slot, i) => {
       const btn = this.buttons[i];
       const def = slot.id ? WEAPON_DEFS[slot.id] : null;
       btn.classList.toggle("gj-weapon-slot-empty", !def);
       btn.classList.toggle("gj-weapon-slot-active", i === activeIndex);
-      btn.textContent = def ? def.icon : String(i + 1);
+      const want: IconId | "empty" = def ? def.icon : "empty";
+      if (this.rendered[i] !== want) {
+        this.rendered[i] = want;
+        if (def) {
+          btn.innerHTML = iconSvg(def.icon);
+        } else {
+          btn.textContent = String(i + 1);
+        }
+      }
     });
   }
 

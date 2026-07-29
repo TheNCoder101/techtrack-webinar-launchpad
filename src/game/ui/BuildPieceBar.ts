@@ -3,6 +3,7 @@ import {
   BUILD_PIECE_IDS,
   type BuildPieceId,
 } from "../building/buildPieceDefs";
+import { iconSvg } from "./icons";
 
 // Wall/floor picker for the build tool: a small vertical column of slots next
 // to the right-thumb button cluster, mirroring WeaponBar's pattern (own DOM +
@@ -23,7 +24,7 @@ export class BuildPieceBar {
       const def = BUILD_PIECE_DEFS[id];
       const btn = document.createElement("div");
       btn.className = "gj-build-slot";
-      btn.innerHTML = `<span>${def.icon}</span><span class="gj-build-slot-cost">${def.materialCost}</span>`;
+      btn.innerHTML = `${iconSvg(def.icon)}<span class="gj-build-slot-cost">${def.materialCost}</span>`;
 
       btn.addEventListener("pointerdown", (e) => {
         e.stopPropagation();

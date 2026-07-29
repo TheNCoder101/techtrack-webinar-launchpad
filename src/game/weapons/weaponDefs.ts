@@ -1,12 +1,15 @@
 // Data-driven weapon roster. Slot 0 (pickaxe) and slot 1 (blaster) are
 // always owned; slots 2-5 are empty until filled by an airdrop pickup.
 
+import type { IconId } from "../ui/icons";
+
 export type WeaponId = "pickaxe" | "blaster" | "smg" | "shotgun" | "sniper" | "heavy";
 
 export interface WeaponDef {
   id: WeaponId;
   name: string;
-  icon: string;
+  /** Icon id resolved through ui/icons.ts (V3 Track C3 — was an emoji). */
+  icon: IconId;
   isMelee: boolean;
   /** Damage per hit (per pellet for shotgun-style weapons). */
   damage: number;
@@ -32,7 +35,7 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
   pickaxe: {
     id: "pickaxe",
     name: "Pickaxe",
-    icon: "⛏️",
+    icon: "pickaxe",
     isMelee: true,
     damage: 12,
     fireRate: 1.8,
@@ -50,7 +53,7 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
   blaster: {
     id: "blaster",
     name: "Blaster",
-    icon: "🔫",
+    icon: "blaster",
     isMelee: false,
     damage: 22,
     fireRate: 7,
@@ -68,7 +71,7 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
   smg: {
     id: "smg",
     name: "SMG",
-    icon: "💥",
+    icon: "smg",
     isMelee: false,
     damage: 10,
     fireRate: 14,
@@ -86,7 +89,7 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
   shotgun: {
     id: "shotgun",
     name: "Shotgun",
-    icon: "💢",
+    icon: "shotgun",
     isMelee: false,
     damage: 15,
     fireRate: 1.3,
@@ -104,7 +107,7 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
   sniper: {
     id: "sniper",
     name: "Sniper",
-    icon: "🎯",
+    icon: "sniper",
     isMelee: false,
     damage: 70,
     fireRate: 0.9,
@@ -122,7 +125,7 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
   heavy: {
     id: "heavy",
     name: "Heavy",
-    icon: "☄️",
+    icon: "heavy",
     isMelee: false,
     damage: 45,
     fireRate: 0.8,

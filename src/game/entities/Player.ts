@@ -61,7 +61,9 @@ export class Player {
   private static readonly AIM_LEAN_FACTOR = 0.14;
   private static readonly AIM_LEAN_MAX = 0.12;
 
-  onDamaged?: () => void;
+  /** Fired on any damage taken, with the amount (drives the HUD damage
+   *  flash + screen-shake intensity — presentation only). */
+  onDamaged?: (amount: number) => void;
   onDeath?: () => void;
 
   /** Multiplier applied on top of the base LOOK_SENSITIVITY constant, from GameSettings. */
@@ -89,7 +91,7 @@ export class Player {
   takeDamage(amount: number, nowSec: number): void {
     if (this.dead || nowSec < this.invulnerableUntil) return;
     this.health -= amount;
-    this.onDamaged?.();
+    this.onDamaged?.(amount);
     if (this.health <= 0) {
       this.health = 0;
       this.dead = true;

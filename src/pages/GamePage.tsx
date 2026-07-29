@@ -16,7 +16,26 @@ import {
 } from "@/game/core/Settings";
 import { loadStats, saveStats, type LifetimeStats } from "@/game/core/Stats";
 import { NetManager, type BrokerOverride } from "@/game/net/NetManager";
+import { iconSvg, type IconId } from "@/game/ui/icons";
+// Self-hosted display face (V3 Track C2): Rajdhani via @fontsource — WOFF2
+// assets are bundled by Vite and land in the PWA precache (vite.config.ts
+// globPatterns already includes woff2), so the font works fully offline with
+// no CDN request ever.
+import "@fontsource/rajdhani/latin-600.css";
+import "@fontsource/rajdhani/latin-700.css";
 import "@/game/ui/hud.css";
+
+/** Inline SVG icon from the shared game icon set (ui/icons.ts) — the same
+ *  markup the imperative HUD/bars render, so React and non-React UI stay on
+ *  one icon language. Content is static and authored in this repo. */
+function Icon({ id }: { id: IconId }) {
+  // eslint-disable-next-line react/no-danger
+  return <span className="gj-ic-wrap" dangerouslySetInnerHTML={{ __html: iconSvg(id) }} />;
+}
+
+/** How long the branded menu→match transition stays up (ms) — matches the
+ *  gj-match-intro CSS animation length. */
+const MATCH_INTRO_MS = 1500;
 
 const SKIN_STORAGE_KEY = "elronite-skin";
 const QUALITY_TIER_OPTIONS: QualityTier[] = ["low", "medium", "high"];
@@ -85,6 +104,26 @@ export default function GamePage() {
   const [matchEnd, setMatchEnd] = useState<{ outcome: MatchOutcome; summary: LifeSummary } | null>(
     null
   );
+  // Branded menu→match transition (V3 Track C7): true for a moment after
+  // PLAY. Purely visual (the overlay is pointer-events: none) — the match
+  // starts underneath immediately, so no gameplay timing changes.
+  const [introVisible, setIntroVisible] = useState(false);
+  const introTimeoutRef = useRef<number | null>(null);
+
+  const flashMatchIntro = useCallback(() => {
+    if (introTimeoutRef.current) window.clearTimeout(introTimeoutRef.current);
+    setIntroVisible(true);
+    introTimeoutRef.current = window.setTimeout(() => {
+      setIntroVisible(false);
+      introTimeoutRef.current = null;
+    }, MATCH_INTRO_MS);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (introTimeoutRef.current) window.clearTimeout(introTimeoutRef.current);
+    };
+  }, []);
 
   // --- Co-op lobby state. Solo play never touches any of this: netRef stays
   // null unless the player explicitly presses Host/Join, and PLAY works
@@ -244,7 +283,8 @@ export default function GamePage() {
 
     game.start();
     setStarted(true);
-  }, [skinIndex, settings, updateStats]);
+    flashMatchIntro();
+  }, [skinIndex, settings, updateStats, flashMatchIntro]);
 
   // Rough total-playtime accounting: tick the ledger every 10s while a game
   // is running. Coarse by design — a partial final tick is simply dropped.
@@ -321,7 +361,11 @@ export default function GamePage() {
       {!started && (
         <div className="gj-start-screen">
           <div className="gj-start-inner">
-            <div className="gj-title">ELRONITE</div>
+            <div className="gj-title-block">
+              <div className="gj-title-kicker">Battle Island</div>
+              <div className="gj-title">ELRONITE</div>
+              <div className="gj-title-rule" />
+            </div>
             <div className="gj-subtitle">
               Free-roam a low-poly battle island. Swing a pickaxe to harvest wood &amp; stone,
               blast wandering raiders with your blaster, catch airdrops for SMGs, shotguns,
@@ -355,7 +399,11 @@ export default function GamePage() {
                           style={{ background: hexToCss(skin.helmetColor ?? 0x222222) }}
                         />
                       )}
-                      {!unlocked && <span className="gj-skin-swatch-lock">🔒</span>}
+                      {!unlocked && (
+                        <span className="gj-skin-swatch-lock">
+                          <Icon id="lock" />
+                        </span>
+                      )}
                     </span>
                     <span className="gj-skin-swatch-label">{skin.name}</span>
                     {!unlocked && skin.unlockCondition && (
@@ -369,14 +417,28 @@ export default function GamePage() {
             </div>
 
             <div className="gj-lifetime-stats">
-              🏆 {stats.totalKills} kills · 💀 {stats.totalDeaths} eliminated · ⭐ best{" "}
-              {stats.bestScore} · ⏱ {formatDuration(stats.totalPlaySeconds)} played
+              <span className="gj-stat">
+                <Icon id="trophy" />
+                {stats.totalKills} kills
+              </span>
+              <span className="gj-stat gj-stat-skull">
+                <Icon id="skull" />
+                {stats.totalDeaths} down
+              </span>
+              <span className="gj-stat gj-stat-star">
+                <Icon id="star" />
+                best {stats.bestScore}
+              </span>
+              <span className="gj-stat gj-stat-clock">
+                <Icon id="clock" />
+                {formatDuration(stats.totalPlaySeconds)}
+              </span>
             </div>
 
             {/* Co-op lobby (additive — PLAY below works exactly as before
                 for solo). Host shows a join code + waiting state; Join takes
                 a code; failures fall back here with an inline error. */}
-            <div className="gj-coop-section">
+            <div className="gj-coop-section gj-panel gj-panel-cyan">
               <div className="gj-settings-title">Co-op · 2–4 players</div>
 
               {!hostCode && !joinConnected && (
@@ -453,7 +515,7 @@ export default function GamePage() {
               {coopError && <div className="gj-coop-error">{coopError}</div>}
             </div>
 
-            <div className="gj-settings-section">
+            <div className="gj-settings-section gj-panel">
               <div className="gj-settings-title">Settings</div>
 
               <div className="gj-quality-picker">
@@ -499,15 +561,28 @@ export default function GamePage() {
             </div>
 
             <button className="gj-play-btn" onClick={handlePlay}>
-              ▶ PLAY
+              <Icon id="play" />
+              PLAY
             </button>
             <div className="gj-controls-help">
-              <div>🕹️ Left thumb — move</div>
-              <div>👉 Right side drag — look / aim</div>
-              <div>🔫 FIRE — shoot / swing</div>
-              <div>🎒 Bottom slots — switch weapons</div>
-              <div>⬆️ JUMP</div>
-              <div>🧱 BUILD — place wall</div>
+              <div>
+                <Icon id="joystick" /> Left thumb — move
+              </div>
+              <div>
+                <Icon id="drag" /> Right side drag — look / aim
+              </div>
+              <div>
+                <Icon id="crosshair" /> FIRE — shoot / swing
+              </div>
+              <div>
+                <Icon id="slots" /> Bottom slots — switch weapons
+              </div>
+              <div>
+                <Icon id="jump" /> JUMP
+              </div>
+              <div>
+                <Icon id="wall" /> BUILD — place wall
+              </div>
             </div>
           </div>
         </div>
@@ -518,7 +593,8 @@ export default function GamePage() {
           button) is up. */}
       {started && !matchEnd && (
         <button type="button" className="gj-exit-btn" onClick={handleExitToMenu}>
-          ✕ EXIT
+          <Icon id="exit" />
+          EXIT
         </button>
       )}
 
@@ -528,10 +604,13 @@ export default function GamePage() {
       {started && matchEnd && (
         <div className="gj-match-end">
           <div
-            className={`gj-match-end-card gj-match-end-${matchEnd.outcome}`}
+            className={`gj-match-end-card gj-panel gj-match-end-${matchEnd.outcome} ${
+              matchEnd.outcome === "victory" ? "" : "gj-panel-red"
+            }`}
           >
             <div className="gj-match-end-title">
-              {matchEnd.outcome === "victory" ? "🏆 VICTORY" : "☠ ELIMINATED"}
+              <Icon id={matchEnd.outcome === "victory" ? "trophy" : "skull"} />
+              {matchEnd.outcome === "victory" ? "VICTORY" : "ELIMINATED"}
             </div>
             <div className="gj-match-end-sub">
               {matchEnd.outcome === "victory"
@@ -556,10 +635,12 @@ export default function GamePage() {
             </div>
             <div className="gj-match-end-buttons">
               <button type="button" className="gj-match-end-play" onClick={handleRestart}>
-                ▶ PLAY AGAIN
+                <Icon id="play" />
+                PLAY AGAIN
               </button>
               <button type="button" className="gj-match-end-menu" onClick={handleExitToMenu}>
-                ☰ MAIN MENU
+                <Icon id="menu" />
+                MAIN MENU
               </button>
             </div>
           </div>
@@ -570,8 +651,18 @@ export default function GamePage() {
           dual-thumb touch controls still play best in landscape. */}
       {started && !matchEnd && (
         <div className="gj-rotate-hint gj-rotate-visible">
-          <div>🔄</div>
+          <Icon id="rotate" />
           <div>Rotate your device to landscape for the best experience</div>
+        </div>
+      )}
+
+      {/* Branded menu→match transition (C7): a short, self-fading wordmark
+          flash. pointer-events: none — never blocks the first input. */}
+      {started && introVisible && (
+        <div className="gj-match-intro">
+          <div className="gj-match-intro-sub">Battle Island</div>
+          <div className="gj-match-intro-title">ELRONITE</div>
+          <div className="gj-match-intro-bar" />
         </div>
       )}
     </div>

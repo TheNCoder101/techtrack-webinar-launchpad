@@ -68,7 +68,10 @@ export class WeaponSystem {
   // instead of allocating a fresh array on every single shot/swing.
   private cachedTargets: THREE.Object3D[] = [];
 
-  onHitBot?: () => void;
+  /** Fired per landed hit with the damage dealt and whether it killed
+   *  (drives the HUD's floating damage numbers — presentation only, the
+   *  damage itself is applied by BotManager). */
+  onHitBot?: (damage: number, killed: boolean) => void;
   onKillBot?: () => void;
   onSwitch?: (index: number) => void;
   onMeleeSwing?: () => void;
@@ -245,7 +248,7 @@ export class WeaponSystem {
       if (refId === undefined || !botManager.isAlive(refId)) return false;
       const killed = botManager.damage(refId, def.damage);
       particles.burst(hit.point, COLOR_BLOOD, 12, 4.5, 1, 9, 0.4);
-      this.onHitBot?.();
+      this.onHitBot?.(def.damage, killed);
       if (killed) {
         audio.botKill();
         this.onKillBot?.();

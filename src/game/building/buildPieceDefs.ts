@@ -3,12 +3,15 @@
 // code change in BuildingManager. Ramps are intentionally absent — they need
 // a raycast-based ground extension the player controller doesn't have yet.
 
+import type { IconId } from "../ui/icons";
+
 export type BuildPieceId = "wall" | "floor";
 
 export interface BuildPieceDef {
   id: BuildPieceId;
   name: string;
-  icon: string;
+  /** Icon id resolved through ui/icons.ts (V3 Track C3 — was an emoji). */
+  icon: IconId;
   /** Materials deducted from the player on placement. */
   materialCost: number;
   /** BoxGeometry dimensions in world units. */
@@ -29,7 +32,7 @@ export const BUILD_PIECE_DEFS: Record<BuildPieceId, BuildPieceDef> = {
   wall: {
     id: "wall",
     name: "Wall",
-    icon: "🧱",
+    icon: "wall",
     materialCost: 20,
     width: 3.2,
     height: 3,
@@ -42,7 +45,7 @@ export const BUILD_PIECE_DEFS: Record<BuildPieceId, BuildPieceDef> = {
   floor: {
     id: "floor",
     name: "Floor",
-    icon: "🟫",
+    icon: "floor",
     materialCost: 12,
     width: 3.2,
     height: 0.2,

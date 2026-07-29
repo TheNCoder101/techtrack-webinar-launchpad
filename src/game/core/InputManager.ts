@@ -1,4 +1,5 @@
 import type { PlayerInput } from "./types";
+import { iconSvg } from "../ui/icons";
 
 const JOYSTICK_MAX_RADIUS = 52;
 
@@ -158,12 +159,15 @@ export class InputManager implements PlayerInput {
     });
     this.fireBtn.addEventListener("pointerup", () => (this.fireHeld = false));
     this.fireBtn.addEventListener("pointercancel", () => (this.fireHeld = false));
-    this.fireBtn.textContent = "FIRE";
+    // Icon-over-label buttons (V3 Track C3). Children are pointer-events:
+    // none in CSS, so the existing pointer handlers on the button still see
+    // every tap.
+    this.fireBtn.innerHTML = `${iconSvg("crosshair")}<span>FIRE</span>`;
 
     this.jumpBtn = this.makeButton("gj-btn gj-btn-jump", () => {
       this.jumpQueued = true;
     });
-    this.jumpBtn.textContent = "JUMP";
+    this.jumpBtn.innerHTML = `${iconSvg("jump")}<span>JUMP</span>`;
 
     // BUILD is hold-to-preview / release-to-place: pointerdown shows the
     // placement ghost (buildHeld), pointerup queues the actual placement.
@@ -178,7 +182,7 @@ export class InputManager implements PlayerInput {
       }
     });
     this.buildBtn.addEventListener("pointercancel", () => (this.buildHeld = false));
-    this.buildBtn.textContent = "BUILD";
+    this.buildBtn.innerHTML = `${iconSvg("wall")}<span>BUILD</span>`;
   }
 
   consumeLook(): { dx: number; dy: number } {
