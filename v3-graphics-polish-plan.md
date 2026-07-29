@@ -202,8 +202,61 @@ density increase.
 
 ---
 
-## Track C — UI/UX Design System
+## Track C — UI/UX Design System ✅ done (2796db3)
 **Goal:** this is where "vibe-coded" is most visible today, and the cheapest track to fix per visual dollar — it's CSS and SVG, not the renderer.
+
+**Shipped:** C1 (`hud.css` rebuilt on a ~30-token `:root` layer — palette, two
+font stacks, tracking, radii, spacing, elevation/glow; no ad-hoc hex/rgba
+left), C2 (Rajdhani self-hosted via `@fontsource/rajdhani`, latin-600/700
+only, body copy stays system-ui), C3 (new `src/game/ui/icons.ts` — 24 bespoke
+glyphs on one 24×24 / 2px-round-stroke / `currentColor` language, single
+source shared by React, the imperative bars, `HUDController` and
+`InputManager`; `weaponDefs`/`buildPieceDefs` `icon` fields are now typed
+`IconId`s, `WeaponBar` resolves them through a per-slot render cache so
+`innerHTML` isn't rewritten each frame — **every emoji is gone**), C4
+(`.gj-panel` recipe: layered gradient + hairline + inner glow + accent top
+edge via `::before`, shared by settings/co-op/both match-end variants; a
+`.gj-hudpill` chip recipe for in-game readouts), C5 (spring press-bounce,
+eased score tick-up, floating damage numbers, canvas-only screen shake so DOM
+touch targets never move under a finger, expanding-ring kill marker,
+`prefers-reduced-motion` respected), C6 (vignetted minimap face, range rings,
+yaw-rotating compass ticks with gold north, glow+crisp zone ring, pulsing
+threat halos inside 26 units, diamond airdrop marker, outlined player wedge),
+C7 (kicker/wordmark/rule title block, iconed stat chips and control hints,
+1.5s branded ELRONITE menu→match transition that is `pointer-events: none`
+and cleaned up on unmount).
+
+Presentation-only hook changes: `Player.onDamaged` now passes the damage
+amount and `WeaponSystem.onHitBot` passes `(damage, killed)` — no gameplay
+values touched, and the HUD stays imperative (never React) inside the render
+loop, as its own design note requires. Deliberately **no `backdrop-filter`**
+on in-game HUD elements, since blurring over a per-frame WebGL canvas costs
+compositor time every frame.
+
+**Independently re-verified** beyond the implementing agent's report: confirmed
+the diff touches zero renderer/geometry files; traced both changed callback
+signatures to every declaration and call site (the `pulseHit(killed)` refactor
+correctly avoids a double-pulse); ran my own `tsc`/build (clean, both Rajdhani
+WOFF2s emitted at ~31 kB total, precache 18 → 20 entries); **verified the
+offline claim directly** — zero external font/CDN URLs anywhere in `dist/`,
+both fonts present in the `sw.js` precache manifest; confirmed via
+`document.fonts.check` on the served production build that Rajdhani genuinely
+loaded and applied rather than silently falling back; and re-ran my own
+`getBoundingClientRect` intersection test for the recently-fixed EXIT button —
+**zero overlap area against the storm pill, the score pill, and a
+force-shown survive timer, in both portrait and landscape**. Zero console
+errors across every run. Landscape two-column start-screen layout (Phase 10)
+confirmed intact.
+
+**Caveats carried from the implementing agent, not independently re-checked:**
+CSS-animation timing is unreliable under the headless software renderer, so
+the intro overlay and damage numbers were captured with animations frozen and
+proven to mount via MutationObserver rather than caught mid-flight naturally;
+real-device *feel* (shake intensity, tick-up speed) is untested; score tick-up
+was verified by code review plus the pop animation firing, not by scoring a
+live kill. Portrait in-game remains cramped (rotate hint overlays the top-left
+health text at 393px) — pre-existing, left unchanged rather than risk
+regressing the recently-shipped hint/storm-status layout.
 
 - **C1. Design tokens.** A small `:root` CSS custom-property layer in
   `hud.css` — color palette (currently ad-hoc hex/rgba repeated ~40+ times),
