@@ -15,7 +15,8 @@ import {
 } from "../core/constants";
 import type { PlayerInput } from "../core/types";
 import { World } from "../world/World";
-import { createPlayerMesh } from "./playerMesh";
+import { createPlayerMesh, GUN_WEAPON_IDS, type GunWeaponId } from "./playerMesh";
+import { WEAPON_DEFS, type WeaponId } from "../weapons/weaponDefs";
 import { createBlobShadow } from "../world/blobShadow";
 import { PLAYER_SKINS, type CharacterSkin } from "./skinDefs";
 import { animateHumanoidLocomotion, type HumanoidBuild } from "./humanoid";
@@ -25,6 +26,8 @@ export class Player {
   gunTip: THREE.Object3D;
   private gunGroup: THREE.Group;
   private pickaxeGroup: THREE.Group;
+  private gunVariants: Record<GunWeaponId, THREE.Group>;
+  private gunTipOffsets: Record<GunWeaponId, number>;
   private humanoid: HumanoidBuild;
   position: THREE.Vector3;
   velocity = new THREE.Vector3();
@@ -66,11 +69,14 @@ export class Player {
 
   constructor(scene: THREE.Scene, skin: CharacterSkin = PLAYER_SKINS[0], lookSensitivity = 1) {
     this.lookSensitivity = lookSensitivity;
-    const { group, gunTip, gunGroup, pickaxeGroup, humanoid } = createPlayerMesh(skin);
+    const { group, gunTip, gunGroup, pickaxeGroup, gunVariants, gunTipOffsets, humanoid } =
+      createPlayerMesh(skin);
     this.group = group;
     this.gunTip = gunTip;
     this.gunGroup = gunGroup;
     this.pickaxeGroup = pickaxeGroup;
+    this.gunVariants = gunVariants;
+    this.gunTipOffsets = gunTipOffsets;
     this.humanoid = humanoid;
     this.position = group.position;
     this.position.set(0, 1, 4);
@@ -106,9 +112,21 @@ export class Player {
     this.velocity.set(0, 0, 0);
   }
 
-  setActiveWeaponVisual(isMelee: boolean): void {
+  /** Shows the held mesh for the equipped weapon: the pickaxe for melee, or
+   *  the matching per-weapon gun silhouette (V3 Track B2) otherwise. Also
+   *  moves gunTip (muzzle-flash/tracer origin) to the active gun's barrel
+   *  length so tracers start at the muzzle for short and long guns alike. */
+  setActiveWeaponVisual(id: WeaponId): void {
+    const isMelee = WEAPON_DEFS[id].isMelee;
     this.pickaxeGroup.visible = isMelee;
     this.gunGroup.visible = !isMelee;
+    if (!isMelee) {
+      const gunId = id as GunWeaponId;
+      for (const key of GUN_WEAPON_IDS) {
+        this.gunVariants[key].visible = key === gunId;
+      }
+      this.gunTip.position.z = this.humanoid.rightHandAnchor.z - this.gunTipOffsets[gunId];
+    }
   }
 
   /** Kicks off a one-shot swing arc; called each time the pickaxe actually connects/swings. */

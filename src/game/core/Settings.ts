@@ -40,6 +40,15 @@ export interface QualitySettings {
    *  next to their higher pixelRatioCap. When `postFX` is ever enabled for a
    *  tier, that composer takes precedence and this pass is skipped. */
   gradePass: boolean;
+  /** Billboard grass/scrub clusters scattered per tree (V3 Track B3; see
+   *  props.createGrassInstancedMesh / World.scatterTrees). The whole feature
+   *  is a single extra InstancedMesh draw call, but it is the one net-new
+   *  draw-call item in Track B, so it follows the same tier discipline as
+   *  every other feature here: 0 on "low" (that tier's identity is the
+   *  zero-overhead render path — the mesh/texture are never even created),
+   *  modest on "medium"/"high". Like prop density, resolved once at world
+   *  build — a mid-session auto-downgrade doesn't retroactively mow it. */
+  grassDensity: number;
 }
 
 export const QUALITY_TIERS: Record<QualityTier, QualitySettings> = {
@@ -52,6 +61,7 @@ export const QUALITY_TIERS: Record<QualityTier, QualitySettings> = {
     shadowMapSize: 1024,
     postFX: false,
     gradePass: false,
+    grassDensity: 0,
   },
   medium: {
     pixelRatioCap: 1.5,
@@ -62,6 +72,7 @@ export const QUALITY_TIERS: Record<QualityTier, QualitySettings> = {
     shadowMapSize: 1024,
     postFX: false,
     gradePass: true,
+    grassDensity: 2,
   },
   high: {
     pixelRatioCap: 2,
@@ -75,6 +86,7 @@ export const QUALITY_TIERS: Record<QualityTier, QualitySettings> = {
     shadowMapSize: 2048,
     postFX: false,
     gradePass: true,
+    grassDensity: 3,
   },
 };
 

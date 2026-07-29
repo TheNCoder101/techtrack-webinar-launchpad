@@ -7,14 +7,19 @@ import { fbm2D } from "./noise";
 import {
   createTreeInstancedMeshes,
   createAppleInstancedMesh,
-  createRockInstancedMesh,
-  createCrateInstancedMesh,
+  createRockInstancedMeshes,
+  createCrateInstancedMeshes,
   createShackInstancedMeshes,
+  createGrassInstancedMesh,
   makeTreeLayout,
   makeAppleLayouts,
   makeRockLayout,
   makeCrateLayout,
   makeShackLayout,
+  makeGrassLayout,
+  ROCK_VARIANT_COUNT,
+  CRATE_VARIANT_COUNT,
+  SHACK_VARIANT_COUNT,
   type PartTransform,
 } from "./props";
 
@@ -232,10 +237,16 @@ export class World {
   private treeTrunkMesh!: THREE.InstancedMesh;
   private treeLeafMesh!: THREE.InstancedMesh;
   private appleMesh!: THREE.InstancedMesh;
-  private rockMesh!: THREE.InstancedMesh;
-  private crateMesh!: THREE.InstancedMesh;
-  private shackWallMesh!: THREE.InstancedMesh;
-  private shackRoofMesh!: THREE.InstancedMesh;
+  // B4: one InstancedMesh per geometry variant (rocks x3, crates x3,
+  // shack wall/roof pairs x2); the scatter functions pick a variant per
+  // placement. Still one draw call per variant mesh.
+  private rockMeshes: THREE.InstancedMesh[] = [];
+  private crateMeshes: THREE.InstancedMesh[] = [];
+  private shackWallMeshes: THREE.InstancedMesh[] = [];
+  private shackRoofMeshes: THREE.InstancedMesh[] = [];
+  // B3: single decorative grass InstancedMesh; null when the tier's
+  // grassDensity is 0 (the "low" tier never creates it).
+  private grassMesh: THREE.InstancedMesh | null = null;
 
   // instanceId -> harvestable refId, one array per InstancedMesh that can
   // hold harvestable parts. Referenced directly from each mesh's userData
@@ -244,7 +255,8 @@ export class World {
   private treeTrunkRefIds: number[] = [];
   private treeLeafRefIds: number[] = [];
   private appleRefIds: number[] = [];
-  private rockRefIds: number[] = [];
+  /** One refId array per rock variant mesh, parallel to rockMeshes. */
+  private rockRefIds: number[][] = [];
 
   private nextRefId = 0;
   private harvestableByRefId = new Map<number, Harvestable>();
@@ -422,30 +434,33 @@ export class World {
     this.treeTrunkMesh = treeMeshes.trunk;
     this.treeLeafMesh = treeMeshes.leaves;
     this.appleMesh = createAppleInstancedMesh(treeCount);
-    this.rockMesh = createRockInstancedMesh(rockCount);
-    this.crateMesh = createCrateInstancedMesh(crateCount);
+    this.rockMeshes = createRockInstancedMeshes(rockCount);
+    this.crateMeshes = createCrateInstancedMeshes(crateCount);
     const shackMeshes = createShackInstancedMeshes(shackCount);
-    this.shackWallMesh = shackMeshes.wall;
-    this.shackRoofMesh = shackMeshes.roof;
+    this.shackWallMeshes = shackMeshes.map((m) => m.wall);
+    this.shackRoofMeshes = shackMeshes.map((m) => m.roof);
 
     this.treeTrunkMesh.userData = { kind: "harvestable", refIds: this.treeTrunkRefIds } satisfies HitUserData;
     this.treeLeafMesh.userData = { kind: "harvestable", refIds: this.treeLeafRefIds } satisfies HitUserData;
     // Apples are parts of their tree: a raycast hit on an apple resolves to
     // the owning tree's refId, exactly like a hit on its trunk or leaves.
     this.appleMesh.userData = { kind: "harvestable", refIds: this.appleRefIds } satisfies HitUserData;
-    this.rockMesh.userData = { kind: "harvestable", refIds: this.rockRefIds } satisfies HitUserData;
-    this.crateMesh.userData = { kind: "prop" } satisfies HitUserData;
-    this.shackWallMesh.userData = { kind: "prop" } satisfies HitUserData;
-    this.shackRoofMesh.userData = { kind: "prop" } satisfies HitUserData;
+    this.rockRefIds = this.rockMeshes.map(() => []);
+    this.rockMeshes.forEach((mesh, v) => {
+      mesh.userData = { kind: "harvestable", refIds: this.rockRefIds[v] } satisfies HitUserData;
+    });
+    for (const mesh of [...this.crateMeshes, ...this.shackWallMeshes, ...this.shackRoofMeshes]) {
+      mesh.userData = { kind: "prop" } satisfies HitUserData;
+    }
 
     for (const mesh of [
       this.treeTrunkMesh,
       this.treeLeafMesh,
       this.appleMesh,
-      this.rockMesh,
-      this.crateMesh,
-      this.shackWallMesh,
-      this.shackRoofMesh,
+      ...this.rockMeshes,
+      ...this.crateMeshes,
+      ...this.shackWallMeshes,
+      ...this.shackRoofMeshes,
     ]) {
       // Shadow flags are inert unless a quality tier turns shadow mapping on
       // (none do in this shipped version). InstancedMesh casts as a whole —
@@ -457,12 +472,21 @@ export class World {
     }
     // Flat-ish props the player stands next to also catch character/tree
     // shadows; skip the trees' trunk/leaves where receiving mostly buys acne.
-    this.rockMesh.receiveShadow = true;
-    this.crateMesh.receiveShadow = true;
-    this.shackWallMesh.receiveShadow = true;
-    this.shackRoofMesh.receiveShadow = true;
+    for (const mesh of [...this.rockMeshes, ...this.crateMeshes, ...this.shackWallMeshes, ...this.shackRoofMeshes]) {
+      mesh.receiveShadow = true;
+    }
 
-    this.scatterTrees(treeCount, 0.75, kindOuterRadius);
+    // B3 grass: one decorative InstancedMesh for the whole island, capacity
+    // grassDensity clusters per tree. grassDensity 0 ("low") skips the
+    // feature entirely — no mesh, no texture, no draw call. Deliberately NOT
+    // a raycast target or collider: bullets and players pass through scrub.
+    const grassPerTree = quality.grassDensity;
+    if (grassPerTree > 0) {
+      this.grassMesh = createGrassInstancedMesh(treeCount * grassPerTree);
+      this.scene.add(this.grassMesh);
+    }
+
+    this.scatterTrees(treeCount, 0.75, kindOuterRadius, grassPerTree);
     this.scatterRocks(rockCount, 1.1, kindOuterRadius);
     this.scatterCrates(crateCount, 0.85, staticOuterRadius);
     this.scatterShacks(shackCount, 2.6, staticOuterRadius);
@@ -483,9 +507,10 @@ export class World {
     return false;
   }
 
-  private scatterTrees(count: number, radius: number, outerRadius: number): void {
+  private scatterTrees(count: number, radius: number, outerRadius: number, grassPerTree: number): void {
     let placed = 0;
     let applesPlaced = 0;
+    let grassPlaced = 0;
     let attempts = 0;
     while (placed < count && attempts < count * 20) {
       attempts++;
@@ -556,6 +581,32 @@ export class World {
         }
       }
 
+      // B3: a few grass/scrub clusters hugging each tree. Anchored to the
+      // terrain height at their own offset (not the trunk's), so they sit on
+      // the ground even on a slope. Decorative only — no collider, no
+      // harvestable part, not tied to the tree's health scaling.
+      if (this.grassMesh && grassPerTree > 0) {
+        for (let g = 0; g < grassPerTree; g++) {
+          const layout = makeGrassLayout();
+          const gx = x + layout.position.x;
+          const gz = z + layout.position.z;
+          const gy = terrainHeight(gx, gz);
+          if (gy < 0.08) continue; // keep scrub off the beach/waterline
+          const grassInstanceId = grassPlaced++;
+          this.grassMesh.setMatrixAt(
+            grassInstanceId,
+            composeInstanceMatrix(
+              new THREE.Vector3(gx, gy - 0.02, gz),
+              new THREE.Vector3(0, 0, 0),
+              layout.quaternion,
+              layout.scale,
+              1
+            )
+          );
+          this.grassMesh.setColorAt(grassInstanceId, layout.color);
+        }
+      }
+
       const collider: Collider = { position: anchor, radius };
       this.colliders.push(collider);
 
@@ -584,11 +635,19 @@ export class World {
     this.appleMesh.instanceMatrix.needsUpdate = true;
     if (this.treeLeafMesh.instanceColor) this.treeLeafMesh.instanceColor.needsUpdate = true;
     if (this.appleMesh.instanceColor) this.appleMesh.instanceColor.needsUpdate = true;
+    if (this.grassMesh) {
+      this.grassMesh.count = grassPlaced;
+      this.grassMesh.instanceMatrix.needsUpdate = true;
+      if (this.grassMesh.instanceColor) this.grassMesh.instanceColor.needsUpdate = true;
+    }
   }
 
   private scatterRocks(count: number, radius: number, outerRadius: number): void {
     let placed = 0;
     let attempts = 0;
+    // B4: per-variant instance cursors — each variant mesh fills its own
+    // buffer independently as the random variant picks come in.
+    const placedPerVariant = new Array(ROCK_VARIANT_COUNT).fill(0);
     while (placed < count && attempts < count * 20) {
       attempts++;
       const { x, z } = this.randomIslandPoint(10, outerRadius);
@@ -598,14 +657,16 @@ export class World {
       const anchor = new THREE.Vector3(x, y, z);
       const layout = makeRockLayout();
       const refId = this.nextRefId++;
-      const instanceId = placed;
+      const variant = Math.floor(Math.random() * ROCK_VARIANT_COUNT);
+      const mesh = this.rockMeshes[variant];
+      const instanceId = placedPerVariant[variant]++;
 
-      this.rockMesh.setMatrixAt(
+      mesh.setMatrixAt(
         instanceId,
         composeInstanceMatrix(anchor, layout.position, layout.quaternion, layout.scale, 1)
       );
-      this.rockMesh.setColorAt(instanceId, layout.color);
-      this.rockRefIds[instanceId] = refId;
+      mesh.setColorAt(instanceId, layout.color);
+      this.rockRefIds[variant][instanceId] = refId;
 
       const collider: Collider = { position: anchor, radius };
       this.colliders.push(collider);
@@ -614,7 +675,7 @@ export class World {
         kind: "rock",
         parts: [
           {
-            mesh: this.rockMesh,
+            mesh,
             instanceId,
             basePos: layout.position,
             baseQuat: layout.quaternion,
@@ -634,14 +695,17 @@ export class World {
       placed++;
     }
 
-    this.rockMesh.count = placed;
-    this.rockMesh.instanceMatrix.needsUpdate = true;
-    if (this.rockMesh.instanceColor) this.rockMesh.instanceColor.needsUpdate = true;
+    this.rockMeshes.forEach((mesh, v) => {
+      mesh.count = placedPerVariant[v];
+      mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    });
   }
 
   private scatterCrates(count: number, radius: number, outerRadius: number): void {
     let placed = 0;
     let attempts = 0;
+    const placedPerVariant = new Array(CRATE_VARIANT_COUNT).fill(0);
     while (placed < count && attempts < count * 20) {
       attempts++;
       const { x, z } = this.randomIslandPoint(14, outerRadius);
@@ -649,20 +713,28 @@ export class World {
       if (y < 0.1 || this.tooClose(x, z, radius + 1.2)) continue;
 
       const anchor = new THREE.Vector3(x, y, z);
-      const layout = makeCrateLayout();
-      this.crateMesh.setMatrixAt(placed, composeInstanceMatrix(anchor, layout.position, layout.quaternion, layout.scale, 1));
+      const variant = Math.floor(Math.random() * CRATE_VARIANT_COUNT);
+      const layout = makeCrateLayout(variant);
+      const mesh = this.crateMeshes[variant];
+      mesh.setMatrixAt(
+        placedPerVariant[variant]++,
+        composeInstanceMatrix(anchor, layout.position, layout.quaternion, layout.scale, 1)
+      );
 
       this.colliders.push({ position: anchor, radius });
       placed++;
     }
 
-    this.crateMesh.count = placed;
-    this.crateMesh.instanceMatrix.needsUpdate = true;
+    this.crateMeshes.forEach((mesh, v) => {
+      mesh.count = placedPerVariant[v];
+      mesh.instanceMatrix.needsUpdate = true;
+    });
   }
 
   private scatterShacks(count: number, radius: number, outerRadius: number): void {
     let placed = 0;
     let attempts = 0;
+    const placedPerVariant = new Array(SHACK_VARIANT_COUNT).fill(0);
     while (placed < count && attempts < count * 20) {
       attempts++;
       const { x, z } = this.randomIslandPoint(14, outerRadius);
@@ -670,15 +742,19 @@ export class World {
       if (y < 0.1 || this.tooClose(x, z, radius + 1.2)) continue;
 
       const anchor = new THREE.Vector3(x, y, z);
-      const layout = makeShackLayout();
+      const variant = Math.floor(Math.random() * SHACK_VARIANT_COUNT);
+      const layout = makeShackLayout(variant);
+      const wallMesh = this.shackWallMeshes[variant];
+      const roofMesh = this.shackRoofMeshes[variant];
+      const instanceId = placedPerVariant[variant]++;
 
-      this.shackWallMesh.setMatrixAt(
-        placed,
+      wallMesh.setMatrixAt(
+        instanceId,
         composeInstanceMatrix(anchor, layout.wall.position, layout.wall.quaternion, layout.wall.scale, 1)
       );
-      this.shackWallMesh.setColorAt(placed, layout.wall.color);
-      this.shackRoofMesh.setMatrixAt(
-        placed,
+      wallMesh.setColorAt(instanceId, layout.wall.color);
+      roofMesh.setMatrixAt(
+        instanceId,
         composeInstanceMatrix(anchor, layout.roof.position, layout.roof.quaternion, layout.roof.scale, 1)
       );
 
@@ -686,11 +762,14 @@ export class World {
       placed++;
     }
 
-    this.shackWallMesh.count = placed;
-    this.shackRoofMesh.count = placed;
-    this.shackWallMesh.instanceMatrix.needsUpdate = true;
-    this.shackRoofMesh.instanceMatrix.needsUpdate = true;
-    if (this.shackWallMesh.instanceColor) this.shackWallMesh.instanceColor.needsUpdate = true;
+    this.shackWallMeshes.forEach((wallMesh, v) => {
+      wallMesh.count = placedPerVariant[v];
+      wallMesh.instanceMatrix.needsUpdate = true;
+      if (wallMesh.instanceColor) wallMesh.instanceColor.needsUpdate = true;
+      const roofMesh = this.shackRoofMeshes[v];
+      roofMesh.count = placedPerVariant[v];
+      roofMesh.instanceMatrix.needsUpdate = true;
+    });
   }
 
   getHarvestable(refId: number): Harvestable | undefined {

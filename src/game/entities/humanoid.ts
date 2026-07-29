@@ -17,11 +17,23 @@ const LEG_LENGTH = 0.95;
 const ARM_HALF_LENGTH = ARM_LENGTH / 2;
 const LEG_HALF_LENGTH = LEG_LENGTH / 2;
 
-const torsoGeo = new THREE.BoxGeometry(0.44, 0.62, 0.26);
+// V3 Track B1: sculpted silhouette, same rig. The torso is an 8-sided
+// tapered prism (beveled corners + a shoulders-wider-than-waist V-taper)
+// instead of a raw box; rotated so flat faces align front/back, then
+// squashed on Z to keep the original chest-vs-depth proportions. Limb
+// cylinders taper harder toward the wrist/ankle, and a short neck cylinder
+// opens a visible gap between shoulders and head. ~30 extra triangles per
+// character — authoring-time geometry only, zero new draw calls or rig
+// changes (animateHumanoidLocomotion drives the exact same pivots).
+const torsoGeo = new THREE.CylinderGeometry(0.26, 0.205, 0.62, 8, 1);
+torsoGeo.rotateY(Math.PI / 8);
+torsoGeo.scale(1, 1, 0.56);
 const headGeo = new THREE.SphereGeometry(0.28, 10, 8);
 const helmetGeo = new THREE.SphereGeometry(0.32, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.65);
-const armGeo = new THREE.CylinderGeometry(0.08, 0.075, ARM_LENGTH, 6);
-const legGeo = new THREE.CylinderGeometry(0.11, 0.1, LEG_LENGTH, 6);
+const armGeo = new THREE.CylinderGeometry(0.085, 0.058, ARM_LENGTH, 6);
+const legGeo = new THREE.CylinderGeometry(0.115, 0.082, LEG_LENGTH, 6);
+// Open-ended: both rims are hidden inside the torso/head.
+const neckGeo = new THREE.CylinderGeometry(0.085, 0.105, 0.16, 6, 1, true);
 
 // --- Fresnel rim light (V3 Track A3) ---------------------------------------
 // Character materials get a cheap view-dependent rim term patched into the
@@ -64,7 +76,10 @@ const TORSO_HALF_HEIGHT = 0.31;
 const SHOULDER_Y = TORSO_Y + TORSO_HALF_HEIGHT;
 const HIP_Y = TORSO_Y - TORSO_HALF_HEIGHT;
 const ARM_Y = SHOULDER_Y - ARM_HALF_LENGTH;
-const HEAD_Y = SHOULDER_Y + 0.28;
+// B1: head raised 0.06 above the old shoulder-touching position so the neck
+// cylinder below reads as an actual neck instead of a ball sitting on a box.
+const HEAD_Y = SHOULDER_Y + 0.34;
+const NECK_Y = SHOULDER_Y + 0.06;
 const ARM_X = 0.3;
 const LEG_X = 0.13;
 
@@ -103,6 +118,12 @@ export function buildHumanoid(skin: CharacterSkin): HumanoidBuild {
   const torso = new THREE.Mesh(torsoGeo, bodyMat);
   torso.position.y = TORSO_Y;
   group.add(torso);
+
+  // B1 neck: skin-toned like the head, cosmetic only (kept out of
+  // hittableMeshes, same as the helmet, so gameplay hitboxes are unchanged).
+  const neckMesh = new THREE.Mesh(neckGeo, headMat);
+  neckMesh.position.y = NECK_Y;
+  group.add(neckMesh);
 
   const headMesh = new THREE.Mesh(headGeo, headMat);
   headMesh.position.y = HEAD_Y;
@@ -150,7 +171,7 @@ export function buildHumanoid(skin: CharacterSkin): HumanoidBuild {
   // Characters cast into the player-following sun shadow map when a quality
   // tier enables shadow mapping; a no-op flag otherwise (the shipped default —
   // every tier currently leaves renderer.shadowMap.enabled false).
-  for (const mesh of [torso, headMesh, helmetMesh, leftArm, rightArm, leftLeg, rightLeg]) {
+  for (const mesh of [torso, neckMesh, headMesh, helmetMesh, leftArm, rightArm, leftLeg, rightLeg]) {
     mesh.castShadow = true;
   }
 

@@ -14,7 +14,6 @@ import {
 import type { CharacterSkin } from "../entities/skinDefs";
 import { WeaponSystem } from "../weapons/WeaponSystem";
 import { AirdropManager } from "../weapons/AirdropManager";
-import { WEAPON_DEFS } from "../weapons/weaponDefs";
 import { ParticleSystem } from "../weapons/ParticleSystem";
 import { BuildingManager } from "../building/BuildingManager";
 import { AudioManager } from "./AudioManager";
@@ -300,8 +299,11 @@ export class Game {
     this.weapons.onHitBot = () => this.hud.pulseHit(false);
     this.weapons.onKillBot = () => this.hud.pulseHit(true);
     this.weapons.onSwitch = (index) => {
+      // switchTo never activates an empty slot, so id is always set here;
+      // the guard is just defensive. B2: the visual now needs the concrete
+      // weapon id (each gun has its own held silhouette), not just isMelee.
       const id = this.weapons.slots[index].id;
-      this.player.setActiveWeaponVisual(id ? WEAPON_DEFS[id].isMelee : false);
+      if (id) this.player.setActiveWeaponVisual(id);
     };
     this.weapons.onMeleeSwing = () => this.player.triggerPickaxeSwing();
 
