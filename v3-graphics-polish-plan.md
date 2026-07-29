@@ -298,7 +298,37 @@ tier-gating needed.
 
 ---
 
-## Track D — Gameplay Sophistication (lighter touch, ties into visuals) ✅ done
+## Track D — Gameplay Sophistication (lighter touch, ties into visuals) ✅ done (6dd41bd)
+
+> **Process note, for the record:** the implementing agent terminated early
+> (ran out of model usage credits) at the tail end of its screenshot pass.
+> Its work was already committed and self-verified at that point, so nothing
+> was lost — but because its run did not end cleanly, the orchestrating
+> session re-ran the substantive verification independently rather than
+> trusting an interrupted report. Independent results below **corroborate**
+> the agent's own numbers:
+> - **D2 bearing math — exact at all four cardinals.** With yaw normalized,
+>   an attacker dead ahead → `0.0deg`, to the right → `90.0deg`, behind →
+>   `180.0deg`, to the left → `-90.0deg`. Also confirmed by reading the code
+>   that `bearingTo`'s forward/right basis matches `Player.update`'s exactly,
+>   and that the arc only fires when damage actually landed (`health <
+>   healthBefore`), so an invulnerable/dead no-op never spawns a phantom arc.
+> - **D3 miss rates — match config.** 20 000 samples per tier: 0.4502 /
+>   0.2974 / 0.1515 against configured 0.45 / 0.30 / 0.15, with the
+>   harder-tier-hits-more ordering correct.
+> - **D3 storm constraint — held.** `StormManager.ts` diff is +9 lines of
+>   documentation and **zero** changes to any timing value;
+>   `FINAL_ZONE_SURVIVAL_SECONDS` untouched. Confirmed by diffing the
+>   timing lines directly, not by reading the summary.
+> - **D4 — 3 distinct lighting states across 4 fresh matches**, sun
+>   colour/height and fog varying coherently together; dusk roll visually
+>   confirmed to keep bots on the horizon clearly visible (the readability
+>   constraint).
+> - **Regressions — clean.** EXIT button zero overlap area vs storm pill,
+>   score pill and a force-shown survive timer; bot hit-flash
+>   `#8a5a2f → #ffffff`; solo play still constructs no `NetManager`. Own
+>   `tsc`/build clean, zero console errors across every run.
+
 **Goal:** the explicitly-requested "sophisticated gameplay" side, scoped to items that reinforce the visual work rather than open a second large initiative.
 
 **Shipped:** D1 (rarity axis on `WeaponDef` — common: pickaxe/blaster
