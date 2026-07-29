@@ -141,8 +141,38 @@ with `samplePerf`'s existing frame-time sampler before defaulting on for
 
 ---
 
-## Track B — Character & Prop Craft
+## Track B — Character & Prop Craft ✅ done (dfc2e86)
 **Goal:** make the low-poly cast and world read as *designed*, not primitive placeholders. Still zero textures, modest geometry cost.
+
+**Shipped:** B1 (beveled tapered-prism torso, tapered limb ends, a real neck
+gap — all inside the existing pivot groups, ~30 extra tris/character), B2
+(all 5 guns now have a distinct held silhouette — SMG short/boxy, shotgun
+wide-barreled, sniper long+scoped, heavy bulky, blaster refined — built from
+2 shared unit primitives, each with an accent trim in its existing
+`WeaponDef.color`; `Player.setActiveWeaponVisual` now takes the weapon id
+instead of just a melee/ranged bool; `gunTip` moves to each gun's own muzzle
+length), B3 (procedural billboard grass clusters near trees, one shared
+`InstancedMesh`, new `QualitySettings.grassDensity` field: 0/low, 2-per-tree/
+medium, 3-per-tree/high), B4 (3 rock variants, 3 crate variants, 2 shack
+variants, each still one `InstancedMesh` per variant, scatter functions pick
+per-placement). Independently re-verified beyond the implementing agent's own
+report, given this touches the instance-dispatch/harvest system flagged
+throughout this project as the highest-regression-risk area: read every
+diff directly (the `rockRefIds: number[][]` per-variant-mesh parallel-array
+pattern correctly mirrors the existing tree trunk/leaf dispatch), confirmed
+the single `setActiveWeaponVisual` call site was updated and the initial
+gun-visibility default matches `WeaponSystem`'s actual starting slot
+(blaster), ran an independent `tsc`/build (clean), and ran independent
+Playwright functional tests: **harvested all 3 rock variants to destruction**
+(100hp → dead in 5 hits each, correct material yield, zero errors),
+confirmed `gunTip` offsets correctly differ per weapon (sniper -1.27 vs SMG
+-0.65), re-ran the Track A hit-flash regression check (still
+`#241a33 → #ffffff` correctly), and confirmed grass instance counts directly
+(`grassMesh` is `null`/never-constructed on "low", 106 on "medium", 233 on
+"high" — matches the design exactly). Zero console errors across every
+check. **Real-device frame-time verification for the new grass draw call is
+still outstanding** — same standing caveat as every prior tier-gated feature
+in this project.
 
 - **B1. Sculpt the humanoid rig a step further.** `humanoid.ts`'s
   torso/limbs are currently a bare box + cylinders. Add small silhouette
