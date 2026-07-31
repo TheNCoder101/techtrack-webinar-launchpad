@@ -17,9 +17,10 @@ import { WEAPON_DEFS } from "../weapons/weaponDefs";
 import { AirdropManager } from "../weapons/AirdropManager";
 import { ParticleSystem } from "../weapons/ParticleSystem";
 import { BuildingManager } from "../building/BuildingManager";
+import { BUILD_PIECE_IDS } from "../building/buildPieceDefs";
 import { AudioManager } from "./AudioManager";
 import { StormManager } from "./StormManager";
-import { InputManager } from "./InputManager";
+import type { PlayerInput } from "./types";
 import { HUDController } from "../ui/HUDController";
 import { WeaponBar } from "../ui/WeaponBar";
 import { BuildPieceBar } from "../ui/BuildPieceBar";
@@ -65,6 +66,18 @@ export interface LifeSummary {
 const PERF_SAMPLE_MAX_FRAMES = 60;
 const PERF_SAMPLE_MIN_SECONDS = 1;
 const PERF_DOWNGRADE_FRAME_MS = 33; // ~30fps
+
+// Aim-down-sights (V4 D3, desktop RMB). Hold-to-aim: the camera FOV eases
+// toward ADS_FOV while `input.aimHeld` is true and snaps back to BASE_FOV on
+// release. Only the desktop input backend ever sets aimHeld, so touch play is
+// untouched — the FOV simply never leaves BASE_FOV there.
+const BASE_FOV = 68;
+const ADS_FOV = 50;
+/** Exponential approach rate for the FOV ease (per second). */
+const ADS_FOV_LERP = 14;
+/** Below this delta the FOV snaps, so it settles on exact 68/50 rather than
+ *  asymptotically approaching them forever. */
+const ADS_FOV_SNAP = 0.05;
 
 export class Game {
   private renderer: THREE.WebGLRenderer;
@@ -175,7 +188,11 @@ export class Game {
 
   constructor(
     private canvas: HTMLCanvasElement,
-    private input: InputManager,
+    // Interface, not the concrete touch class (V4): either InputManager
+    // (touch) or DesktopInputManager (keyboard/mouse) satisfies it. Game
+    // never needs to know which — the desktop-only members are optional and
+    // feature-detected at their call sites in the loop.
+    private input: PlayerInput,
     private hud: HUDController,
     uiContainer: HTMLElement,
     playerSkin: CharacterSkin,
@@ -192,7 +209,7 @@ export class Game {
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(
-      68,
+      BASE_FOV,
       canvas.clientWidth / canvas.clientHeight,
       0.1,
       WORLD_RADIUS * 7
@@ -726,6 +743,51 @@ export class Game {
     });
   }
 
+  /** Drains the desktop backend's queued action keys (V4 D4). Every branch is
+   *  feature-detected via optional call, so with the touch InputManager this
+   *  is three cheap undefined checks and nothing else — mobile behavior is
+   *  identical to before.
+   *
+   *  Each action routes through exactly the same method the existing on-screen
+   *  control uses, so keyboard and touch can never drift apart. Note the two
+   *  HUD bars differ in how their highlight is maintained:
+   *   - WeaponBar's active slot is re-derived every frame from
+   *     `weapons.activeSlotIndex` in WeaponBar.update() below, so switching via
+   *     the number keys moves the highlight with no extra call.
+   *   - BuildPieceBar has no per-frame update, so Q/E must call setActive
+   *     explicitly — exactly as its own pointerdown handler does. */
+  private applyDesktopActions(): void {
+    const slot = this.input.consumeWeaponSlot?.() ?? null;
+    if (slot !== null) this.weapons.switchTo(slot, this.audio);
+
+    const step = this.input.consumeBuildPieceStep?.() ?? 0;
+    if (step !== 0) {
+      const current = BUILD_PIECE_IDS.indexOf(this.buildingManager.selectedPieceId);
+      const count = BUILD_PIECE_IDS.length;
+      // Wrap in both directions (JS % keeps the sign of the dividend).
+      const next = BUILD_PIECE_IDS[(((current + step) % count) + count) % count];
+      this.buildingManager.selectPiece(next);
+      this.buildPieceBar.setActive(next);
+    }
+
+    if (this.input.consumeReload?.()) this.weapons.requestReload(this.audio);
+  }
+
+  /** Eases the camera FOV toward the ADS or hip-fire target and keeps the HUD
+   *  crosshair in sync. No-op on touch (aimHeld is always undefined there, so
+   *  the FOV sits at BASE_FOV and the early-out below skips the work). */
+  private updateAimDownSights(dt: number): void {
+    const aiming = !!this.input.aimHeld && !this.player.dead && !this.matchEnded;
+    const target = aiming ? ADS_FOV : BASE_FOV;
+    if (this.camera.fov !== target) {
+      const t = Math.min(1, dt * ADS_FOV_LERP);
+      const next = this.camera.fov + (target - this.camera.fov) * t;
+      this.camera.fov = Math.abs(target - next) < ADS_FOV_SNAP ? target : next;
+      this.camera.updateProjectionMatrix();
+    }
+    this.hud.setAiming(aiming);
+  }
+
   private loop = (): void => {
     if (!this.running) return;
     this.rafId = requestAnimationFrame(this.loop);
@@ -743,6 +805,7 @@ export class Game {
       if (this.input.consumeBuild()) {
         this.buildingManager.tryBuild(this.player, this.audio);
       }
+      this.applyDesktopActions();
     }
     // Ghost preview tracks the snapped placement while BUILD is held; hidden
     // otherwise (and always once the match has ended).
@@ -773,6 +836,7 @@ export class Game {
       }
     }
 
+    this.updateAimDownSights(dt);
     this.player.updateCamera(this.camera, this.world, dt);
     this.player.updateWeaponPose(dt, this.input.fireHeld && !this.player.dead);
     this.botManager.update(

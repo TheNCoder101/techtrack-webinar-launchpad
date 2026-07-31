@@ -57,8 +57,16 @@ export interface HitUserData {
   refIds?: number[];
 }
 
-// Contract InputManager fulfills and Player/Game consume, kept separate so
-// the two modules don't need to import each other directly.
+// Contract every input backend fulfills and Player/Game consume, kept separate
+// so the two modules don't need to import each other directly.
+//
+// Two implementations ship: the touch `InputManager` (mobile — the primary
+// platform) and `DesktopInputManager` (V4 — keyboard + pointer-locked mouse).
+// Game only ever sees this interface, so neither backend knows about the
+// other. Everything below the required block is OPTIONAL on purpose: those
+// members exist only on the desktop backend, and Game feature-detects them
+// (`this.input.consumeReload?.()`), which is what lets the touch manager stay
+// byte-for-byte unchanged.
 export interface PlayerInput {
   moveX: number;
   moveY: number;
@@ -69,4 +77,17 @@ export interface PlayerInput {
   consumeJump(): boolean;
   /** Fires once on BUILD release — confirms placement of the previewed piece. */
   consumeBuild(): boolean;
+  /** Tears down whatever DOM/listeners the backend owns. */
+  dispose(): void;
+
+  // --- Optional, desktop-only (see the note above) ---
+
+  /** True while aim-down-sights is engaged (RMB held). Undefined on touch. */
+  aimHeld?: boolean;
+  /** Weapon slot index requested since the last poll (number keys), or null. */
+  consumeWeaponSlot?(): number | null;
+  /** Build-piece cycle step requested since the last poll: -1, 0 or +1 (Q/E). */
+  consumeBuildPieceStep?(): number;
+  /** True once per manual reload request (R). */
+  consumeReload?(): boolean;
 }

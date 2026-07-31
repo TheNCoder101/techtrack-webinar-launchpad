@@ -445,6 +445,32 @@
   height: 2px;
 }
 
+/* Aim-down-sights (V4 D3, desktop right-mouse): the crosshair contracts to a
+   tight precision mark and picks up the cyan accent, reading as "zoomed and
+   steady" alongside the camera's 68deg -> 50deg FOV pull. Driven by a class on
+   the HUD root (HUDController.setAiming) — never set on touch, so the mobile
+   crosshair is unchanged. */
+.gj-crosshair::before,
+.gj-crosshair::after {
+  transition: transform 0.12s ease, background 0.12s ease;
+  transform-origin: center;
+}
+.gj-hud-ads .gj-crosshair::before {
+  transform: scaleY(0.42);
+  background: var(--gj-cyan);
+}
+.gj-hud-ads .gj-crosshair::after {
+  transform: scaleX(0.42);
+  background: var(--gj-cyan);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gj-crosshair::before,
+  .gj-crosshair::after {
+    transition: none;
+  }
+}
+
 /* Hit marker: four-corner SVG mark (icons.ts "hitmarker"); gold + ring on a
    kill via the -kill modifier. */
 .gj-hit-marker {
@@ -1634,6 +1660,185 @@
 .gj-controls-help .gj-ic {
   font-size: 13px;
   color: var(--gj-cyan);
+}
+
+/* ---------- Desktop controls (V4) ---------- */
+
+/* Key-cap primitive: a small pressed-in chip in the display face, reusing the
+   chip/line/radius tokens so it reads as part of the same UI kit as the HUD
+   pills and weapon slots. */
+.gj-keycap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  padding: 1px 5px;
+  font-family: var(--gj-font-display);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: var(--gj-track-mid);
+  color: var(--gj-text);
+  background: var(--gj-chip-bg-strong);
+  border: 1px solid var(--gj-line-strong);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  box-shadow: var(--gj-inner-edge);
+}
+
+.gj-keycaps {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.gj-keycap-sep {
+  color: var(--gj-text-faint);
+  font-size: 10px;
+}
+
+.gj-keymap-label {
+  color: var(--gj-text-dim);
+}
+
+/* The desktop hint list is denser than the touch one (11 rows vs 6), so it
+   flows as a centered wrap rather than the touch layout's loose row. */
+.gj-keymap {
+  max-width: 620px;
+  gap: var(--gj-sp-1) var(--gj-sp-2);
+}
+
+.gj-keymap div {
+  gap: 5px;
+}
+
+/* Control-scheme override row in Settings. */
+.gj-scheme-row {
+  display: flex;
+  align-items: center;
+  gap: var(--gj-sp-3);
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.gj-scheme-picker {
+  display: flex;
+  gap: 6px;
+}
+
+.gj-scheme-resolved {
+  font-family: var(--gj-font-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: var(--gj-track-mid);
+  color: var(--gj-text-faint);
+  text-align: right;
+}
+
+/* Pause overlay: raised on pointer-lock loss (Esc / alt-tab). Full-bleed and
+   click-anywhere-to-resume, with an explicit RESUME button for discoverability
+   and MAIN MENU so a paused player is never trapped behind a hidden cursor. */
+.gj-pause-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gj-sp-4);
+  background: radial-gradient(circle at 50% 45%, rgba(6, 11, 17, 0.72), rgba(4, 8, 12, 0.9));
+  backdrop-filter: blur(3px);
+  cursor: pointer;
+}
+
+.gj-pause-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gj-sp-2);
+  width: min(420px, 100%);
+  padding: var(--gj-sp-5) var(--gj-sp-4) var(--gj-sp-4);
+  text-align: center;
+}
+
+.gj-pause-title {
+  display: flex;
+  align-items: center;
+  gap: var(--gj-sp-2);
+  font-family: var(--gj-font-display);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: var(--gj-track-wide);
+  color: var(--gj-cyan);
+  text-shadow: var(--gj-glow-cyan);
+}
+
+.gj-pause-title .gj-ic {
+  font-size: 20px;
+}
+
+.gj-pause-sub {
+  font-family: var(--gj-font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: var(--gj-track-mid);
+  color: var(--gj-text-dim);
+}
+
+.gj-pause-keys {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--gj-sp-1) var(--gj-sp-2);
+  margin-top: var(--gj-sp-2);
+  font-family: var(--gj-font-display);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.gj-pause-keys div {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--gj-line);
+  border-radius: var(--gj-r-sm);
+  white-space: nowrap;
+}
+
+.gj-pause-buttons {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-top: var(--gj-sp-3);
+}
+
+.gj-pause-buttons button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 11px 8px;
+  font-family: var(--gj-font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: var(--gj-track-mid);
+  white-space: nowrap;
+  border-radius: var(--gj-r-sm);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: transform 0.18s cubic-bezier(0.34, 1.8, 0.5, 1), background 0.1s ease;
+}
+
+.gj-pause-buttons button:active {
+  transform: scale(0.95);
+  transition-duration: 0.06s;
+}
+
+.gj-pause-buttons .gj-ic {
+  font-size: 13px;
 }
 
 /* ---------- Match intro transition (C7) ---------- */

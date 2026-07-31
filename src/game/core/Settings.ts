@@ -119,19 +119,52 @@ export const BOT_DIFFICULTY: Record<QualityTier, BotDifficultySettings> = {
   high: { botCount: 10, aggroRange: 28, rangedFireCooldown: 1.2, rangedDamage: 6, rangedMissChance: 0.15 },
 };
 
+/** Which input backend a match uses (V4). "auto" runs the capability probe in
+ *  `prefersDesktopControls()`; the other two are explicit player overrides, so
+ *  a misdetection (hybrid laptop, unusual browser) is never a dead end. */
+export type ControlScheme = "auto" | "touch" | "keyboard";
+
 export interface GameSettings {
   qualityTier: QualityTier;
   /** Multiplier applied on top of the base LOOK_SENSITIVITY constant. */
   lookSensitivity: number;
   /** 0-1 master SFX volume. */
   sfxVolume: number;
+  /** Touch joystick vs. keyboard + mouse — see ControlScheme. */
+  controlScheme: ControlScheme;
 }
 
 export const DEFAULT_SETTINGS: GameSettings = {
   qualityTier: "medium",
   lookSensitivity: 1.0,
   sfxVolume: 1.0,
+  controlScheme: "auto",
 };
+
+/** Capability probe for "auto": desktop requires a precise pointer AND the
+ *  absence of any coarse (touch) pointer. Hybrid touchscreen laptops therefore
+ *  fall back to touch, which is the safer default — the touch layout works with
+ *  a mouse, whereas keyboard controls are useless without a keyboard. */
+export function prefersDesktopControls(): boolean {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+  try {
+    return (
+      window.matchMedia("(pointer: fine)").matches &&
+      !window.matchMedia("(any-pointer: coarse)").matches
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** Resolves the effective scheme: the explicit override if set, else the probe.
+ *  (Named `resolve…` rather than `use…` on purpose — it is a plain predicate,
+ *  and a `use` prefix would make React's hook lint treat it as a hook.) */
+export function resolveDesktopControls(scheme: ControlScheme): boolean {
+  if (scheme === "keyboard") return true;
+  if (scheme === "touch") return false;
+  return prefersDesktopControls();
+}
 
 const SETTINGS_STORAGE_KEY = "elronite-settings";
 // Separate bookkeeping key (not part of the persisted GameSettings shape)
@@ -148,6 +181,10 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+function isControlScheme(value: unknown): value is ControlScheme {
+  return value === "auto" || value === "touch" || value === "keyboard";
+}
+
 /** Loads persisted settings from localStorage, falling back to defaults if
  *  nothing is stored or the stored value fails to parse/validate. */
 export function loadSettings(): GameSettings {
@@ -161,6 +198,9 @@ export function loadSettings(): GameSettings {
         ? parsed.lookSensitivity
         : DEFAULT_SETTINGS.lookSensitivity,
       sfxVolume: isFiniteNumber(parsed.sfxVolume) ? parsed.sfxVolume : DEFAULT_SETTINGS.sfxVolume,
+      controlScheme: isControlScheme(parsed.controlScheme)
+        ? parsed.controlScheme
+        : DEFAULT_SETTINGS.controlScheme,
     };
   } catch {
     return { ...DEFAULT_SETTINGS };

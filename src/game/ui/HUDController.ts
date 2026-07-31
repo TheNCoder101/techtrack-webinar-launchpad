@@ -159,6 +159,17 @@ export class HUDController {
     this.shakeTarget = container.querySelector(".gj-canvas");
   }
 
+  /** Aim-down-sights visual state (V4 D3, desktop RMB): tightens the crosshair
+   *  via a single class on the HUD root. Called every frame with the current
+   *  value, so it self-corrects; the classList write is skipped when nothing
+   *  changed since this runs inside the render loop. */
+  setAiming(aiming: boolean): void {
+    if (aiming === this.aiming) return;
+    this.aiming = aiming;
+    this.root.classList.toggle("gj-hud-ads", aiming);
+  }
+  private aiming = false;
+
   update(state: HUDState): void {
     const pct = Math.max(0, state.health / state.maxHealth) * 100;
     this.healthFill.style.width = `${pct}%`;

@@ -31,6 +31,11 @@ export type IconId =
   | "crosshair"
   | "slots"
   | "jump"
+  // desktop control hints (V4)
+  | "mouse"
+  | "keyboard"
+  | "reload"
+  | "pause"
   // resources / building
   | "wood"
   | "wall"
@@ -73,6 +78,16 @@ const P: Record<IconId, string> = {
   slots: `<rect x="2.8" y="8.4" width="5.4" height="7.2" rx="1.2"/><rect x="9.3" y="8.4" width="5.4" height="7.2" rx="1.2" fill="currentColor" stroke="none"/><rect x="15.8" y="8.4" width="5.4" height="7.2" rx="1.2"/>`,
 
   jump: `<path d="M12 20.5V6.6"/><path d="M6.4 12.2L12 6.6l5.6 5.6"/>`,
+
+  mouse: `<rect x="6.8" y="2.8" width="10.4" height="18.4" rx="5.2"/><path d="M12 6.6v3.4"/>`,
+
+  keyboard: `<rect x="2.4" y="6.2" width="19.2" height="11.6" rx="2.2"/><path d="M6.2 10.2h1.1M9.6 10.2h1.1M13 10.2h1.1M16.4 10.2h1.1"/><path d="M8.2 14.2h7.6"/>`,
+
+  reload: `<path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20.2 3.8v4.9h-4.9"/>`,
+
+  // Solid like the play triangle (its counterpart) — outlined bars turn into
+  // thin double-lines at HUD sizes.
+  pause: `<rect x="7.4" y="4.6" width="3.9" height="14.8" rx="1.3" fill="currentColor" stroke="none"/><rect x="12.7" y="4.6" width="3.9" height="14.8" rx="1.3" fill="currentColor" stroke="none"/>`,
 
   wood: `<ellipse cx="7.2" cy="12" rx="3" ry="3.5"/><circle cx="7.2" cy="12" r="1.1"/><path d="M7.2 8.5h9.5a3.5 3.5 0 0 1 0 7H7.2"/><path d="M17.2 10.4h2M15.8 13.6h2.4" opacity=".55"/>`,
 
