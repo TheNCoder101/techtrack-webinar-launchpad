@@ -38,6 +38,35 @@ const RANGED_HOLD_RANGE = 13;
 
 export type BotKind = "melee" | "ranged";
 
+/** One targetable player for bot AI (V5 F3a). `peerId` is null for the local
+ *  (host's own) player and the connected peer's id for a RemotePlayer puppet
+ *  — Bot.update picks whichever entry is nearest, and threads `peerId` back
+ *  out through `onAttack` so Game knows WHOSE health bar an attack landed on
+ *  (null: apply locally; a peer id: only the host can see this happen, since
+ *  bots are host-authoritative, so it must tell that peer via `player_hit`).
+ *  A solo/host-alone game always has exactly one entry (peerId: null),
+ *  making this byte-identical to the old single-playerPos behavior. */
+export interface PlayerTarget {
+  pos: THREE.Vector3;
+  peerId: string | null;
+}
+
+/** Picks the nearest entry in `players` (flat XZ distance) to `from`. Always
+ *  returns an entry — callers only ever pass a non-empty array (Game always
+ *  includes the local player). */
+function nearestPlayer(from: THREE.Vector3, players: PlayerTarget[]): PlayerTarget {
+  let best = players[0];
+  let bestDist = Infinity;
+  for (const p of players) {
+    const d = (p.pos.x - from.x) ** 2 + (p.pos.z - from.z) ** 2;
+    if (d < bestDist) {
+      bestDist = d;
+      best = p;
+    }
+  }
+  return best;
+}
+
 /** True when the flat XZ segment from `a` to `b` clips any collider circle.
  *  This is the minimal line-of-sight obstruction check ranged bots use in
  *  place of a real mesh raycast against the player (who has no hittable
@@ -247,10 +276,10 @@ export class Bot {
     dt: number,
     nowSec: number,
     world: World,
-    playerPos: THREE.Vector3,
+    players: PlayerTarget[],
     safeZoneCenter: THREE.Vector3,
     safeZoneRadius: number,
-    onAttack: (damage: number, sourcePos: THREE.Vector3) => void,
+    onAttack: (damage: number, sourcePos: THREE.Vector3, peerId: string | null) => void,
     onRangedFire?: (from: THREE.Vector3, to: THREE.Vector3) => void
   ): void {
     if (!this.alive) {
@@ -259,6 +288,13 @@ export class Bot {
     }
 
     this.restoreHitFlash(nowSec);
+
+    // F3a: chase/attack whichever player (host or any RemotePlayer) is
+    // actually nearest, instead of always the local one — this is what makes
+    // a bot react to a joiner playing far from the host.
+    const target = nearestPlayer(this.group.position, players);
+    const playerPos = target.pos;
+    const targetPeerId = target.peerId;
 
     const pos = this.group.position;
     const toPlayer = new THREE.Vector3().subVectors(playerPos, pos);
@@ -319,7 +355,7 @@ export class Bot {
           } else {
             // sourcePos feeds the HUD damage-direction indicator (D2);
             // cloned because the consumer may outlive this frame's pos.
-            onAttack(this.difficulty.rangedDamage, pos.clone());
+            onAttack(this.difficulty.rangedDamage, pos.clone(), targetPeerId);
           }
           // Ranged bots previously had no visual/audio tell at all — a shot
           // landed as an unexplained HP drop with nothing on screen to
@@ -331,7 +367,7 @@ export class Bot {
       } else if (distToPlayer < ATTACK_RANGE) {
         if (this.attackCooldown <= 0) {
           this.attackCooldown = ATTACK_COOLDOWN;
-          onAttack(ATTACK_DAMAGE, pos.clone());
+          onAttack(ATTACK_DAMAGE, pos.clone(), targetPeerId);
         }
       }
     } else {

@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import type { RandFn } from "./rng";
 
 // Shared geometries/materials for InstancedMesh-based props. Each distinct
 // visual part (tree trunk, tree leaves, rock, crate, shack wall, shack roof)
@@ -192,16 +193,18 @@ export interface TreeLayout {
   leafColor: THREE.Color;
 }
 
-/** Randomized per-tree local layout, matching the old createTree() shape. */
-export function makeTreeLayout(): TreeLayout {
+/** Randomized per-tree local layout, matching the old createTree() shape.
+ *  `rand` (V5 F2b) is Math.random by default in solo play and a seeded PRNG
+ *  in co-op, so both peers scatter an identical island — see World.ts. */
+export function makeTreeLayout(rand: RandFn): TreeLayout {
   const trunk: PartTransform = {
     position: new THREE.Vector3(0, 1.5, 0),
     quaternion: new THREE.Quaternion(),
     scale: new THREE.Vector3(1, 1, 1),
   };
 
-  const greenHue = 0.28 + Math.random() * 0.06;
-  const leafColor = new THREE.Color().setHSL(greenHue, 0.45, 0.32 + Math.random() * 0.08);
+  const greenHue = 0.28 + rand() * 0.06;
+  const leafColor = new THREE.Color().setHSL(greenHue, 0.45, 0.32 + rand() * 0.08);
 
   const tiers = 3;
   const leaves: PartTransform[] = [];
@@ -228,14 +231,14 @@ export interface AppleLayout extends PartTransform {
  * height fraction `t` in the wide lower half, and sits at that height's
  * surface radius (pushed out a hair so it pokes through the leaves).
  */
-export function makeAppleLayouts(leaves: PartTransform[]): AppleLayout[] {
-  const count = 2 + Math.floor(Math.random() * (APPLES_PER_TREE_MAX - 2 + 1));
+export function makeAppleLayouts(leaves: PartTransform[], rand: RandFn): AppleLayout[] {
+  const count = 2 + Math.floor(rand() * (APPLES_PER_TREE_MAX - 2 + 1));
   const apples: AppleLayout[] = [];
   for (let i = 0; i < count; i++) {
-    const tier = leaves[Math.floor(Math.random() * leaves.length)];
-    const t = 0.12 + Math.random() * 0.38;
+    const tier = leaves[Math.floor(rand() * leaves.length)];
+    const t = 0.12 + rand() * 0.38;
     const surfaceR = 1.5 * (1 - t) * tier.scale.x * 1.06;
-    const angle = Math.random() * Math.PI * 2;
+    const angle = rand() * Math.PI * 2;
     const position = new THREE.Vector3(
       tier.position.x + Math.cos(angle) * surfaceR,
       tier.position.y + (-1.2 + t * 2.4) * tier.scale.y,
@@ -243,10 +246,10 @@ export function makeAppleLayouts(leaves: PartTransform[]): AppleLayout[] {
     );
     // Mostly red, occasionally a green apple.
     const color =
-      Math.random() < 0.8
-        ? new THREE.Color().setHSL(Math.random() * 0.02, 0.85, 0.42)
+      rand() < 0.8
+        ? new THREE.Color().setHSL(rand() * 0.02, 0.85, 0.42)
         : new THREE.Color().setHSL(0.24, 0.7, 0.45);
-    const s = 0.9 + Math.random() * 0.3;
+    const s = 0.9 + rand() * 0.3;
     apples.push({
       position,
       quaternion: new THREE.Quaternion(),
@@ -262,16 +265,12 @@ export interface RockLayout extends PartTransform {
 }
 
 /** Randomized per-rock local layout, matching the old createRock() shape. */
-export function makeRockLayout(): RockLayout {
-  const shade = 0.42 + Math.random() * 0.15;
+export function makeRockLayout(rand: RandFn): RockLayout {
+  const shade = 0.42 + rand() * 0.15;
   const color = new THREE.Color(shade * 0.55, shade * 0.55, shade * 0.6);
-  const scale = new THREE.Vector3(
-    0.7 + Math.random() * 0.9,
-    0.55 + Math.random() * 0.7,
-    0.7 + Math.random() * 0.9
-  );
+  const scale = new THREE.Vector3(0.7 + rand() * 0.9, 0.55 + rand() * 0.7, 0.7 + rand() * 0.9);
   const quaternion = new THREE.Quaternion().setFromEuler(
-    new THREE.Euler(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI)
+    new THREE.Euler(rand() * Math.PI, rand() * Math.PI, rand() * Math.PI)
   );
   const position = new THREE.Vector3(0, scale.y * 0.4, 0);
   return { position, quaternion, scale, color };
@@ -279,10 +278,10 @@ export function makeRockLayout(): RockLayout {
 
 /** Randomized per-crate local layout; rest height depends on the variant's
  *  geometry height (cube / low chest / barrel). */
-export function makeCrateLayout(variant: number): PartTransform {
+export function makeCrateLayout(variant: number, rand: RandFn): PartTransform {
   return {
     position: new THREE.Vector3(0, CRATE_REST_Y[variant] ?? 0.55, 0),
-    quaternion: new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.random() * Math.PI, 0)),
+    quaternion: new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rand() * Math.PI, 0)),
     scale: new THREE.Vector3(1, 1, 1),
   };
 }
@@ -297,8 +296,8 @@ const SHACK_WALL_Y = [1.5, 1.75];
 const SHACK_ROOF_Y = [4.1, 4.15];
 
 /** Randomized per-shack local layout for the given variant. */
-export function makeShackLayout(variant: number): ShackLayout {
-  const wallColor = new THREE.Color().setHSL(0.09, 0.25, 0.42 + Math.random() * 0.08);
+export function makeShackLayout(variant: number, rand: RandFn): ShackLayout {
+  const wallColor = new THREE.Color().setHSL(0.09, 0.25, 0.42 + rand() * 0.08);
   return {
     wall: {
       position: new THREE.Vector3(0, SHACK_WALL_Y[variant] ?? 1.5, 0),
@@ -406,15 +405,15 @@ export interface GrassLayout extends PartTransform {
 }
 
 /** One grass/scrub cluster placed in a ring around a tree's trunk. */
-export function makeGrassLayout(): GrassLayout {
-  const angle = Math.random() * Math.PI * 2;
-  const dist = 1.7 + Math.random() * 2.3;
-  const width = 0.9 + Math.random() * 0.9;
-  const height = 0.45 + Math.random() * 0.4;
+export function makeGrassLayout(rand: RandFn): GrassLayout {
+  const angle = rand() * Math.PI * 2;
+  const dist = 1.7 + rand() * 2.3;
+  const width = 0.9 + rand() * 0.9;
+  const height = 0.45 + rand() * 0.4;
   return {
     position: new THREE.Vector3(Math.cos(angle) * dist, 0, Math.sin(angle) * dist),
-    quaternion: new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.random() * Math.PI, 0)),
+    quaternion: new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rand() * Math.PI, 0)),
     scale: new THREE.Vector3(width, height, width),
-    color: new THREE.Color().setHSL(0.24 + Math.random() * 0.07, 0.45, 0.42 + Math.random() * 0.14),
+    color: new THREE.Color().setHSL(0.24 + rand() * 0.07, 0.45, 0.42 + rand() * 0.14),
   };
 }

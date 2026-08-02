@@ -432,29 +432,44 @@ export default function GamePage() {
     };
   }, []);
 
-  /** Tears down the live game/input/HUD/net and nulls their refs so a fresh
-   *  match can be started. Deliberately touches no React state or fullscreen
-   *  — callers decide whether to return to the menu or immediately restart.
-   *  Safe to call more than once (the unmount effect's optional chaining then
-   *  simply no-ops on the nulled refs). */
-  const teardownGame = useCallback(() => {
+  /** Tears down the live game/input/HUD and (unless `keepNet`) the co-op
+   *  NetManager, nulling their refs so a fresh match can be started.
+   *  Deliberately touches no React state or fullscreen — callers decide
+   *  whether to return to the menu or immediately restart. Safe to call more
+   *  than once (the unmount effect's optional chaining then simply no-ops on
+   *  the nulled refs).
+   *
+   *  V5 F2a: `keepNet` exists for "Play Again" (handleRestart) — tearing the
+   *  net down there was the root cause of a co-op match silently restarting
+   *  solo (handlePlay reads `netRef.current ?? undefined`, so a nulled
+   *  netRef meant the fresh Game got no NetManager at all). Leaving the
+   *  NetManager alive across the old Game's disposal is safe: Game.dispose()
+   *  never touches `net` itself (only its own RemotePlayer puppets/scene),
+   *  and the new Game's constructor unconditionally re-assigns
+   *  `net.onMessage`/`onPeerLeft` — single-slot callback fields that simply
+   *  overwrite, so the still-open peer connections keep working uninterrupted. */
+  const teardownGame = useCallback((opts?: { keepNet?: boolean }) => {
     gameRef.current?.dispose();
     inputRef.current?.dispose();
     hudRef.current?.dispose();
-    netRef.current?.dispose();
     gameRef.current = null;
     inputRef.current = null;
     // DesktopInputManager.dispose() already released pointer lock.
     desktopInputRef.current = null;
     hudRef.current = null;
-    netRef.current = null;
+    if (!opts?.keepNet) {
+      netRef.current?.dispose();
+      netRef.current = null;
+    }
     setPaused(false);
     if (import.meta.env.DEV) {
       (window as unknown as { __elronite?: Game }).__elronite = undefined;
     }
   }, []);
 
-  /** Leaves the current match and returns to the start screen (main menu). */
+  /** Leaves the current match and returns to the start screen (main menu).
+   *  Always drops the co-op session — re-hosting/joining from the menu is
+   *  the explicit way back in, matching the co-op lobby UI reset below. */
   const handleExitToMenu = useCallback(() => {
     teardownGame();
     setMatchEnd(null);
@@ -472,11 +487,14 @@ export default function GamePage() {
   }, [teardownGame]);
 
   /** End screen "Play Again": tears the finished match down and immediately
-   *  starts a fresh solo one, staying in fullscreen (this runs inside the
-   *  button-click gesture). Co-op is not auto-rejoined — players re-host from
-   *  the menu. */
+   *  starts a fresh one, staying in fullscreen (this runs inside the
+   *  button-click gesture). V5 F2a: keeps any live co-op session — netRef
+   *  survives teardownGame's `keepNet`, so handlePlay below hands the same
+   *  still-connected NetManager to the new Game and every peer stays
+   *  visible to each other across the restart, instead of silently dropping
+   *  into a solo world. */
   const handleRestart = useCallback(() => {
-    teardownGame();
+    teardownGame({ keepNet: true });
     setMatchEnd(null);
     handlePlay();
   }, [teardownGame, handlePlay]);

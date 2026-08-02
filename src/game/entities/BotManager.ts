@@ -2,17 +2,21 @@ import * as THREE from "three";
 import type { BotDifficultySettings } from "../core/Settings";
 import type { BotNetState } from "../net/protocol";
 import { World } from "../world/World";
-import { Bot, type BotKind } from "./Bot";
+import { Bot, type BotKind, type PlayerTarget } from "./Bot";
 
 export class BotManager {
   bots: Bot[] = [];
   raycastTargets: THREE.Object3D[] = [];
-  /** Fired when a bot attack lands on the player. `sourcePos` is the
-   *  attacking bot's world position at the moment of the hit — it drives the
-   *  HUD damage-direction indicator (V3 Track D2). Optional by design:
+  /** Fired when a bot attack lands on a player. `sourcePos` is the attacking
+   *  bot's world position at the moment of the hit — it drives the HUD
+   *  damage-direction indicator (V3 Track D2). Optional by design:
    *  non-positional damage (the storm tick) never flows through this
-   *  callback, so callers must not assume a source exists elsewhere. */
-  onPlayerDamaged?: (amount: number, sourcePos?: THREE.Vector3) => void;
+   *  callback, so callers must not assume a source exists elsewhere.
+   *  `peerId` (V5 F3a) is null when the hit landed on the local player and a
+   *  peer id when it landed on a RemotePlayer puppet — only the host ever
+   *  sees a non-null peerId here (bots are host-authoritative), and Game
+   *  forwards it to that peer as a `player_hit` message. */
+  onPlayerDamaged?: (amount: number, sourcePos?: THREE.Vector3, peerId?: string | null) => void;
   onKill?: (bot: Bot) => void;
   /** Fired every time a ranged bot actually takes a shot at the player —
    *  purely cosmetic (tracer/impact feedback), does not affect damage. */
@@ -97,7 +101,7 @@ export class BotManager {
     dt: number,
     nowSec: number,
     world: World,
-    playerPos: THREE.Vector3,
+    players: PlayerTarget[],
     safeZoneCenter: THREE.Vector3,
     safeZoneRadius: number
   ): void {
@@ -114,10 +118,10 @@ export class BotManager {
         dt,
         nowSec,
         world,
-        playerPos,
+        players,
         safeZoneCenter,
         safeZoneRadius,
-        (dmg, sourcePos) => this.onPlayerDamaged?.(dmg, sourcePos),
+        (dmg, sourcePos, peerId) => this.onPlayerDamaged?.(dmg, sourcePos, peerId),
         (from, to) => this.onRangedFire?.(from, to)
       );
     }

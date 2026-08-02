@@ -1,9 +1,11 @@
 import * as THREE from "three";
 import { WORLD_RADIUS } from "./constants";
 import { World } from "../world/World";
+import { seedFromString } from "../world/rng";
 import { Player } from "../entities/Player";
 import { BotManager } from "../entities/BotManager";
 import { RemotePlayer } from "../entities/RemotePlayer";
+import type { PlayerTarget } from "../entities/Bot";
 import type { NetManager } from "../net/NetManager";
 import {
   STATE_SEND_HZ,
@@ -13,7 +15,7 @@ import {
 } from "../net/protocol";
 import type { CharacterSkin } from "../entities/skinDefs";
 import { WeaponSystem } from "../weapons/WeaponSystem";
-import { WEAPON_DEFS } from "../weapons/weaponDefs";
+import { WEAPON_DEFS, type WeaponId } from "../weapons/weaponDefs";
 import { AirdropManager } from "../weapons/AirdropManager";
 import { ParticleSystem } from "../weapons/ParticleSystem";
 import { BuildingManager } from "../building/BuildingManager";
@@ -139,10 +141,25 @@ export class Game {
   private remotePlayers = new Map<string, RemotePlayer>();
   private remoteStates = new Map<string, PeerStateMessage>();
   private lastPeerSeq = new Map<string, number>();
-  private stateSeq = 0;
+  // F2a follow-on: "Play Again" now KEEPS the NetManager alive across a
+  // fresh Game instance (see GamePage's teardownGame `keepNet` option), so a
+  // still-connected peer's Game may hold a `lastPeerSeq` watermark from this
+  // peer's PREVIOUS session. If this counter restarted at 0, every one of
+  // this session's broadcasts would read as "older than what we've already
+  // applied" (handleNetMessage's `msg.seq <= lastSeq` guard) and get
+  // silently dropped until the counter climbed back past the old watermark
+  // — at 15Hz that could be tens of seconds of this peer being invisible to
+  // everyone else right after they hit Play Again. Seeding from
+  // performance.now() (strictly monotonic for the tab's whole lifetime, and
+  // far larger than any watermark a ~15/sec counter could reach even after a
+  // long match) guarantees every post-restart seq beats every pre-restart one.
+  private stateSeq = Math.floor(performance.now());
   private stateSendIn = 0;
   private botStateSendIn = 0;
   private nextHitId = 0;
+  // F3a: monotonic per-sender counter for the host -> peer `player_hit`
+  // message, same idiom as nextHitId for the joiner -> host `bot_hit`.
+  private nextPlayerHitId = 0;
   // Set only while applying a joiner's forwarded bot_hit, so the shared
   // onKill path can credit the kill to that peer instead of the host.
   private remoteHitPeer: string | null = null;
@@ -150,7 +167,17 @@ export class Game {
   // NetManager's stagger): key -> receive time, pruned as they age out.
   private seenBotHits = new Map<string, number>();
   private seenKillFeed = new Map<string, number>();
+  private seenPlayerHits = new Map<string, number>();
+  // F1: last-seen `shots` counter per peer, so a new `state` packet can spawn
+  // exactly the tracer/swing events for however many shots landed since the
+  // previous packet — a 15Hz boolean sample would silently miss semi-auto
+  // taps between samples, so the sender counts instead of just flagging.
+  private lastPeerShots = new Map<string, number>();
   private netTmpVec = new THREE.Vector3();
+  // F3a: reused every frame for the botManager.update() players array
+  // (local player + every live RemotePlayer) instead of allocating a fresh
+  // array each tick — see the loop below.
+  private netPlayerTargets: PlayerTarget[] = [];
 
   private settings: GameSettings;
   private perfSampleDone = false;
@@ -239,7 +266,15 @@ export class Game {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.applyQualityTier();
 
-    this.world = new World(this.scene);
+    // F2b: co-op peers derive the same world seed from the join code — both
+    // already know it (it's baked into the host's peer id: "elronite-XXXX",
+    // which the host reads as its own myId and the joiner reads as hostId)
+    // before either side ever constructs a World, so this needs no protocol
+    // message and no handshake ordering. Solo play passes no seed, so World
+    // falls back to plain Math.random() and match-to-match variety is
+    // unchanged.
+    const worldSeed = net ? seedFromString((net.isHost ? net.myId : net.hostId) ?? "") : undefined;
+    this.world = new World(this.scene, worldSeed);
     this.world.build(QUALITY_TIERS[this.settings.qualityTier]);
 
     this.player = new Player(this.scene, playerSkin, this.settings.lookSensitivity);
@@ -267,7 +302,35 @@ export class Game {
       BOT_DIFFICULTY[this.settings.qualityTier],
       !net || net.isHost
     );
-    this.botManager.onPlayerDamaged = (amount, sourcePos) => {
+    // F3a: bots now consider every player (host + every RemotePlayer), not
+    // just the local one — see the players array built in the loop below —
+    // so `targetPeerId` says WHICH player a bot's attack actually landed on.
+    // null means the host's own local player (the pre-F3 behavior, unchanged
+    // in solo play where remotePlayers is always empty); a peer id means a
+    // bot hit a remote puppet, which only the host can see happen (bots are
+    // host-authoritative), so the host must tell that peer to apply the
+    // damage locally.
+    this.botManager.onPlayerDamaged = (amount, sourcePos, targetPeerId) => {
+      if (targetPeerId != null) {
+        // A bot hit a REMOTE player. Only the host ever reaches this branch
+        // (BotManager.update's AI path is host/solo-only) — tell that peer
+        // so its own takeDamage path fires (hurt flash/shake/audio) and its
+        // own damage-direction indicator can point back at the bot.
+        if (this.net?.isHost && sourcePos) {
+          this.net.sendTo(
+            targetPeerId,
+            {
+              t: "player_hit",
+              peerId: targetPeerId,
+              damage: amount,
+              botPos: [sourcePos.x, sourcePos.y, sourcePos.z],
+              hitId: ++this.nextPlayerHitId,
+            },
+            { redundant: true }
+          );
+        }
+        return;
+      }
       const healthBefore = this.player.health;
       this.player.takeDamage(amount, performance.now() / 1000);
       // D2: directional hit indicator, only for damage that actually landed
@@ -573,10 +636,35 @@ export class Game {
             this.netTmpVec.set(msg.pos[0], msg.pos[1], msg.pos[2])
           );
           this.remotePlayers.set(peerId, puppet);
+          // Baseline the shots counter on the very first packet from this
+          // peer so we never invent a burst of "missed" shots for whatever
+          // count they'd already reached before we saw them.
+          this.lastPeerShots.set(peerId, msg.shots);
         } else {
           puppet.setSkin(msg.skinId);
         }
+        // F1: give the puppet its real held-weapon mesh (was previously a
+        // bare humanoid with nothing to show at all).
+        puppet.setActiveWeaponVisual(msg.weaponId);
         puppet.setDead(msg.dead);
+
+        // F1: Δshots since the last packet -> exactly that many tracer/swing
+        // events, so a rapid burst of taps between 15Hz samples is never
+        // silently collapsed into "at most one" the way sampling `firing`
+        // alone would.
+        const lastShots = this.lastPeerShots.get(peerId) ?? msg.shots;
+        this.lastPeerShots.set(peerId, msg.shots);
+        let deltaShots = msg.shots - lastShots;
+        // A rejoin (sender's counter reset) or a long stall (many samples
+        // missed) both show up as an implausible delta — clamp instead of
+        // replaying a flood of tracers.
+        if (deltaShots < 0) deltaShots = 0;
+        deltaShots = Math.min(deltaShots, 5);
+        if (!msg.dead) {
+          for (let i = 0; i < deltaShots; i++) {
+            this.spawnRemoteWeaponEffect(puppet, msg.weaponId);
+          }
+        }
         return;
       }
       case "bot_state":
@@ -623,6 +711,29 @@ export class Game {
         }
         return;
       }
+      case "player_hit": {
+        // F3a: the host is telling THIS peer it took bot damage (bots only
+        // ever run AI on the host, so only the host can know this happened).
+        // sendTo already targets exactly this peer, but the shape carries
+        // `peerId` too so a future broadcast form would stay self-describing;
+        // guard it anyway rather than trust transport addressing alone.
+        if (msg.peerId !== net.myId) return;
+        const nowSec = performance.now() / 1000;
+        const key = `${peerId}:${msg.hitId}`;
+        if (this.seenPlayerHits.has(key)) return; // 3x-redundant send dedupe
+        this.seenPlayerHits.set(key, nowSec);
+        this.pruneSeen(this.seenPlayerHits, nowSec);
+        const healthBefore = this.player.health;
+        this.player.takeDamage(msg.damage, nowSec);
+        // Same D2 directional indicator local bot damage gets — reuses the
+        // normal takeDamage path, so the hurt flash/shake/audio (wired via
+        // Player.onDamaged in the constructor) already fire unconditionally.
+        if (this.player.health < healthBefore) {
+          const botPos = this.netTmpVec.set(msg.botPos[0], msg.botPos[1], msg.botPos[2]);
+          this.hud.showDamageDirection(this.bearingTo(botPos));
+        }
+        return;
+      }
     }
   }
 
@@ -654,9 +765,16 @@ export class Game {
         pitch: p.pitch,
         hp: p.health,
         skinId: this.playerSkinId,
-        weaponSlot: this.weapons.activeSlotIndex,
+        // F1: the concrete weapon id, not just a slot index — a receiving
+        // peer has no way to know which gun occupies *this* peer's pickup
+        // slots 2-5 (that's per-peer inventory state, never transmitted), so
+        // the id is what actually lets RemotePlayer show the right held gun.
+        weaponId: this.weapons.activeDef?.id ?? "blaster",
         firing: this.input.fireHeld && !p.dead,
         dead: p.dead,
+        // F1: monotonic — see WeaponSystem.shotsFired's field comment. Lets
+        // receivers diff Δshots instead of sampling a boolean at 15Hz.
+        shots: this.weapons.shotsFired,
       });
     }
 
@@ -688,6 +806,7 @@ export class Game {
         this.netTmpVec.set(st.pos[0], st.pos[1], st.pos[2]),
         st.yaw,
         st.pitch,
+        st.firing,
         dt
       );
     }
@@ -726,6 +845,30 @@ export class Game {
     const line = new THREE.Line(geo, mat);
     this.scene.add(line);
     this.botTracers.push({ line, expiresAt: performance.now() / 1000 + 0.1 });
+  }
+
+  /** F1: visual feedback for one shot/swing a remote peer just took, fired
+   *  once per detected `shots` delta in handleNetMessage's "state" case. A
+   *  melee peer gets the puppet's pickaxe swing arc; a ranged peer gets a
+   *  tracer (reusing spawnBotTracer's line, same as bot ranged fire) from
+   *  their gunTip along their broadcast aim direction, plus the same
+   *  muzzle-flash particle burst WeaponSystem.shoot spawns locally. There is
+   *  no raycast here — we don't know what the remote peer's shot actually
+   *  hit (that already resolved on their own machine) — this only makes
+   *  their shot visible on this screen. */
+  private spawnRemoteWeaponEffect(puppet: RemotePlayer, weaponId: WeaponId): void {
+    if (WEAPON_DEFS[weaponId].isMelee) {
+      puppet.triggerPickaxeSwing();
+      return;
+    }
+    const def = WEAPON_DEFS[weaponId];
+    const from = new THREE.Vector3();
+    puppet.gunTip.getWorldPosition(from);
+    const aim = puppet.aimDirection();
+    const to = from.clone().addScaledVector(aim, def.range);
+    this.spawnBotTracer(from, to);
+    this.particles.burst(from, new THREE.Color(0xfff2b0), 4, 2.5, 0.5, 1, 0.1);
+    this.audio.shoot();
   }
 
   /** Ends the match exactly once (idempotent). Freezes the local player,
@@ -839,11 +982,22 @@ export class Game {
     this.updateAimDownSights(dt);
     this.player.updateCamera(this.camera, this.world, dt);
     this.player.updateWeaponPose(dt, this.input.fireHeld && !this.player.dead);
+    // F3a: bots must consider every player, not just the local one — a
+    // solo/host-only game always has exactly the local entry (peerId: null,
+    // byte-identical to the pre-F3 single-position call), so this degrades
+    // to old behavior with an empty remotePlayers map. Dead remote peers are
+    // excluded (a bot chasing a hidden, already-down ally is pointless).
+    this.netPlayerTargets.length = 0;
+    this.netPlayerTargets.push({ pos: this.player.position, peerId: null });
+    for (const [peerId, puppet] of this.remotePlayers) {
+      if (this.remoteStates.get(peerId)?.dead) continue;
+      this.netPlayerTargets.push({ pos: puppet.group.position, peerId });
+    }
     this.botManager.update(
       dt,
       nowSec,
       this.world,
-      this.player.position,
+      this.netPlayerTargets,
       this.storm.center,
       this.storm.radius
     );

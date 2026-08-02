@@ -59,6 +59,13 @@ function freshSlot(id: WeaponId | null, def: WeaponDef | null): WeaponSlot {
 export class WeaponSystem {
   slots: WeaponSlot[];
   activeSlotIndex = 1;
+  /** Monotonic count of every shot fired or melee swing taken (V5 F1) —
+   *  incremented once per actual shoot()/swing() call, not once per pellet.
+   *  Game broadcasts this in PeerStateMessage.shots so a receiving peer can
+   *  diff Δshots and spawn exactly that many remote tracer/swing events,
+   *  instead of sampling the `firing` boolean at 15Hz and silently missing
+   *  taps that land between samples. */
+  shotsFired = 0;
 
   private cooldown = 0;
   private raycaster = new THREE.Raycaster();
@@ -327,6 +334,7 @@ export class WeaponSystem {
     player: Player
   ): void {
     slot.ammo--;
+    this.shotsFired++;
     audio.shoot();
 
     const gunTipWorld = new THREE.Vector3();
@@ -377,6 +385,7 @@ export class WeaponSystem {
     player: Player
   ): void {
     audio.pickaxeSwing();
+    this.shotsFired++;
     this.onMeleeSwing?.();
 
     // Melee range is short (~3 units), so the ray must start at the player's

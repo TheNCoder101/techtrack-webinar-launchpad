@@ -4,6 +4,7 @@ import type { Collider, Harvestable, HarvestablePart, HarvestResult, HitUserData
 import { QUALITY_TIERS, type QualitySettings } from "../core/Settings";
 import { terrainHeight } from "./terrain";
 import { fbm2D } from "./noise";
+import { mulberry32, type RandFn } from "./rng";
 import {
   createTreeInstancedMeshes,
   createAppleInstancedMesh,
@@ -390,8 +391,21 @@ export class World {
   private nextRefId = 0;
   private harvestableByRefId = new Map<number, Harvestable>();
 
-  constructor(scene: THREE.Scene) {
+  // V5 F2b: every Math.random() call used for prop scatter (trees, rocks,
+  // crates, shacks, and their per-piece layout variance in props.ts) now
+  // goes through this instead. Solo play (seed undefined, the default) keeps
+  // using Math.random() directly — same signature as RandFn — so single-
+  // player world variety is completely unchanged. Co-op passes a seed
+  // derived from the join code (both peers already know it), so every peer
+  // scatters an IDENTICAL island: same trees, same rocks, same colliders.
+  // Deliberately does NOT cover rollTimeOfDay() below — time-of-day is purely
+  // cosmetic lighting, not gameplay state, so it stays independently random
+  // per peer exactly as before.
+  private rand: RandFn;
+
+  constructor(scene: THREE.Scene, seed?: number) {
     this.scene = scene;
+    this.rand = seed !== undefined ? mulberry32(seed) : Math.random;
     this.timeOfDay = rollTimeOfDay();
     this.sunDir = new THREE.Vector3(...this.timeOfDay.sunDir).normalize();
   }
@@ -634,8 +648,8 @@ export class World {
   }
 
   private randomIslandPoint(minR: number, maxR: number): { x: number; z: number } {
-    const angle = Math.random() * Math.PI * 2;
-    const r = minR + Math.random() * (maxR - minR);
+    const angle = this.rand() * Math.PI * 2;
+    const r = minR + this.rand() * (maxR - minR);
     return { x: Math.cos(angle) * r, z: Math.sin(angle) * r };
   }
 
@@ -660,7 +674,7 @@ export class World {
       if (y < 0.1 || this.tooClose(x, z, radius + 1)) continue;
 
       const anchor = new THREE.Vector3(x, y, z);
-      const layout = makeTreeLayout();
+      const layout = makeTreeLayout(this.rand);
       const refId = this.nextRefId++;
 
       const trunkInstanceId = placed;
@@ -702,9 +716,9 @@ export class World {
       // instances tucked into the leaf tiers. The apples join `parts`, so
       // every existing per-part behavior — health scaling, the zero-scale
       // destroy, respawn restore — covers them with no extra bookkeeping.
-      const isAppleTree = Math.random() < APPLE_TREE_CHANCE;
+      const isAppleTree = this.rand() < APPLE_TREE_CHANCE;
       if (isAppleTree) {
-        for (const apple of makeAppleLayouts(layout.leaves)) {
+        for (const apple of makeAppleLayouts(layout.leaves, this.rand)) {
           const appleInstanceId = applesPlaced++;
           this.appleMesh.setMatrixAt(
             appleInstanceId,
@@ -728,7 +742,7 @@ export class World {
       // harvestable part, not tied to the tree's health scaling.
       if (this.grassMesh && grassPerTree > 0) {
         for (let g = 0; g < grassPerTree; g++) {
-          const layout = makeGrassLayout();
+          const layout = makeGrassLayout(this.rand);
           const gx = x + layout.position.x;
           const gz = z + layout.position.z;
           const gy = terrainHeight(gx, gz);
@@ -796,9 +810,9 @@ export class World {
       if (y < 0.1 || this.tooClose(x, z, radius + 1)) continue;
 
       const anchor = new THREE.Vector3(x, y, z);
-      const layout = makeRockLayout();
+      const layout = makeRockLayout(this.rand);
       const refId = this.nextRefId++;
-      const variant = Math.floor(Math.random() * ROCK_VARIANT_COUNT);
+      const variant = Math.floor(this.rand() * ROCK_VARIANT_COUNT);
       const mesh = this.rockMeshes[variant];
       const instanceId = placedPerVariant[variant]++;
 
@@ -854,8 +868,8 @@ export class World {
       if (y < 0.1 || this.tooClose(x, z, radius + 1.2)) continue;
 
       const anchor = new THREE.Vector3(x, y, z);
-      const variant = Math.floor(Math.random() * CRATE_VARIANT_COUNT);
-      const layout = makeCrateLayout(variant);
+      const variant = Math.floor(this.rand() * CRATE_VARIANT_COUNT);
+      const layout = makeCrateLayout(variant, this.rand);
       const mesh = this.crateMeshes[variant];
       mesh.setMatrixAt(
         placedPerVariant[variant]++,
@@ -883,8 +897,8 @@ export class World {
       if (y < 0.1 || this.tooClose(x, z, radius + 1.2)) continue;
 
       const anchor = new THREE.Vector3(x, y, z);
-      const variant = Math.floor(Math.random() * SHACK_VARIANT_COUNT);
-      const layout = makeShackLayout(variant);
+      const variant = Math.floor(this.rand() * SHACK_VARIANT_COUNT);
+      const layout = makeShackLayout(variant, this.rand);
       const wallMesh = this.shackWallMeshes[variant];
       const roofMesh = this.shackRoofMeshes[variant];
       const instanceId = placedPerVariant[variant]++;
