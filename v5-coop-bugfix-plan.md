@@ -1,4 +1,44 @@
-# V5 — Co-op Bug Repair
+# V5 — Co-op Bug Repair ✅ done (9204f90)
+
+**Shipped:** F1 (RemotePlayer rebuilt on `createPlayerMesh()` so puppets carry
+real gun geometry; `PeerStateMessage.weaponSlot` — never read — replaced with
+`weaponId`; a monotonic `shotsFired` counter added to `WeaponSystem` and
+diffed on receipt so no shot is lost between 15Hz samples, with a first-sight
+baseline so a newly-seen peer doesn't dump their whole shot history as a
+tracer flood), F2a (`teardownGame({ keepNet: true })` for "Play Again";
+`stateSeq` reseeded from `performance.now()` on restart — a second latent bug
+the implementing agent found unprompted, since a reset-to-0 counter would
+have made every peer's dedupe watermark reject the restarted peer's
+broadcasts for a long stretch), F2b (mulberry32 PRNG seeded from the co-op
+join code — both peers already know it, so zero new protocol messages —
+threaded through all ~29 `Math.random()` calls in world/prop generation; solo
+keeps `Math.random()` directly as the default `RandFn`, so single-player
+variety is untouched), F3a (`Bot.update` now takes every player's position —
+host plus each live `RemotePlayer` — and the nearest one; a new
+`player_hit` message, same `redundant: true`/dedupe idiom as `bot_hit`, so a
+host-side bot hit on a remote peer reaches that peer's own health).
+
+**F0 finding, worth recording plainly:** the agent's own instrumented 2-peer
+repro for "bots not damaged" initially reproduced the symptom — then, by
+reproducing the *identical* pattern in solo play with zero networking
+involved, proved it was a test-harness artifact (the third-person camera
+lerps toward the player for ~1s after a debug-hook teleport, so early shots
+in the repro were aimed at where the bot *used to appear*), not a real
+network defect. Bot-hit delivery itself measured 0 drops across every
+sampled run. The residual symptom is fully explained by F3a (bots never
+targeting joiners at all) — no separate mechanical bug existed.
+
+**Independently re-verified** with a fresh 2-peer run (local `npx peer`
+signaling server + two Playwright contexts, real join-code flow through the
+actual co-op UI — not the agent's own test code): worlds byte-identical (102
+colliders each, identical 15-item position/radius sample); joiner's puppet
+of the host carries 52 meshes (vs. ~7 for the pre-fix bare-humanoid puppet),
+confirming real gun geometry; a forced 5-shot burst on the host produced
+`lastPeerShots` reading exactly `5` on the joiner; with the host player moved
+140 units away, bots nudged near the joiner still measurably damaged them
+(100 → 5 HP) — proving multi-target selection, not host-position bias;
+"Play Again" on the host left `net.peerCount` unchanged (1 → 1) across the
+restart. Own `tsc`/build clean. Zero console errors across the whole run.
 
 Three bugs reported from real 2-player testing:
 1. You can't see other players **shooting** — only moving.
