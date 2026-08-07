@@ -47,6 +47,7 @@ export type IconId =
   | "shotgun"
   | "sniper"
   | "heavy"
+  | "grenade"
   // HUD marks
   | "hitmarker";
 
@@ -106,6 +107,12 @@ const P: Record<IconId, string> = {
   sniper: `<path d="M3 11.5h18v1.8H9.5l-1.2 3.5H5.4l1.2-3.5H3z"/><circle cx="12.6" cy="8.2" r="2.3"/><path d="M12.6 10.5v1"/>`,
 
   heavy: `<rect x="2.8" y="9.8" width="13.4" height="4.4" rx="2.2"/><path d="M8.6 9.8V7.6h5.2"/><path d="M17.4 9.2L21.8 12l-4.4 2.8z" fill="currentColor" stroke="none"/>`,
+
+  // V7 grenade launcher: stubby tube + grip low-left, with the shell's
+  // ballistic arc sweeping up and over to a solid shell mark — the arc IS the
+  // weapon's identity (it is the only projectile weapon), which also keeps it
+  // from reading like the `heavy` tube.
+  grenade: `<rect x="2.4" y="13.4" width="9.2" height="4.6" rx="2.3"/><rect x="11.2" y="12.9" width="2.1" height="5.6" rx="0.8"/><path d="M6.2 18l-1.5 3.2"/><path d="M14.4 12.6C16.2 6.4 19.4 5.2 21 8.4"/><circle cx="21.3" cy="10.6" r="1.7" fill="currentColor" stroke="none"/>`,
 
   hitmarker: `<path d="M5.5 5.5l4.4 4.4M18.5 5.5l-4.4 4.4M5.5 18.5l4.4-4.4M18.5 18.5l-4.4-4.4"/>`,
 };

@@ -118,4 +118,20 @@ export class AudioManager {
     this.noiseBurst(0.25, 0.22);
     this.tone(160, 60, 0.3, "sawtooth", 0.2);
   }
+
+  /** V7: the launcher's firing thump — a hollow, low "thoonk" that reads as
+   *  lobbing something heavy rather than the bright crack of shoot(). */
+  grenadeLaunch(): void {
+    this.tone(190, 82, 0.16, "sine", 0.26);
+    this.noiseBurst(0.07, 0.1);
+  }
+
+  /** V7: grenade detonation — deeper and longer than every other cue in the
+   *  set, so a blast is unmistakable even off-screen. Same two procedural
+   *  primitives as everything else; the project ships zero audio assets. */
+  grenadeExplosion(): void {
+    this.noiseBurst(0.42, 0.32);
+    this.tone(120, 34, 0.5, "sawtooth", 0.3);
+    this.tone(58, 26, 0.6, "sine", 0.26);
+  }
 }

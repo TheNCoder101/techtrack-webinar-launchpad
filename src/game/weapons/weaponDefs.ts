@@ -1,9 +1,17 @@
 // Data-driven weapon roster. Slot 0 (pickaxe) and slot 1 (blaster) are
 // always owned; slots 2-5 are empty until filled by an airdrop pickup.
 
+import { GRAVITY } from "../core/constants";
 import type { IconId } from "../ui/icons";
 
-export type WeaponId = "pickaxe" | "blaster" | "smg" | "shotgun" | "sniper" | "heavy";
+export type WeaponId =
+  | "pickaxe"
+  | "blaster"
+  | "smg"
+  | "shotgun"
+  | "sniper"
+  | "heavy"
+  | "grenade";
 
 // --- Weapon rarity tiers (V3 Track D1) --------------------------------------
 // One rarity axis drives every rarity visual: the held-gun accent trim
@@ -28,6 +36,22 @@ export const WEAPON_RARITIES: Record<WeaponRarity, WeaponRarityDef> = {
   rare: { id: "rare", label: "RARE", color: 0x6fd7ff, cssColor: "#6fd7ff" },
   epic: { id: "epic", label: "EPIC", color: 0xb39bfc, cssColor: "#b39bfc" },
 };
+
+/** V7: makes a weapon fire a ballistic projectile instead of a hitscan ray.
+ *  OPTIONAL on WeaponDef by design — every pre-V7 weapon omits it and keeps
+ *  the unchanged raycast path in WeaponSystem.shoot(). Presence of this block
+ *  is the only thing that routes a weapon down the projectile path. */
+export interface ProjectileSpec {
+  /** Muzzle speed in units/sec along Player.aimDir. */
+  speed: number;
+  /** Downward acceleration applied to the projectile (units/sec²). */
+  gravity: number;
+  /** Hard backstop: the projectile detonates at this age no matter what, so
+   *  it can never live forever if every collision test somehow misses. */
+  fuseSeconds: number;
+  /** Collision sphere radius, also the rendered grenade's mesh radius. */
+  radius: number;
+}
 
 export interface WeaponDef {
   id: WeaponId;
@@ -59,6 +83,8 @@ export interface WeaponDef {
   /** D1 rarity tier. Starters (pickaxe/blaster) are common; airdrop-only
    *  weapons are rare/epic by power (see the assignment notes below). */
   rarity: WeaponRarity;
+  /** V7, optional: absent on every hitscan weapon. See ProjectileSpec. */
+  projectile?: ProjectileSpec;
 }
 
 // Rarity assignments, grounded in stats + acquisition:
@@ -69,10 +95,12 @@ export interface WeaponDef {
 //   for the roster's highest fire rate (14/s, ~140 DPS up close); the
 //   shotgun is a 6-pellet 90-per-blast burst gated to 22 units of range.
 //   Strong situationally, not round-defining.
-// - sniper/heavy: EPIC — the two round-defining airdrop pulls. The sniper
+// - sniper/heavy/grenade: EPIC — the round-defining airdrop pulls. The sniper
 //   one-taps most bots (70 dmg, 160 range, near-zero spread); the heavy is
-//   the only splash weapon (45 dmg + 4.5-unit AoE) with the scarcest ammo
-//   economy (4/16).
+//   a splash weapon (45 dmg + 4.5-unit AoE) with a scarce ammo economy
+//   (4/16); the grenade launcher (V7) is the only projectile weapon and the
+//   only reliable multi-kill, paid for with a 3-round clip, a 2.6 s reload
+//   and shells that have to be arced onto a target instead of pointed at it.
 export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
   pickaxe: {
     id: "pickaxe",
@@ -188,10 +216,63 @@ export const WEAPON_DEFS: Record<WeaponId, WeaponDef> = {
     color: 0xff5555,
     rarity: "epic",
   },
+  // V7 — the roster's only non-hitscan weapon. Its shells arc under gravity,
+  // so aim pitch alone picks the blast distance: ~0.7 m aiming hard down,
+  // ~13 m level, ~42 m at 20 deg and a ~62 m max at a 45 deg lob (measured
+  // against the computed ballistic table in v7-grenade-launcher-plan.md).
+  //
+  // `damage` is deliberately far above the hitscan roster because NONE of it
+  // is ever applied directly: a grenade has no direct-hit target, so every
+  // point of damage goes through WeaponSystem.applySplash's falloff curve,
+  //     effective = damage * 0.6 * (1 - dist / splashRadius)
+  // which at 130/6.5 gives 78 at the epicentre and crosses BOT_MAX_HP (45)
+  // at 2.75 m. So: everything inside ~2.75 m of the impact dies, everything
+  // out to 6.5 m is wounded but survives — the "kills a clustered group,
+  // chips the stragglers" shape the weapon exists for.
+  //
+  // `range` is unused by the projectile path (kept for HUD/stat consistency)
+  // and set to the ballistic maximum so the number the player sees is true.
+  grenade: {
+    id: "grenade",
+    name: "Grenade Launcher",
+    icon: "grenade",
+    isMelee: false,
+    damage: 130,
+    fireRate: 0.7,
+    clipSize: 3,
+    reserveMax: 12,
+    reloadTime: 2.6,
+    range: 62,
+    pellets: 1,
+    spread: 0,
+    splashRadius: 6.5,
+    reserveRegenPerSec: 0,
+    canHarvest: false,
+    color: 0x8ef07a,
+    rarity: "epic",
+    projectile: {
+      // 38 m/s chosen from the plan's computed range table: 30 tops out near
+      // 39 m (reads as a lobbed grenade, not a launcher) and 46 reaches ~90 m,
+      // most of the island. 38 spans ~2.5 m to ~62 m across the existing
+      // -66..+60 deg pitch clamp with no charge-up mechanic.
+      speed: 38,
+      gravity: GRAVITY,
+      // Longest possible flight is the +60 deg lob at ~2.8 s, so 5 s is a
+      // pure backstop that a normally-terminating shot never reaches.
+      fuseSeconds: 5,
+      radius: 0.22,
+    },
+  },
 };
 
 /** Weapon types obtainable from airdrop crates (pickaxe/blaster are fixed starters). */
-export const AIRDROP_WEAPON_POOL: WeaponId[] = ["smg", "shotgun", "sniper", "heavy"];
+export const AIRDROP_WEAPON_POOL: WeaponId[] = [
+  "smg",
+  "shotgun",
+  "sniper",
+  "heavy",
+  "grenade",
+];
 
 export const WEAPON_SLOT_COUNT = 6;
 export const PICKUP_SLOT_INDICES = [2, 3, 4, 5];

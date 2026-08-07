@@ -23,7 +23,14 @@ const unitCylGeo = new THREE.CylinderGeometry(1, 1, 1, 8);
 
 /** The five hand-held gun ids (every weapon except the melee pickaxe). */
 export type GunWeaponId = Exclude<WeaponId, "pickaxe">;
-export const GUN_WEAPON_IDS: GunWeaponId[] = ["blaster", "smg", "shotgun", "sniper", "heavy"];
+export const GUN_WEAPON_IDS: GunWeaponId[] = [
+  "blaster",
+  "smg",
+  "shotgun",
+  "sniper",
+  "heavy",
+  "grenade",
+];
 
 interface GunPartSpec {
   /** box = scaled unit box; barrel = unit cylinder laid along Z; grip = unit cylinder upright. */
@@ -99,6 +106,22 @@ const GUN_SPECS: Record<GunWeaponId, GunSpec> = {
       { kind: "box", size: [0.05, 0.06, 0.28], pos: [0, 0.17, -0.12] },
       { kind: "barrel", size: [0.1, 0.06], pos: [0, 0.02, -0.64], accent: true },
       { kind: "box", size: [0.21, 0.05, 0.12], pos: [0, 0.02, 0.08], accent: true },
+    ],
+  },
+  // Grenade launcher (V7): revolver-style — a fat drum magazine laid across
+  // the middle is the read that separates it from the heavy's plain tube,
+  // plus a short barrel ending in the widest muzzle on the roster and a
+  // stubby shoulder stock behind the grip.
+  grenade: {
+    tipOffset: 0.66,
+    parts: [
+      { kind: "box", size: [0.16, 0.17, 0.34], pos: [0, 0.02, 0] },
+      { kind: "barrel", size: [0.165, 0.24], pos: [0, -0.02, -0.14] },
+      { kind: "barrel", size: [0.07, 0.34], pos: [0, 0.04, -0.44] },
+      { kind: "grip", size: [0.055, 0.28], pos: [0, -0.16, 0.12] },
+      { kind: "box", size: [0.1, 0.13, 0.18], pos: [0, -0.01, 0.22] },
+      { kind: "barrel", size: [0.115, 0.075], pos: [0, 0.04, -0.62], accent: true },
+      { kind: "box", size: [0.05, 0.05, 0.3], pos: [0, 0.14, -0.1], accent: true },
     ],
   },
 };
