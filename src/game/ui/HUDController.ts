@@ -80,6 +80,7 @@ export class HUDController {
   private weaponNameEl: HTMLDivElement;
   private pickupToast: HTMLDivElement;
   private stormStatus: HTMLDivElement;
+  private eventBanner: HTMLDivElement;
   private dmgLayer: HTMLDivElement;
   private dmgDirLayer: HTMLDivElement;
   private killFeed: HTMLDivElement;
@@ -127,6 +128,7 @@ export class HUDController {
         <div class="gj-kills">${iconSvg("skull")}<span class="gj-kills-text">0</span></div>
       </div>
       <div class="gj-storm-status"></div>
+      <div class="gj-event-banner"></div>
       <div class="gj-bottom-left">
         <canvas class="gj-minimap" width="140" height="140"></canvas>
       </div>
@@ -153,6 +155,7 @@ export class HUDController {
     this.weaponNameEl = this.root.querySelector(".gj-weapon-name")!;
     this.pickupToast = this.root.querySelector(".gj-pickup-toast")!;
     this.stormStatus = this.root.querySelector(".gj-storm-status")!;
+    this.eventBanner = this.root.querySelector(".gj-event-banner")!;
     this.dmgLayer = this.root.querySelector(".gj-dmg-layer")!;
     this.dmgDirLayer = this.root.querySelector(".gj-dmg-dir-layer")!;
     this.killFeed = this.root.querySelector(".gj-killfeed")!;
@@ -250,6 +253,22 @@ export class HUDController {
       this.ammoText.textContent = `${state.ammo} / ${Math.floor(state.reserve)}`;
     }
   }
+
+  /** V6 timed events: shows the live event's name and a countdown to its end,
+   *  or hides the banner when nothing is running. Called every frame from the
+   *  loop and self-corrects, so the banner disappears on its own the moment
+   *  the window closes mid-match. */
+  setEventBanner(text: string | null): void {
+    if (text === this.lastEventText) return;
+    this.lastEventText = text;
+    if (text === null) {
+      this.eventBanner.style.display = "none";
+      return;
+    }
+    this.eventBanner.textContent = text;
+    this.eventBanner.style.display = "block";
+  }
+  private lastEventText: string | null | undefined = undefined;
 
   showPickup(weaponName: string, isNew: boolean, rarity: WeaponRarity): void {
     // D1: the toast leads with the rarity tier and tints to match.

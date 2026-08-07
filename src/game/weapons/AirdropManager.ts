@@ -13,6 +13,7 @@ import { WeaponSystem } from "./WeaponSystem";
 import { ParticleSystem } from "./ParticleSystem";
 import { AudioManager } from "../core/AudioManager";
 import { AIRDROP_WEAPON_POOL, WEAPON_DEFS, type WeaponId } from "./weaponDefs";
+import { activeEffects } from "../core/events";
 
 const crateGeo = new THREE.BoxGeometry(1.3, 1.3, 1.3);
 const crateMat = new THREE.MeshLambertMaterial({ color: 0xd4a24c });
@@ -142,7 +143,12 @@ export class AirdropManager {
       audio.pickupWeapon();
       this.onPickup?.(weaponId, result.isNew);
       this.removeCrate();
-      this.nextSpawnAt = nowSec + randomRange(AIRDROP_MIN_INTERVAL, AIRDROP_MAX_INTERVAL);
+      // V6: a live timed event can shorten the gap between drops. Multiplier
+      // is 1 outside any event window, so this is the pre-event behavior then.
+      this.nextSpawnAt =
+        nowSec +
+        randomRange(AIRDROP_MIN_INTERVAL, AIRDROP_MAX_INTERVAL) *
+          activeEffects().airdropIntervalMultiplier;
     }
   }
 }

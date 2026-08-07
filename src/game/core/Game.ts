@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { WORLD_RADIUS } from "./constants";
 import { World } from "../world/World";
+import { activeEvent, activeEffects, formatCountdown, type GameEvent } from "./events";
 import { seedFromString } from "../world/rng";
 import { Player } from "../entities/Player";
 import { BotManager } from "../entities/BotManager";
@@ -354,7 +355,7 @@ export class Game {
         );
         return;
       }
-      this.score += 10;
+      this.score += this.killScore();
       this.kills += 1;
       this.onKill?.();
       this.hud.pushKillFeed("you", bot.id);
@@ -698,7 +699,7 @@ export class Game {
         this.seenKillFeed.set(key, nowSec);
         if (msg.peerId === net.myId) {
           // Kill credited to this peer: score it and feed it as "you".
-          this.score += 10;
+          this.score += this.killScore();
           this.kills += 1;
           this.onKill?.();
           this.audio.botKill();
@@ -869,6 +870,13 @@ export class Game {
     this.spawnBotTracer(from, to);
     this.particles.burst(from, new THREE.Color(0xfff2b0), 4, 2.5, 0.5, 1, 0.1);
     this.audio.shoot();
+  }
+
+  /** Score for one bot kill, scaled by any live timed event (V6). Evaluated
+   *  per kill rather than cached at match start, so a match that spans the
+   *  event boundary awards the right amount on both sides of it. */
+  private killScore(): number {
+    return Math.round(10 * activeEffects().scoreMultiplier);
   }
 
   /** Ends the match exactly once (idempotent). Freezes the local player,
@@ -1060,6 +1068,14 @@ export class Game {
       surviveSecondsLeft:
         this.storm.isFinalZone && !this.matchEnded ? this.finalCountdown : null,
     });
+    // V6: live-event banner (null hides it). Re-evaluated every frame so it
+    // appears/disappears on its own if a match spans the window boundary.
+    const liveEvent: GameEvent | null = activeEvent();
+    this.hud.setEventBanner(
+      liveEvent
+        ? `${liveEvent.name} · ${liveEvent.blurb} · ${formatCountdown(liveEvent.endsAt - Date.now())}`
+        : null
+    );
     this.hud.drawMinimap(this.player, this.botManager, this.airdrops.activePosition, {
       x: this.storm.center.x,
       z: this.storm.center.z,

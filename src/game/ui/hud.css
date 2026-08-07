@@ -2101,3 +2101,71 @@ button:focus-visible,
   86% { opacity: 1; }
   100% { opacity: 0; }
 }
+
+/* --- V6 live-event banner ------------------------------------------------
+   Sits just under the centered storm/survive pills so it never fights them
+   for the same strip (same reasoning as the EXIT button's placement). Gold,
+   matching the brand accent already used for the wordmark and victory state,
+   so "an event is running" reads as celebratory rather than as a warning. */
+.gj-event-banner {
+  display: none;
+  position: absolute;
+  left: 50%;
+  top: calc(max(14px, env(safe-area-inset-top)) + 34px);
+  transform: translateX(-50%);
+  z-index: 17;
+  font-family: var(--gj-font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: var(--gj-track-mid);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--gj-gold);
+  background: var(--gj-chip-bg);
+  border: 1px solid rgba(255, 199, 68, 0.55);
+  padding: 4px 13px;
+  border-radius: var(--gj-r-pill);
+  box-shadow: var(--gj-inner-edge), 0 0 16px rgba(255, 199, 68, 0.22);
+  animation: gj-event-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes gj-event-pulse {
+  0%, 100% { box-shadow: var(--gj-inner-edge), 0 0 12px rgba(255, 199, 68, 0.18); }
+  50%      { box-shadow: var(--gj-inner-edge), 0 0 22px rgba(255, 199, 68, 0.34); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gj-event-banner { animation: none; }
+}
+
+/* Portrait: the storm pill is pushed down under the top-left cluster, so the
+   event banner follows it rather than colliding with the health readout. */
+@media (orientation: portrait) {
+  .gj-event-banner {
+    top: calc(max(10px, env(safe-area-inset-top)) + 152px);
+  }
+}
+
+/* Start-screen event card (live or upcoming). */
+.gj-event-card {
+  border-color: rgba(255, 199, 68, 0.5) !important;
+}
+
+.gj-event-card .gj-settings-title { color: var(--gj-gold); }
+
+.gj-event-status {
+  font-family: var(--gj-font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: var(--gj-track-mid);
+  font-variant-numeric: tabular-nums;
+  color: var(--gj-gold);
+  text-align: center;
+}
+
+.gj-event-blurb {
+  font-size: 12px;
+  opacity: 0.78;
+  text-align: center;
+  margin-top: 2px;
+}
