@@ -117,3 +117,71 @@ rather than implying full parity.
 - **Regression:** the other five weapons still hitscan normally (especially
   `heavy`, which shares `applySplash`), and solo play is unaffected.
 - Zero console errors.
+
+---
+
+## ✅ Done (e053634)
+
+Shipped by a worktree agent, merged via `git merge --ff-only`, and
+independently re-verified — both by direct code reading and by a from-scratch
+Playwright reproduction (not reusing the agent's own test code).
+
+**Code review (direct reads, not trusted from the agent's report alone):**
+- `applySplash` now returns `SplashHit[]` instead of `void`; the existing
+  `heavy` call site discards the return value, confirmed byte-for-byte
+  unaffected.
+- `updateProjectiles(dt, ...)` is called from `WeaponSystem.update()` *before*
+  the `if (!def) return` guard, so a shell already in flight keeps flying and
+  detonating even if the player switches weapons mid-arc — correct per plan.
+- `detonateProjectile` calls `applySplash(def, center, -1, ...)` — `-1` means
+  no bot is excluded, which is what lets one shell hit an entire cluster.
+- Detonation order is ground → bot proximity → world colliders (with a
+  `PROP_HIT_HEIGHT` guard so a lobbed shell passing safely over a rock isn't
+  wrongly detonated by an XZ-only collider check) → fuse backstop — matches
+  the planned 4-stage order, with sub-stepped integration
+  (`PROJECTILE_MAX_SUBSTEPS`/`PROJECTILE_SUBSTEP_DIST`) preventing tunnelling.
+- Co-op: joiner-fired splash correctly forwards one `bot_hit` per bot in
+  radius (each `redundant: true` with host-side dedupe, the existing V5
+  pattern) — confirmed by reading `BotManager`'s host/joiner split directly.
+  The one accepted gap from the plan stands: a joiner's grenade produces no
+  arcing-projectile VFX on the host's screen (damage itself is fully correct
+  and synced) — flagged as a follow-up, not a bug.
+
+**Independent live reproduction** (own Playwright script, own scenario, not
+the agent's test code): equipped the grenade via the DEV `__elronite` hook,
+positioned a 4-bot cluster at world (0, y, 9.5) plus a stray bot at (30, y,
+30), fired one shell along `player.aimDir` (pitch 0 → flat ~9.5 m shot,
+consistent with the plan's range table), and measured HP before/after:
+
+| bot | distance from blast center | damage taken |
+|---|---|---|
+| 1 | closest | 68.5 |
+| 2 | | 62.3 |
+| 3 | | 58.8 |
+| 4 | farthest of the four | 50.2 |
+| stray (30 m away, outside `splashRadius`) | — | **0 (untouched)** |
+
+Monotonic falloff with distance, all four hit from a single shell, the
+out-of-radius bystander untouched — confirms the splash math independently
+of the agent's own (tighter-cluster, 2-kill) measurement.
+
+**Regression** (existing `blaster` hitscan, unrelated to any V7 code path):
+placed a bot exactly on the camera's real forward raycast and fired —
+**22 damage**, exactly matching `WEAPON_DEFS.blaster.damage`. Confirms the
+five pre-existing hitscan weapons are unaffected.
+
+*(Two dead-ends in my own verification script, noted for the record since
+they cost real debugging time and aren't game bugs: (1) directly mutating
+`player.yaw`/`pitch` without calling `player.update()`/`updateCamera()`
+leaves `aimDir` and the camera stale — both the grenade's launch vector and
+the blaster's raycast direction silently point at the old orientation; (2)
+teleporting a bot's `group.position` without calling
+`group.updateMatrixWorld(true)` leaves the raycaster testing against a
+stale world matrix until the next real render frame. Both are artifacts of
+poking engine state directly from a test script, not defects in the shipped
+game code.)*
+
+- `npx tsc --noEmit` clean, `NODE_ENV=development npm run build:dev` clean.
+- Zero console errors across all verification runs.
+- Pushed to `origin/claude/mobile-fortnite-game-nn2fwr`; GitHub Pages deploy
+  confirmed green for this commit.
